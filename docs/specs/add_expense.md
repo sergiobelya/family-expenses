@@ -318,7 +318,7 @@ Business Requirements §6.2: stores are created only in the Stores section, and 
 **Steps**
 
 1. The draft status becomes Paused (reason `store_creation`); expiry follows Business Requirements §6.2.1.
-2. The bot opens the Stores section's create form as a new message, carrying the return context (Appendix B). When started from a no-results search, prefill the name with the exact trimmed search query and show it as editable.
+2. The bot opens the Stores section's create form as a new message, carrying the return context (Appendix A). When started from a no-results search, prefill the name with the exact trimmed search query and show it as editable.
 3. After the store is created, the Stores flow offers `↩️ Back to expense`. The bot re-anchors the card, **selects the new store**, and continues at AE-06.
 4. Alternatively, the user taps `Continue creating expense` (or `/add`) → AE-00 → AE-02 to reopen the paused draft. The new store is then available in the list but is **not** selected automatically unless the Stores flow's `Back to expense` action is used.
 5. If the draft expired meanwhile → AE-17.
@@ -759,25 +759,14 @@ No note field exists in MVP.
 ## 10. Acceptance criteria
 
 - **Entry and draft routing:** Exercise the menu and `/add` paths from Business Requirements §5, including each draft state and a stale Continue label; verify family context and card behavior in this specification's §§2 and 5.
-- **Store and category detours:** Exercise search, separate-section creation, return, and selection flows in AE-03–AE-09 and Appendix B.
+- **Store and category detours:** Exercise search, separate-section creation, return, and selection flows in AE-03–AE-09 and Appendix A.
 - **Input validation:** Run the amount, date, and allocation boundary cases in §§6.1, 6.3–6.4, and AE-06–AE-12.
 - **Conversion and saving:** Exercise matching currencies, automatic/manual/unavailable rates, save retries, and uncertain outcomes under AE-10–AE-15.
 - **Recovery and localization:** Exercise cancellation, expiry, stale callbacks, restart recovery, and localized strings under AE-16–AE-18 and §9.
 
 ---
 
-## Appendix A — Shared component for the Stores scenario: similar-store warning
-
-Shown in the **Stores section** when the new store name has fuzzy matches but a different canonical `dedupe_key` (Business Requirements §6.3).
-
-| Key | English |
-|-----|---------|
-| `store.create.similar_warning` | Heads up: a store or seller with a similar name already exists. Are you sure you want to create a new store? |
-| `store.create.hard_collision` | A store with this name already exists: {store_name}. Choose it from the list instead. |
-
-Controls for the warning: `Create new store` · `Show similar stores` · `Cancel`. A hard-key collision cannot be overridden.
-
-## Appendix B — Return from Stores and Categories
+## Appendix A — Return from Stores and Categories
 
 Both sections receive the originating user, family, expense-draft reference, and return step. A trimmed search query may be passed as `prefill_name`. The existing expense-card draft reference may be reused; no additional token is required by this contract.
 
