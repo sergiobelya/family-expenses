@@ -1,6 +1,6 @@
-# Family Expenses Telegram Bot — Product & Technical Requirements
+# Family Expenses Telegram Bot — Business Requirements
 
-**Document status:** Consolidated requirements for MVP  
+**Document status:** Consolidated business requirements for MVP  
 **Product:** Telegram bot for family expense tracking  
 **Fallback language:** English  
 **Initial supported languages:** English, Ukrainian, Polish, Russian  
@@ -37,7 +37,7 @@ The MVP records **family expenses only**. The data model should support adding p
 - Family expenses.
 - Family-scoped stores and categories.
 - Add, edit, and delete expenses.
-- Store search uses a dedicated search-index abstraction; a separate category index is not required for MVP. Search behavior and family isolation are defined in §6.3, §10, and §14.
+- Store search behavior is defined in §§6.3 and 10.
 - Expense history and search.
 - Reports by month, multiple months, or exact date range.
 - Category and store breakdowns and spending dynamics.
@@ -97,7 +97,7 @@ Support:
 
 Invitation tokens must be unguessable, revocable, and associated with a specific family. Use Telegram bot deep links as the primary invitation mechanism. A username is only a user-provided hint; it must never be used as the identity key or as proof of membership. Do not promise username/contact lookup or proactive messaging where Telegram does not support it.
 
-For MVP, invitations expire after 48 hours by default and allow one successful use by default (`max_uses = 1`); the creator may choose a different maximum-use limit. Store `expires_at` and `revoked_at`. `InvitationUse` is the source of truth for use count; do not store a redundant `use_count`. Enforce maximum uses atomically with the successful join and `InvitationUse` insert. Revocation blocks future joins only and does not remove users who already joined. Audit invitation creation, revocation, and successful use. Joining must be an explicit action by the recipient after opening the bot.
+For MVP, invitations expire after 48 hours by default and allow one successful use by default (`max_uses = 1`); the creator may choose a different maximum-use limit. Store `expires_at` and `revoked_at`. `InvitationUse` is the source of truth for use count; do not store a redundant `use_count`. Record each successful use and enforce the configured maximum. Revocation blocks future joins only and does not remove users who already joined. Audit invitation creation, revocation, and successful use. Joining must be an explicit action by the recipient after opening the bot.
 
 ## 5. Main Telegram Navigation
 
@@ -105,7 +105,7 @@ Use standard Telegram controls. The MVP supports private chats with the bot only
 
 ### Reply-keyboard main menu
 
-- Expense action: **Add expense** when the active family has no resumable unfinished draft for this user; **Continue creating expense** when one exists for `(user_id, active_family_id)`. Both labels and `/add` invoke the same handler. After checking membership and active family, the handler resumes/re-anchors an Active or Paused draft, reports `Saving` as in progress, and routes `SaveUnknown` to the reconciliation flow in §15. If a stale Continue action finds no Active/Paused draft, explain that it expired and offer a fresh start. If `Add expense` or `/add` finds no draft, it starts a new expense directly. Refresh the label when draft status or active family changes and whenever a new keyboard is rendered. A stale label is safe because the handler rechecks the current family-scoped state.
+- Expense action: **Add expense** when the active family has no resumable unfinished draft for this user; **Continue creating expense** when one exists for `(user_id, active_family_id)`. Both labels and `/add` invoke the same handler. After checking membership and active family, the handler resumes/re-anchors an Active or Paused draft, reports `Saving` as in progress, and routes `SaveUnknown` to reconciliation. If a stale Continue action finds no Active/Paused draft, explain that it expired and offer a fresh start. If `Add expense` or `/add` finds no draft, it starts a new expense directly. Refresh the label when draft status or active family changes and whenever a new keyboard is rendered. A stale label is safe because the handler rechecks the current family-scoped state.
 - **Reports**
 - **History / Search**
 - **Stores**
@@ -162,11 +162,10 @@ Store creation and management take place in the separate Stores section. If no m
 - If a user belongs to multiple families and switches active families, any draft from another family is inaccessible within the new family context.
 - If the user switches back to the previous family within the 24-hour draft lifetime, their unfinished draft for that family becomes available again to resume or discard.
 - Active/Paused drafts expire 24 hours after their last meaningful change. Viewing a draft, a no-op action, or invalid input does not extend its lifetime. TTL removes the draft record; `Expired` is not a persisted status.
-- Save outcome and idempotency rules, including `SaveUnknown`, are defined in §15; reply-keyboard entry behavior is defined in §5.
 
 ### 6.3 Store search and creation
 
-- Search stores through a dedicated search index; the specific engine (e.g. Elasticsearch or a managed cloud equivalent) is deferred to system design.
+- Store search behavior is defined here.
 - Search must support case-insensitive and diacritic-insensitive matching, normalized forms, language-aware transliteration across Latin/Cyrillic scripts, and fuzzy matching with edit distance 1. The queries `biedronka`, `Бєдронка`, and `бедронка` must find the same likely Biedronka candidate, even when their hard deduplication keys differ; `Żabka` and `zabka` must match. Search normalization may generate multiple language-aware transliteration forms, while hard duplicate prevention uses one fixed transliteration scheme. Fuzzy/transliterated search results are suggestions only, never proof of identity and never an automatic merge.
 - Transliteration and fuzzy matches are search aids only; they must never automatically merge stores.
 - Store creation is available only in the separate Stores section. Compute `dedupe_key` using the single canonical algorithm in §6.3.1; it is a pure function of the name and never depends on actor or UI language. Enforce `UNIQUE (family_id, dedupe_key)`. The fixed scheme makes `Бєдронка` collide with `Biedronka`, while `бедронка` may remain a separate hard key (`bedronka`); search must still suggest `Biedronka` for `бедронка`. Search can use broader language-aware transliteration forms, but these never affect hard uniqueness. The final key must contain at least one Unicode letter or digit; otherwise reject the name.
@@ -265,11 +264,10 @@ The MVP should use a chat-based editable expense card, not a Mini App.
 
 - Accept only currencies from the centrally configured supported ISO 4217 currency list.
 - Expense amounts and category allocations must be strictly positive; zero and negative amounts are invalid.
-- Parse and store monetary values and exchange rates using decimal types, never binary floating point. Respect each currency's configured minor-unit precision.
 - Enforce a configurable maximum amount of 100,000,000 in the expense currency and each currency's configured minor-unit precision; return a user-readable validation error for overflow or unsupported precision and do not silently round user input.
 - A normal expense purchase date must be a valid date, no earlier than the configurable minimum date (default `2020-01-01`), and cannot be in the future. A recurring template may have a future scheduled date, but confirming an occurrence as an ordinary expense must reject a future purchase date.
 - Store and category must belong to the same family as the expense. Archiving stores/categories is out of scope for MVP. Existing store/category references must remain readable.
-- Saving is atomic: an expense and all category allocations are committed together only after validation passes. Incomplete allocation rows exist only in the chat draft and are not persisted.
+- Incomplete allocation rows exist only in the chat draft and are not persisted.
 
 ## 7. Currency Settings and Conversion
 
@@ -415,16 +413,11 @@ Clearly indicate when an expense cannot be converted so that report totals are n
 
 - Shared within a family; each store may have a default category.
 - In MVP, allow creation, renaming, changing `default_category_id`, managing explicit aliases, and deleting a store only when it has no references from any expense (including soft-deleted expenses retained for history), recurring templates/occurrences, or other records. If referenced, deletion is blocked with an explanation and the user may rename it instead. Archiving is out of scope. Apply the same rule to categories: deletion is allowed only when no expense allocation, store default-category, recurring template/occurrence, or other record references it; otherwise block deletion.
-- Use the common search-index abstraction described in §6.3 and §14 for search normalization, diacritic-insensitive matching, language-aware transliteration, and fuzzy matching. Persist `Store.dedupe_key` and enforce a database unique constraint on `(family_id, dedupe_key)`. On every store rename, recompute the key according to §6.3.1, check canonical names and aliases, and commit only if no collision exists. The index may maintain extra derived search forms, but it is not the authority for hard duplicate prevention. Do not aggressively collapse distinct hard keys such as `bedronka` and `biedronka`.
-- `StoreAlias` is only for explicit alternate names or confirmed variants, not every normalized string. The canonical store name is searchable without a separate alias row. If `normalized_alias` is stored, it is a derived search aid. Alias creation must check for collisions against other stores' canonical names and aliases within the family using the same canonicalization rules; aliases must not bypass the canonical-name duplicate policy. Persist `StoreAlias.alias_dedupe_key` and enforce a family-scoped unique constraint on `(family_id, alias_dedupe_key)`. Alias-key insertion and checks against canonical store keys and other aliases must occur in the same transaction; aliases must conflict with another store's canonical name, and canonical-name creation/rename must conflict with another store's alias.
-- Hard-key collisions are rejected and cannot be overridden by user confirmation. Fuzzy matches with different keys are warnings only; the user may proceed after acknowledgement, and records are never auto-merged. To represent distinct branches with otherwise identical names, include a meaningful branch/location differentiator in the canonical name.
-- Every search and alias lookup must be scoped to the current family. Protect retries/concurrent processing of the same create request with an idempotency key or equivalent atomic request-level safeguard in addition to the unique constraint. If the index is unavailable, the database key constraint remains active; use database lookup for hard collisions and disclose if fuzzy suggestions cannot be checked.
+- Apply the search and duplicate rules in §6.3. Store aliases are reserved for explicit alternate names or confirmed variants; the canonical name is searchable without an alias. Hard-key collisions are rejected, while fuzzy matches with different keys are warnings that the user may acknowledge. Records are never auto-merged. To represent distinct branches with otherwise identical names, include a meaningful branch/location differentiator in the canonical name.
 
 ### Categories
 
-- Shared within a family. A separate category index is not required for MVP; use the common search abstraction, with a database/list implementation acceptable for the small category set. Any category search and duplicate check must remain family-scoped.
-- Persist `Category.dedupe_key` and enforce a database unique constraint on `(family_id, dedupe_key)`, using exactly the canonical algorithm in §6.3.1; the key must not depend on actor or UI language. Do not aggressively collapse distinct Latin spellings such as `bedronka` and `biedronka`. Exact normalized/transliterated equivalents are rejected; fuzzy matches with different keys are warnings only and may proceed after acknowledgement. The user cannot override a hard-key collision.
-- On creation and rename, recompute `dedupe_key` and enforce the family-scoped unique constraint atomically; a rename that collides with another record’s key is rejected with a clear explanation. Exclude the record itself from canonical-name and alias collision checks, so a case-only or normalization-equivalent rename is allowed. Store renames follow the same rule as category renames. In MVP, allow creation and renaming. Deletion is allowed only when no expense allocation, store default-category, recurring template/occurrence, or other record references the category; otherwise block it with an explanation. Archiving is out of scope.
+- Shared within a family. Use the same hard-key and search rules as stores (§6.3). In MVP, allow creation and renaming. Deletion is allowed only when no expense allocation, store default-category, recurring template/occurrence, or other record references the category; otherwise block it with an explanation. Archiving is out of scope.
 - Used to classify all or part of an expense. Category allocation amounts must reconcile to the expense total.
 
 ## 11. Recurring Expenses
@@ -455,236 +448,19 @@ Requirements:
 - Format dates and numbers appropriately for the selected locale.
 - Currency codes should be unambiguous even when symbols overlap.
 
-## 13. Authorization and Auditability
-
-- Verify family membership for all family-scoped reads and writes.
-- Include the relevant family and entity identifiers in callback payloads where needed; on every action, validate that the acting user is still a member of that specific family and authorized for that entity. Do not rely only on a mutable “active family” value or on hidden buttons.
-- In MVP, only the author may edit or delete an expense.
-- Centralize permission decisions in an authorization/service layer.
-- Keep a change history for important mutations, including expense edits/deletions, store and category creation/renaming/physical deletion, store-alias creation/changes/deletion, manual exchange-rate changes, reporting-currency changes, and relevant settings changes.
-- Never rely on hidden buttons alone for security; validate authorization on the server for every mutation.
-
-## 14. Suggested Data Model
-
-This is a logical model; names and normalization can be adjusted during implementation.
-
-### Core entities
-
-**User**
-- `id`
-- `telegram_user_id` (unique)
-- `language` (user-selected supported language)
-- `created_at`
-- `updated_at`
-
-**Family**
-- `id`
-- `name`
-- `country_code` (optional)
-- `timezone`
-- `default_expense_currency`
-- `reporting_currency`
-- `default_exchange_rate_provider`
-- `created_at`
-- `updated_at`
-
-**FamilyMember**
-- `id`
-- `family_id`
-- `user_id`
-- `status` (active in MVP)
-- `joined_at`
-- `created_at`
-
-Unique constraint: (`family_id`, `user_id`). Leaving/removing membership is out of scope for MVP.
-
-**Expense**
-- `id`
-- `family_id`
-- `created_by_user_id`
-- `store_id`
-- `expense_date`
-- `original_amount`
-- `original_currency`
-- `expense_type` — default `family`; not exposed in MVP UI
-- `created_at`
-- `updated_at`
-- `deleted_at` (nullable)
-- `deleted_by_user_id` (nullable)
-
-**Category**
-- `id`
-- `family_id`
-- `name`
-- `dedupe_key` (deterministic canonical key for hard duplicate prevention)
-- Unique constraint: `(family_id, dedupe_key)`
-- `created_at`
-- `updated_at`
-
-**ExpenseCategory**
-- `id`
-- `expense_id`
-- `category_id`
-- `amount`
-- `created_at`
-- `updated_at`
-
-The sum of `ExpenseCategory.amount` must equal `Expense.original_amount` at the original currency's supported minor-unit precision. For report breakdowns in the reporting currency, allocate the converted expense total proportionally according to the original category allocation amounts. Round each category to the target currency's minor unit, then distribute any rounding remainder using a deterministic largest-remainder rule so category totals reconcile to the converted expense total. This is a reporting allocation rule, not an accounting ledger.
-
-**Store**
-- `id`
-- `family_id`
-- `name`
-- `dedupe_key` (deterministic canonical key for hard duplicate prevention)
-- Unique constraint: `(family_id, dedupe_key)`
-- `default_category_id` (nullable)
-- `created_at`
-- `updated_at`
-- On rename, recompute `dedupe_key` and reject a family-scoped collision atomically; exclude the record being renamed from collision checks so case-only/normalization-equivalent renames do not conflict with themselves; also check aliases in the same family, excluding aliases belonging to that same store.
-
-**StoreAlias** (optional but recommended for confirmed alternate names)
-- `id`
-- `family_id`
-- `store_id`
-- `alias` (user-confirmed alternate spelling/name)
-- `normalized_alias` (optional derived search aid; not authoritative for uniqueness)
-- `alias_dedupe_key` (deterministic hard-duplicate key)
-- Unique constraint: `(family_id, alias_dedupe_key)`; enforce atomically with checks against canonical store keys and other aliases in the same family
-- `created_at`
-
-Store and category search use the shared search-index abstraction described in §6.3; the concrete engine is deferred to system design. Search handles case/diacritic-insensitive matching, language-aware transliteration across Latin/Cyrillic scripts, and fuzzy matching with edit distance 1. Search may return `Biedronka` for queries `biedronka`, `Бєдронка`, and `бедронка`, even when hard keys differ. The fixed Ukrainian hard-key transliteration and character-normalization rules are defined in §6.3 and apply equally to `Store` and `Category`; hard-key output never depends on actor language. Do not add `dedupe_key_version` in MVP; if the algorithm is changed in the future, a migration to recalculate keys and detect/resolve collisions is required as part of that future change, not now. A separate category index is not required for MVP. Keep explicit `StoreAlias` values optional and family-scoped. Persist `StoreAlias.alias_dedupe_key` with a unique constraint on `(family_id, alias_dedupe_key)`; `StoreAlias.family_id` must equal the referenced store's `family_id`, enforced with a composite foreign key or equivalent database constraint. Alias-key creation and checks against canonical store keys and other aliases must be atomic in one transaction. Canonical-name creation/rename must also check existing aliases in that family, excluding the same store when renaming its own canonical name or comparing its own alias to its own canonical name. Every query must filter by `family_id`. Use the Telegram `update_id` as the idempotency source for message updates and `callback_query.id` for callback actions; derive a stable request key from the update type/id and operation, and persist/process it atomically. If the index is unavailable, database key constraints remain authoritative; use database lookup for hard collisions and disclose if fuzzy suggestions cannot be checked. Index results are candidates only: re-fetch each candidate from the database scoped by `family_id`, discard missing/deleted records, and use the live database record for selection and persistence.
-
-### Currency entities
-
-**ExchangeRate**
-- `id`
-- `source_currency`
-- `target_currency`
-- `rate`
-- `rate_date`
-- `published_at` (nullable)
-- `provider` (e.g. NBP or another supported provider)
-- `retrieved_at`
-- `method` (direct/cross-rate, if applicable)
-
-This table stores only reusable reference rates retrieved from supported exchange-rate providers. It does not store manually entered rates. Rates may be reused across families because they are public provider rates, when currency pair, provider, and applicable date match. A manual rate must never be inserted into this shared table. The cache may be populated during read-only report generation; this does not permit writes to expenses, conversions, or family entities.
-
-**ExpenseConversion**
-- `id`
-- `expense_id`
-- `source_currency`
-- `target_currency`
-- `exchange_rate_id` (nullable if a manually supplied rate is stored directly)
-- `rate_used`
-- `rate_date`
-- `provider` (nullable for a fully manual rate, if no external provider was used)
-- `rate_type` (automatic/manual)
-- `converted_amount`
-- `calculated_at`
-- `supersedes_conversion_id` (nullable) or equivalent version link
-- `superseded_at` (nullable) or equivalent metadata indicating whether a later conversion version superseded this record
-- Versioning metadata to preserve recalculation history. Do not store an `is_current` flag for whether the target matches the family reporting currency; determine that by comparing `target_currency` with the report's reporting currency. A conversion is the latest version when it has not been superseded.
-
-Create a conversion record only when source currency differs from target/reporting currency. Keep historical conversion records traceable. In MVP, changing reporting currency does not automatically recalculate them; the schema must support explicit future recalculation and supersession.
-
-### Recurring expenses and invitations
-
-**RecurringExpense**
-- `id`
-- `family_id`
-- `created_by_user_id`
-- `store_id`
-- `amount`
-- `currency`
-- `start_date`
-- `end_date` (nullable)
-- `schedule_type`
-- `schedule_interval` / schedule configuration
-- `next_due_date`
-- `status`
-- `created_at`
-- `updated_at`
-
-Use a `RecurringExpenseCategory` table to represent template category splits. Use `RecurringOccurrenceCategory` for edited draft allocations when an occurrence is pending confirmation.
-
-**RecurringOccurrence**
-- `id`
-- `recurring_expense_id`
-- `scheduled_date`
-- `proposed_expense_date` (nullable; defaults to scheduled date)
-- `proposed_amount` (nullable; defaults to template amount)
-- `proposed_currency` (nullable; defaults to template currency)
-- `status` (`pending_confirmation`/`created`/`skipped`)
-- `skipped_reason` (nullable; e.g. `creator_skipped`, `template_paused`, `template_cancelled`)
-- `created_expense_id` (nullable)
-- `resolved_at` (nullable)
-- Unique constraint to prevent duplicate processing of the same occurrence. Editing a proposed occurrence updates its persisted draft values until confirmation; the final expense is created only on confirmation. Store proposed category allocations in a separate `RecurringOccurrenceCategory` table or equivalent draft structure.
-
-**Invitation**
-- `id`
-- `family_id`
-- `token_hash`
-- `created_by_user_id`
-- `expires_at`
-- `revoked_at`
-- `max_uses` (nullable)
-- `created_at`
-
-**InvitationUse**
-- `id`
-- `invitation_id`
-- `joined_user_id`
-- `used_at`
-
-A Telegram username is not an invitation identity or membership credential.
-
-**AuditLog**
-- `id`
-- `family_id`
-- `actor_user_id`
-- `entity_type`
-- `entity_id` (scalar identifier, deliberately not a foreign key to the audited entity)
-- `action`
-- `before_data` / `after_data` as JSON snapshots containing the fields needed to render the historical state independently of the live entity; include relevant original names/values and identifiers, not just references
-- `created_at`
-
-Audit snapshots must not have a hard foreign-key dependency on the audited entity or its mutable fields. Deleting an eligible store/category in MVP must not delete or invalidate existing audit records. A future physical deletion of a previously referenced entity must still leave its audit snapshots readable. The MVP does not need a UI for browsing audit snapshots.
-
-Use appropriate foreign keys, indexes, decimal precision, and transactional validation. Use decimal types rather than floating-point types for money and exchange rates.
-
-## 15. Suggested Architecture
-
-Use a layered design:
-
-1. **Telegram handlers/UI** — receive updates and render keyboards/cards.
-2. **Application services** — orchestrate add/edit/report/invitation flows.
-3. **Domain/business logic** — expense validation, category reconciliation, conversion rules, recurrence scheduling, authorization.
-4. **Repositories/data access** — family-scoped persistence.
-5. **External integrations** — Telegram Bot API, exchange-rate provider adapters (including NBP where appropriate), CSV/XLSX generation.
-
-Important principles:
-- Keep authorization outside individual Telegram handlers.
-- Scope repositories, service calls, and transient draft states to a family (drafts scoped to `(user_id, family_id)`).
-- Use database transactions for saving expenses and category splits.
-- Use idempotency for Telegram retries and recurring occurrences.
-- If an expense save has an unknown outcome, retain the draft as `SaveUnknown` with the original idempotency key. Reconciliation by that key returns the existing expense if committed; retrying with the same key must create at most one expense. Do not expire or replace an unresolved `SaveUnknown` draft with a new one.
-- Keep exchange-rate retrieval replaceable behind an interface.
-- Do not block the bot's interaction flow indefinitely while calling external rate services.
-- Log errors without exposing sensitive data.
-
-## 16. Verification Coverage
+## 13. Verification Coverage
 
 Use this section as a test index; the requirements themselves are defined in the referenced sections.
 
-- **Family isolation:** verify membership checks and family-scoped access (§4, §6.2.1, §9, §15).
-- **Expenses:** verify entry, validation, category allocation, editing, and deletion (§6.1–6.7, §13).
+- **Family isolation:** verify membership checks and family-scoped access (§4, §6.2.1, §9).
+- **Expenses:** verify entry, validation, category allocation, editing, and deletion (§6.1–6.7).
 - **Currency:** verify settings, conversion, reports, and exports (§7–8).
 - **Recurring expenses:** verify scheduling, pending occurrences, and confirmation (§11).
-- **Invitations:** verify expiry, revocation, and membership flow (§4.3, §13).
-- **Stores and categories:** run the canonical name test vectors and verify search, uniqueness, aliases, deletion, and family isolation (§6.3–6.4, §10, §13).
-- **Localization and Telegram:** verify language selection, date/number formatting, private-chat scope, and callback authorization (§12–13).
+- **Invitations:** verify expiry, revocation, and membership flow (§4.3).
+- **Stores and categories:** run the canonical name test vectors and verify search, uniqueness, aliases, deletion, and family isolation (§6.3–6.4, §10).
+- **Localization and Telegram:** verify language selection and date/number formatting (§12), plus private-chat scope (§5).
 
-## 17. Implementation Phases
+## 14. Implementation Phases
 
 ### Phase 1 — Foundation
 - Telegram user onboarding and localization.
