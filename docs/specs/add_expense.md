@@ -524,7 +524,7 @@ The same card message is edited into the final view.
 | `success.conversion_ok` | 💱 ≈ {converted} {reporting_currency} |
 | `save.committed_meanwhile` | This expense was already saved. |
 
-**Controls:** `➕ Add another` (`btn.add_another`) · `📋 Open expense` (`btn.open_expense`, opens the saved expense card from the History scenario).
+**Controls:** `➕ Add another` (`btn.add_another`) · `📋 Open expense` (`btn.open_expense`, opens the saved expense card in [Expense history](expense_history.md), HS-03).
 
 **Rules:** `Add another` starts a **new** draft with a new card message (the saved card stays as a record). The draft is cleared. All other old buttons become stale.
 
