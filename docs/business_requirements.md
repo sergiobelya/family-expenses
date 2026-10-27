@@ -402,7 +402,12 @@ Clearly indicate when an expense cannot be converted so that report totals are n
 ## 9. History and Search
 
 - Provide paginated expense history.
-- Support searching by store and other practical fields such as date, amount, and category where feasible.
+- Support searching by store, purchase date, amount range, and category.
+- Amount range bounds are inclusive and use a selected currency, defaulting to the family's reporting currency. Users may select another supported currency.
+- For each distinct pair where an expense's original currency differs from the filter currency, use the family's configured provider (§7.2) to get one current rate, regardless of purchase date.
+- Include an expense when its current automatic conversion or its latest non-superseded `ExpenseConversion` targeting the filter currency falls within the range. If both match, return the expense once. When the original currency matches the filter currency, compare the original amount.
+- Amount-search result rows show original amounts and currencies; converted values are used for matching and are not shown in those rows. This does not change the conversion display on the expense card (§6.5).
+- Amount search never creates or updates `ExpenseConversion` records. If a current rate is unavailable for a required pair and at least one affected expense has no non-superseded saved conversion targeting the filter currency within the range, mark results potentially incomplete.
 - Allow users to open an expense card from the results.
 - Apply family membership and authorization checks to every search and history request.
 - Exclude soft-deleted expenses from standard results.
