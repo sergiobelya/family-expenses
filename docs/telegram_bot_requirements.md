@@ -105,7 +105,7 @@ Use standard Telegram controls. The MVP supports private chats with the bot only
 
 ### Reply-keyboard main menu
 
-- Expense action: **Add expense** when the active family has no resumable unfinished draft for this user; **Continue creating expense** when one exists for `(user_id, active_family_id)`. Both labels and `/add` invoke the same handler. After checking membership and active family, the handler resumes/re-anchors an Active or Paused draft, reports `Saving` as in progress, and routes `SaveUnknown` to the reconciliation flow in §15. If the handler receives the stale Continue label after the 24-hour TTL has removed an Active/Paused draft, it explains expiry and offers a fresh start. If `Add expense` or `/add` finds no draft, it starts a new expense directly. Refresh the label when draft status or active family changes and whenever a new keyboard is rendered. A stale label is safe because the handler rechecks the current family-scoped state. Never expose a draft belonging to another family through this menu.
+- Expense action: **Add expense** when the active family has no resumable unfinished draft for this user; **Continue creating expense** when one exists for `(user_id, active_family_id)`. Both labels and `/add` invoke the same handler. After checking membership and active family, the handler resumes/re-anchors an Active or Paused draft, reports `Saving` as in progress, and routes `SaveUnknown` to the reconciliation flow in §15. If a stale Continue action finds no Active/Paused draft, explain that it expired and offer a fresh start. If `Add expense` or `/add` finds no draft, it starts a new expense directly. Refresh the label when draft status or active family changes and whenever a new keyboard is rendered. A stale label is safe because the handler rechecks the current family-scoped state.
 - **Reports**
 - **History / Search**
 - **Stores**
@@ -116,7 +116,7 @@ Use standard Telegram controls. The MVP supports private chats with the bot only
 
 Use inline keyboards for contextual actions, selections, confirmation, pagination, and editing.
 
-When the user belongs to multiple families, provide a clear family selector and display the active family in relevant flows. Never silently mix data across families.
+When the user belongs to multiple families, provide a clear family selector and display the active family in relevant flows.
 
 ## 6. Expense Data and Behavior
 
@@ -152,7 +152,7 @@ The expense-entry currency defaults to the family's `default_expense_currency`, 
 
 A store may have a default category. When the store is selected, preselect that category, but allow the user to change it. A category is required for every expense; if no suitable category exists, direct the user to the separate Categories section and preserve the in-progress draft so they can return after creating one. Do not create a category inline.
 
-Store creation and management take place in the separate Stores section, not inside the add-expense flow. If no matching store exists, direct the user to the separate Stores section and preserve the in-progress expense draft so the user can return to it after creating the store. Do not create a store inline. Drafts paused for this navigation are retained for 24 hours; if the draft expires, tell the user clearly and offer to restart without implying the old data is recoverable.
+Store creation and management take place in the separate Stores section. If no matching store exists, direct the user there and preserve the expense draft for return; do not create a store inline. Apply the draft lifecycle in §6.2.1.
 
 ### 6.2.1 Expense draft scoping and lifecycle
 
@@ -161,7 +161,7 @@ Store creation and management take place in the separate Stores section, not ins
 - A user can have at most one nonterminal expense draft per family at any given time, including Saving and SaveUnknown states.
 - If a user belongs to multiple families and switches active families, any draft from another family is inaccessible within the new family context.
 - If the user switches back to the previous family within the 24-hour draft lifetime, their unfinished draft for that family becomes available again to resume or discard.
-- The 24-hour TTL removes Active/Paused draft records; expiry is not a persisted draft status. SaveUnknown retention is defined in §15.
+- Active/Paused drafts expire 24 hours after their last meaningful change. Viewing a draft, a no-op action, or invalid input does not extend its lifetime. TTL removes the draft record; `Expired` is not a persisted status.
 - Save outcome and idempotency rules, including `SaveUnknown`, are defined in §15; reply-keyboard entry behavior is defined in §5.
 
 ### 6.3 Store search and creation
@@ -672,119 +672,19 @@ Important principles:
 - Do not block the bot's interaction flow indefinitely while calling external rate services.
 - Log errors without exposing sensitive data.
 
-## 16. Core User Stories
+## 16. Verification Coverage
 
-1. As a user, I can create a family and invite other members.
-2. As a user, I can belong to multiple families and switch between them.
-3. As a family member, I can add a family expense in a few Telegram steps.
-4. As a user, I can search for and select an existing store during expense entry, and manage/create stores in the separate Stores section.
-5. As a user, I can allocate an expense across multiple categories and receive validation if the amounts do not add up.
-6. As an expense author, I can edit or delete my expense.
-7. As a family member, I can browse and search the family's expense history.
-8. As a family member, I can view reports for a month, a range of months, or exact dates, choose automatic historical rates or a report-only manual override for each needed currency pair, and continue with automatic rates in one tap.
-9. As a family member, I can export reports to CSV or XLSX.
-10. As a family member, I can record purchases in a currency different from the reporting currency.
-11. As any active family member, I can change the reporting currency; this does not automatically recalculate all historical conversion records in the MVP.
-12. As a user, I can change the default currency used when entering new expenses without changing the reporting currency.
-13. As the expense author, I can enter or correct a manual rate while adding/editing my expense, whether or not an automatic rate is available.
-14. As a user, I can set up a recurring expense and confirm each occurrence before it is recorded.
-15. As a user, I can use the bot in English, Ukrainian, Polish, or Russian, and change my language in Settings.
-16. As a family member, I can create and rename shared stores/categories, change a store’s default category, manage explicit store aliases, and delete stores/categories only when no records reference them; archiving is out of scope.
-17. As a family member, I can join a family through an invitation link and see only that family's data.
-18. As the creator of a recurring template, I can confirm, edit, or skip a due occurrence, and a pending occurrence remains available if I ignore it.
+Use this section as a test index; the requirements themselves are defined in the referenced sections.
 
-## 17. Acceptance Criteria
+- **Family isolation:** verify membership checks and family-scoped access (§4, §6.2.1, §9, §15).
+- **Expenses:** verify entry, validation, category allocation, editing, and deletion (§6.1–6.7, §13).
+- **Currency:** verify settings, conversion, reports, and exports (§7–8).
+- **Recurring expenses:** verify scheduling, pending occurrences, and confirmation (§11).
+- **Invitations:** verify expiry, revocation, and membership flow (§4.3, §13).
+- **Stores and categories:** run the canonical name test vectors and verify search, uniqueness, aliases, deletion, and family isolation (§6.3–6.4, §10, §13).
+- **Localization and Telegram:** verify language selection, date/number formatting, private-chat scope, and callback authorization (§12–13).
 
-### Family isolation and membership
-- A user cannot view or modify a family's data without membership.
-- Switching families changes the scope of all subsequent actions.
-- No report or search result includes another family's data.
-- Expense drafts are scoped to `(user_id, family_id)`: multiple members in the same family can have concurrent, independent drafts without interference, and switching families isolates drafts (a draft from Family A is never visible, accessible, or resumed in Family B; returning to Family A restores access to its unexpired draft).
-
-### Expense creation
-- A new expense defaults to the family's expense-entry currency.
-- The user can choose a different currency for an individual expense.
-- The purchase date defaults to today and can be changed.
-- Store default category is preselected but can be changed.
-- Stores are created and managed in the separate Stores section, not during expense entry; expense entry only selects an existing store.
-- The expense cannot be saved if category allocations do not equal the original total.
-- All MVP expenses are saved with `expense_type = family`; no type selector is shown.
-
-### Currency conversion
-- The system suggests an exchange-rate provider based on family country/reporting currency where possible; the user can choose a supported provider when setting or changing reporting currency.
-- Provider adapters allow multiple providers to be added without changing core expense/reporting logic.
-- No `ExpenseConversion` record is created when the expense currency equals the target/reporting currency.
-- When a conversion is saved for an expense, it stores source/target currencies, rate, rate date, source/provider or manual origin, rate type, converted amount, and calculation time.
-- `ExchangeRate` contains only reusable automatic provider rates. Manually entered rates are stored with the relevant `ExpenseConversion` and are not shared with other expenses or families.
-- The expense author alone may enter/correct a manual rate as part of that expense's creation/edit flow, even when an automatic rate is available. During report generation, the report creator may separately enter an optional manual rate for a needed currency pair; it applies only within that report and is not persisted. Family Settings configure only the automatic rate provider, never a manual-rate source.
-- Changing reporting currency or provider does not automatically rewrite or bulk-recalculate historical `ExpenseConversion` records.
-- Report generation does not create, update, or supersede `ExpenseConversion` records. For each expense, use the original amount if its currency equals the report currency; otherwise use a saved, non-superseded `ExpenseConversion` targeting the report currency, regardless of whether its rate is manual or automatic. For each remaining currency pair, default to automatic historical provider rates and offer an explicit alternative: enter one report-only manual rate that overrides all expenses of that pair without a saved conversion, including expenses that have a historical provider rate. Explain this override-all scope. Provide a one-tap **Continue with automatic rates** action. If automatic historical rates are unavailable for an expense, use the current provider rate as a clearly labeled fallback; if no rate is available, leave it unconverted and mark the report incomplete. Report-only manual rates live in the report session for 24 hours by default, including pagination and exports, and are not saved to any expense, conversion, exchange-rate cache, or family setting. On expiry, require a new report session and warn that rates/totals may differ. There is no manual-rate source in Settings and no `FamilyManualExchangeRate` entity.
-- Historical provider rates and current-rate fallback conversions are labeled with rate basis/date/source where available. Report-only manual rates are labeled in report details and included in exports generated from the same report session, including the pair and override-all scope; they are not labeled on standalone expense cards. If no rate is available, disclose the unconverted expense and do not present a partial subtotal as complete.
-- A conversion is applicable only when its target currency matches the report's reporting currency and it has not been superseded by a later conversion version. Do not use a single `is_current` flag to represent both target-currency applicability and version supersession.
-- After every edit, determine whether conversion to the current reporting currency is needed. If not needed because the expense currency equals the reporting currency, supersede any previously applicable conversion and do not create a replacement. If conversion is needed, retain the prior rate after an amount-only edit only when its source/target pair still matches the expense currency and current reporting currency; create a new conversion version with the recalculated amount and supersede the old version. If the pair no longer matches or the purchase date/currency changes, obtain an applicable rate for the updated pair/date or ask the author to enter a manual rate. Keep old versions for audit; do not delete them.
-- Reports distribute a converted expense total across categories proportionally and deterministically round allocations so the category totals equal the converted expense total.
-- Any active family member can configure default expense-entry currency, reporting currency, and default provider independently in the MVP. The family Settings menu also exposes time zone and provider configuration; there is no family-wide manual exchange-rate setting.
-- Automatic rates identify the provider and rate actually used. Provider changes do not silently overwrite saved conversions.
-- The schema supports a future explicit recalculation from original expense amounts/currencies, preserving prior versions; this is not run automatically in MVP.
-
-### Editing, deletion, and history
-- Only the author can edit/delete an expense in MVP.
-- Deletion is soft deletion.
-- Deleted expenses do not appear in normal history, search, or reports.
-- Important changes are recorded in audit history.
-
-### Reports and exports
-- The user can select a month, a range of months, or exact dates.
-- Totals, category breakdowns, store breakdowns, and spending dynamics are available.
-- Reports do not show per-person spending totals.
-- CSV and XLSX exports match the selected family, period, and reporting currency.
-
-### Recurring expenses
-- A Recurring expenses item is available in the main menu.
-- Pending occurrences do not block other actions; a returning creator sees a non-blocking list and can process items individually or skip all currently listed items. `next_due_date` advances when a pending occurrence is generated.
-- Confirmation rejects a future expense date. Deletion of stores/categories is allowed only when they are unreferenced; deleting referenced records and all archiving/replacement flows are out of scope for MVP.
-- Due occurrences remain pending until the template creator confirms, edits, or explicitly skips them; pending occurrences are shown again when the creator next interacts with the bot.
-- The creator can edit the proposed date (default scheduled date) and choose Today quickly. The rate is based on the final confirmed date. When a template is paused or cancelled, its unprocessed pending occurrences are marked `skipped` and cannot later be confirmed. Store `skipped_reason` as `template_paused` or `template_cancelled`; explicit user skips use `creator_skipped`, so history distinguishes these cases.
-- Only the template creator can edit, pause, or cancel the template in MVP.
-- Monthly schedules for days 29–31 clamp to the month's last day and resume the intended day in subsequent months.
-- A single scheduled occurrence cannot create duplicate expenses.
-
-### Invitations and membership
-- A recipient joins only through an explicit Telegram deep-link flow and confirmation.
-- Invitations default to a 48-hour expiry and one successful use; use limits are checked atomically. Telegram deep-link `start` tokens must be no longer than 64 characters and contain only `[A-Za-z0-9_-]`. `InvitationUse` is the source of truth for uses, and invitation creation/revocation/use are audited. Reopening an invitation link as a user who is already a member does not consume a use. Revocation blocks future joins only.
-- Invitation expiry, revocation, and optional maximum-use limits are enforced; successful uses are recorded.
-- Usernames are not used as identity or proof of membership.
-- Leaving/removing members and family closure are out of scope for MVP.
-
-### Stores, categories, and validation
-- Store and category creation and rename enforce hard uniqueness of `(family_id, dedupe_key)` in the database. `dedupe_key` follows the single canonical algorithm in §6.3.1 and never depends on actor language. Tests must execute the canonical test vectors there rather than maintain a second normalization specification. Exact canonical/transliterated collisions are rejected, including concurrent attempts; fuzzy matches with different keys are warnings only. A separate category index is not required. An idempotency key or equivalent atomic request-level safeguard prevents duplicate processing of the same create request; every query is family-scoped, and tests verify isolation. If the index is unavailable, database hard-duplicate protection remains active, while fuzzy suggestions may be unavailable. Canonical names do not require alias rows; aliases must not bypass duplicate checks.
-- Store uniqueness acceptance tests must execute the complete canonical test-vector table in §6.3.1, including punctuation at boundaries, punctuation between words, apostrophe variants, symbol/emoji handling, and compatibility characters. Do not maintain a second list of normalization equivalences here. Separately verify that `бедронка` may be created as a distinct hard key (`bedronka` under the fixed scheme), but search suggests `Biedronka`; apply the same §6.3.1 behavior to category names using equivalent category examples. The same names may exist in different families. Fuzzy matching with edit distance 1 is required to suggest likely candidates such as `bedronka`/`biedronka` and search must return likely Biedronka candidates for `бедронка`; a fuzzy/transliteration search match with a different hard key is advisory and may be created after acknowledgement. Unrelated names such as `Biedronka`/`Lidl` or `Żabka`/`Carrefour` must not be treated as equivalent. Distinct branches with the same chain name require a meaningful differentiator in the canonical name.
-- Aliases are optional alternate names and are family-scoped; persist `alias_dedupe_key` with unique constraint `(family_id, alias_dedupe_key)`. In a single transaction, alias creation must check its key against other aliases and all other stores' canonical `dedupe_key` values; canonical-name creation/rename must check against aliases. Concurrent conflicting alias/canonical operations must not both succeed; use a family-scoped lock or equivalent transaction-isolation mechanism because a unique index alone cannot enforce uniqueness across the canonical-name and alias tables. Stores are never auto-merged based on fuzzy matching.
-- When the user leaves expense entry to create a store, the draft is retained and can be resumed for 24 hours. After expiry, the bot clearly says the draft expired and offers a restart; it never silently discards a live draft during the navigation.
-- A category is required for every saved allocation. Incomplete allocation rows remain draft-only, and an expense cannot be saved unless allocations exactly equal the original total.
-- Zero/negative amounts, unsupported currencies, invalid/future normal expense dates, and unsupported precision are rejected with clear messages.
-- Deleting a store/category is allowed only when no record references it. For stores, even a soft-deleted expense retained for history counts as a reference, so a store linked to any expense ever created cannot be deleted in MVP; only mistakenly created, never-referenced stores can be deleted. Category deletion is similarly blocked by any expense allocation, store default-category, recurring template/occurrence, or other reference. Deletion is physical in MVP and frees the canonical/alias key; the database must remove the deleted store/category from the search index (or enqueue a reliable deletion event) and acceptance tests must verify it no longer appears in search. Archiving stores/categories is out of scope for MVP.
-
-- Hard-key tests must prove that the key is independent of actor/UI language and always uses the Ukrainian national transliteration scheme (Cabinet of Ministers of Ukraine Resolution No. 55, 27 January 2010), with fixed fallbacks `ы` → `y`, `э` → `e`, `ъ` → empty, and `ё` → `yo`. Search may use language-aware alternatives, but these must not affect hard uniqueness. No `dedupe_key_version` is added in MVP; if the algorithm changes later, a future migration must recalculate keys and detect/resolve collisions.
-- The canonical §6.3.1 test vectors must include `Чайка` → `chaika`, `Київ` → `kyiv`, `Йосип` → `yosyp`, and standalone `ё` → `yo`. Apostrophe tests must verify `McDonald's` = `McDonalds` = `McDonald＇s` and all listed apostrophe variants in §6.3.1 (including `м´ясо` and `м＇ясо`) = the key for `мясо`; trademark/service-mark tests must verify `Pepco™` = `Pepco℠` = `Pepco`.
-- All hard-key normalization behavior, operation order, apostrophe handling, positional Ukrainian transliteration rules, explicit Latin mappings, unsupported-script handling, and canonical test vectors are defined only in §6.3.1. Acceptance tests must use those vectors; do not duplicate or paraphrase the algorithm elsewhere.
-- Renaming a store/category must not self-conflict: exclude the record being renamed and its own aliases from collision checks. An alias matching its own store's canonical key is not a cross-entity collision, but it must still satisfy uniqueness against all other stores and aliases.
-- Search-index results are candidate IDs only. Before showing/selecting a result, re-fetch it from the database with `family_id` filtering and discard deleted/nonexistent rows. `StoreAlias.family_id` must equal its store's family via composite FK or equivalent DB constraint. Idempotency uses Telegram `update_id` for message updates and `callback_query.id` for callback actions, persisted atomically with the operation.
-- Audit coverage explicitly includes store/category creation, rename and physical deletion, plus store-alias changes; audit snapshots remain readable without a foreign-key dependency on the live entity.
-
-### Localization
-- English, Ukrainian, Polish, and Russian are available. Language is user-specific, can be changed in Settings, and applies across all families.
-- First interaction uses Telegram's supported language when available; otherwise English is used until the user selects a preference. Family language is not used as a fallback.
-- Dates and numbers are formatted appropriately for the selected language.
-
-### Time zone
-- Each family has a configurable time zone. During family creation, suggest one using available context such as Telegram locale or family country and ask the user to confirm or change it; use UTC only when no reasonable suggestion is available. It governs “today”, future-date validation, recurring occurrence scheduling, and report-period boundaries. Any active family member can change it in Settings.
-
-### Telegram interaction scope
-- The MVP supports private chats with the bot; group-chat interaction is out of scope.
-- Each callback identifies the relevant family/entity and revalidates membership/authorization rather than relying only on the current active-family selection.
-
-## 18. Implementation Phases
+## 17. Implementation Phases
 
 ### Phase 1 — Foundation
 - Telegram user onboarding and localization.
@@ -808,22 +708,3 @@ Important principles:
 - Recurring templates and confirmation flow.
 - Audit coverage.
 - Idempotency, error handling, security checks, and acceptance testing.
-
-## 19. Decisions to Preserve
-
-- MVP expenses are family expenses only; the data model reserves `expense_type` for future use.
-- There is no personal/family filter in the MVP.
-- Every family has separate data.
-- The default expense-entry currency and reporting currency are separate settings.
-- Automatic exchange rates use the family-configured provider; NBP is one example for Poland.
-- Exchange-rate data and per-expense conversion results are stored separately from the main expense table.
-- A conversion result is not stored when expense currency equals reporting currency.
-- Changing reporting currency does not automatically recalculate historical conversions in the MVP; the schema supports a future explicit recalculation from original amounts/currencies.
-- The MVP uses a Telegram chat and standard keyboards, not a Mini App.
-- Reports do not include per-person totals.
-- Recurring expense occurrences require explicit confirmation, editing, or skipping by the template creator; ignored occurrences remain pending.
-- User language is independent of family settings; supported languages are English, Ukrainian, Polish, and Russian, with English as the initial fallback.
-- Report generation is read-only for expenses and saved conversions; report-only manual rates and automatic fallbacks are session-scoped, with exports from the same report session using the same rates. Automatic historical provider rates are the default; the user may instead choose an explicit report-only manual override-all rate per currency pair. A one-tap continue action uses automatic rates. Current-rate fallback is used only when an automatic historical rate is unavailable and is clearly labeled; report sessions expire after 24 hours with a warning that regenerating may change totals.
-- Automatic provider rates are cached in `ExchangeRate`; manually entered rates belong only to the relevant `ExpenseConversion`. There is no family-wide manual-rate entity or setting.
-- Expense drafts are strictly scoped to `(user_id, family_id)`, enabling independent concurrent drafts for different family members and strict draft isolation across families.
-- Private bot chats are in MVP; group-chat interaction and family membership lifecycle management are out of scope.
