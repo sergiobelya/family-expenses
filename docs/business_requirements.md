@@ -412,6 +412,7 @@ Clearly indicate when an expense cannot be converted so that report totals are n
 ### Stores
 
 - Shared within a family; each store may have a default category.
+- To set a category that does not yet exist, open the separate Categories section from the store's category picker and preserve the store selection context. On return, preselect the new category; set it as the default only after the user confirms. Do not create categories inline in Stores.
 - In MVP, allow creation, renaming, changing `default_category_id`, managing explicit aliases, and deleting a store only when it has no references from any expense (including soft-deleted expenses retained for history), recurring templates/occurrences, or other records. If referenced, deletion is blocked with an explanation and the user may rename it instead. Archiving is out of scope. Apply the same rule to categories: deletion is allowed only when no expense allocation, store default-category, recurring template/occurrence, or other record references it; otherwise block deletion.
 - Apply the search and duplicate rules in §6.3. Store aliases are reserved for explicit alternate names or confirmed variants; the canonical name is searchable without an alias. Hard-key collisions are rejected, while fuzzy matches with different keys are warnings that the user may acknowledge. Records are never auto-merged. To represent distinct branches with otherwise identical names, include a meaningful branch/location differentiator in the canonical name.
 

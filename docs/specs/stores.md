@@ -69,7 +69,8 @@ Show the canonical name, default category (or `None`), and explicit aliases (or 
 **Controls:** `✏️ Rename` · `🏷 Default category` · `🔤 Aliases` · `🗑 Delete` · `⬅️ Stores`.
 
 - Rename opens the name prompt from ST-03 with the current name prefilled. A case-only or normalization-equivalent rename is allowed when it refers to the same store.
-- Default category opens a family-scoped category picker with `No default category` as an option. Saving updates only this store's default; it does not change existing expenses.
+- Default category opens a family-scoped category picker with `No default category`, the existing categories, and `➕ Create category`. Confirming a selection updates only this store's default; it does not change existing expenses.
+- `➕ Create category` opens the separate Categories section's create form. Preserve this store and picker context. On return, preselect the created category; require an explicit confirmation to set it as default. If the user leaves without returning, keep the current default unchanged. See [Categories UI](categories.md).
 - Aliases opens ST-07.
 - Delete opens ST-08 only if the store has no references. If it is referenced, show `This store is used by existing records and cannot be deleted. You can rename it instead.` with `✏️ Rename` and `⬅️ Back`.
 - After a successful mutation, refresh the details card from persisted data.
