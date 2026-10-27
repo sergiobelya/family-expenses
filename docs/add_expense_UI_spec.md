@@ -1,66 +1,20 @@
 # Family Expenses MVP — UI/UX Specification
 
-## Scenario 1: Add an expense (v2)
+## Scenario 1: Add an expense
 
-**Status:** Draft v2, updated with provided decisions (supersedes v1)\
-**Interface:** Standard Telegram bot chat with **one editable expense card** and inline keyboards (Variant B); no Mini App\
-**UI source language:** English. Translations: Ukrainian, Polish, Russian (pending). The user's language is chosen per user (Requirements §12).\
+**Interface:** Standard Telegram bot chat with **one editable expense card** and inline keyboards\
+**UI source language:** English. Localized text is selected per user (Requirements §12).\
 **Scope:** Add a shared family expense from the main menu through successful persistence\
-**Out of scope:** Personal expenses, Mini App, Stores/Categories management screens, StoreAlias management, editing/deleting a saved expense, report generation, expense notes (deferred)\
-**Related requirements:** `telegram_bot_requirements` §5, §6.2–6.7, §7.1–7.3, §12, §17
+**Out of scope:** Personal expenses, Mini App, Stores/Categories management screens, StoreAlias management, editing/deleting a saved expense, report generation, expense notes\
+**Related requirements:** `telegram_bot_requirements` §5, §6.2–6.7, §7.1–7.3, §12
 
 ---
 
-## 0. Changes from v1
+## 1. Overview
 
-| # | Change | Reason |
-|---|--------|--------|
-| 1 | Interaction model is now **Variant B: one editable card** instead of a new message per step (§2). | Decision confirmed in dialogue. |
-| 2 | All UI strings are written in **English** with localization keys; the Ukrainian strings of v1 are removed and will be re-translated from the final English text. | Decision: English source, translations later. |
-| 3 | **Notes removed** from the flow, review card, draft data, and acceptance criteria. | Notes deferred from MVP. |
-| 4 | **Inline store creation removed.** If the store does not exist, the draft is paused and the user is sent to the Stores section (§5, AE-05). | Confirmed: store creation stays in the separate Stores section. |
-| 5 | The similar-store warning text is fixed and recorded as a shared component for the Stores scenario (Appendix A). | Decision on fuzzy duplicates. |
-| 6 | Future purchase dates are rejected; date input formats are specified (§6.3). | Decision. |
-| 7 | Missing exchange rate: the original expense can be saved with a warning; a manual rate can be entered (AE-12). | Decision + Requirements §7.2. |
-| 8 | Currency selection: quick chips PLN, UAH, EUR, USD directly on the amount step; extended list with search (AE-07). | Decision + proposal. |
-| 9 | Amount syntax fixed: comma or dot, no thousands separators (§6.1, test vectors). | Decision. |
-| 10 | Draft lifetime is 24 hours; durable across bot restarts as a goal (§8). | Decision. |
-| 11 | Added states missing in v1: resume/discard existing draft (AE-02), manual rate (AE-12), date edit (AE-11), stale/unexpected input (AE-18), paused draft (AE-05). | Completeness for Variant B. |
-| 12 | Main menu is the persistent **reply keyboard** from Requirements §5; the inline "Main menu" button is removed. | Consistency with requirements. |
-| 13 | Changing currency after the amount was entered **keeps the amount**; the user can edit it separately. | Confirmed. The currency-change notice must not trigger an automatic re-entry prompt. |
+Requirements are the canonical source for product and domain rules. This specification defines how expense creation is presented and handled in Telegram.
 
----
-
-## 1. Resolved decisions
-
-| Topic | Decision |
-|-------|----------|
-| UI model | **Variant B:** the bot maintains one expense card per draft and edits it in place. It is not a web form inside Telegram; text input still creates ordinary user messages. |
-| Draft scoping & isolation | Strictly scoped to `(user_id, family_id)`. Different members of the same family have independent drafts without collision. Switching active family switches draft scope; drafts from other families are not accessible in the new context and remain preserved (up to 24 h) until the user switches back. |
-| Dialog-state storage | Redis or a cloud equivalent is a candidate. The final choice is deferred to System Design; this spec states guarantees only (§8). |
-| Draft lifetime | 24 hours since the last meaningful draft change. Merely opening/viewing a draft does not extend it. Restart-resilient storage is desired. |
-| Missing exchange rate | Allow saving the original expense with a clear warning. The user may enter a manual rate instead. |
-| Future purchase date | Not allowed. |
-| Expense note | Not in MVP. |
-| Quick currencies | PLN, UAH, EUR, USD. The extended list is the approved European ISO 4217 set plus USD, CAD, TRY, GEL, AMD, AZN, and KZT (§11). |
-| Amount and split limits | Maximum amount 100,000,000 (configurable); maximum 20 category allocation rows (configurable). |
-| Earliest purchase date | 2020-01-01 (configurable). |
-| Conversion rounding | Half-up to the reporting currency's configured precision. |
-| Rate lookup | Check the configured provider's cache before requesting a rate from that provider. Automatic retry/backoff policy is deferred to System Design; the add-expense UI has no retry-rate button. |
-| Store creation | Only in the separate Stores section. |
-| Category default | The store's default category is preselected when available; the category step is always shown and the user can change it. |
-| Amount syntax | Comma or dot as decimal separator; no thousands separators. |
-| Similar store | Warning plus explicit confirmation before creating a new store (Appendix A). |
-| Source language | English. Translations: Ukrainian, Polish, Russian. |
-
-### Variant A vs. Variant B (for reference)
-
-- **A — classic chat:** every step is a new bot message. Simple, but the chat fills up and earlier answers are hard to see or correct.
-- **B — editable card (chosen):** the bot edits one card showing store, amount, category, and date; each step only changes the card's prompt and buttons. Less clutter and easier corrections, but it needs careful state handling (§2, §8). A typed answer remains a separate user message.
-
----
-
-## 2. Interaction model (Variant B)
+## 2. Interaction model
 
 ### 2.1 Principles
 
@@ -71,7 +25,7 @@
 5. **Card re-anchoring.** If the card is no longer usable where it is (the draft was resumed after a detour, the edit failed, or the user asked to show it again), the bot sends a **new card** at the bottom and edits the old one to a closed state with no buttons: `↓ This draft continues in a newer message.` (`card.moved`).
 6. **Formatting.** Use Telegram HTML parse mode and escape every user-provided string (store, category names).
 7. **Active family is always visible** in the card header.
-8. **Draft scoping & isolation.** Each draft is strictly scoped to `(user_id, family_id)` and private to the author. Multiple family members can create/edit their own drafts concurrently without seeing or overwriting each other's progress. Switching active family switches draft scope; drafts from other families are inaccessible in the current family context.
+8. Draft ownership and family isolation follow Requirements §6.2.1.
 9. **Toasts vs. card lines.** Callback problems (stale button, "still saving") use a short toast. Problems with typed input use the card's error line.
 
 ### 2.2 Card anatomy
@@ -230,8 +184,8 @@ stateDiagram-v2
     SaveUnknown --> Saved: Reconciliation finds the commit
     SaveUnknown --> Active: Review draft
     Active --> Discarded: Cancel confirmed
-    Active --> Removed: 24 h TTL since last meaningful draft change
-    Paused --> Removed: 24 h TTL since last meaningful draft change
+    Active --> Removed: TTL expired (Requirements §6.2.1)
+    Paused --> Removed: TTL expired (Requirements §6.2.1)
     Saved --> [*]
     Discarded --> [*]
     Removed --> [*]: Draft record no longer exists
@@ -246,7 +200,7 @@ sequenceDiagram
     participant D as Draft store
     participant DB as Database
     U->>B: Tap "Confirm and save" (revision N)
-    B->>D: Lock draft; check revision N and status Active
+    B->>D: Lock draft and check revision N and Active status
     alt Stale revision or already saving/saved
         B-->>U: Toast, no state change
     else Valid
@@ -287,10 +241,7 @@ sequenceDiagram
 
 ### AE-00 — Entry
 
-- Reply-keyboard label is dynamic and family-scoped: `➕ Add expense` (`menu.add_expense`) when there is no resumable unfinished draft for `(user_id, active_family_id)`; `↩️ Continue creating expense` (`menu.continue_expense`) when one exists. Both labels and `/add` invoke this same handler. Match localized button text and accept the command.
-- Check valid membership and active family first (AE-01), then look up the draft scoped to `(user_id, active_family_id)`. For Active or Paused, go directly to AE-02 and re-anchor it; for Saving, show `save.in_progress`; for SaveUnknown, reconcile using the draft's original idempotency key and follow AE-15; if none exists, create a new draft at AE-03. Do not show a continue/discard prompt.
-- The 24-hour TTL removes an Active/Paused draft record; there is no persisted `Expired` status. If no draft exists, a stale `Continue creating expense` menu label routes to AE-17; `Add expense` and `/add` start a new draft directly. A SaveUnknown draft cannot expire or be replaced until its original save outcome is resolved. If an old card button is tapped after its draft record is gone, treat it as stale/unavailable and offer a new draft without implying the old data can be recovered.
-- Refresh the reply-keyboard label when draft status or active family changes (draft created, resumed, paused, saved, discarded, or family switched), and whenever a new keyboard is rendered. The label must never reveal a draft belonging to another family. The server-side draft lookup is authoritative: if expiry has passed while the old label remains visible, the same handler routes to AE-17 and refreshes the keyboard.
+- The reply-keyboard labels, family-first draft lookup, and lifecycle behavior follow Requirements §5 and §6.2.1. Both menu labels and `/add` enter this state; map resumable drafts to AE-02, unresolved saves to AE-15, and a stale Continue label after TTL removal to AE-17.
 - Creating a draft does not create an expense.
 
 ### AE-01 — Family context
@@ -365,7 +316,7 @@ Requirements §6.2: stores are created only in the Stores section, and the in-pr
 
 **Steps**
 
-1. The draft status becomes Paused (reason `store_creation`). It expires 24 hours after its last meaningful change; opening or viewing it alone does not extend expiry.
+1. The draft status becomes Paused (reason `store_creation`); expiry follows Requirements §6.2.1.
 2. The bot opens the Stores section's create form as a new message, carrying the return context (Appendix B). When started from a no-results search, prefill the name with the exact trimmed search query and show it as editable.
 3. After the store is created, the Stores flow offers `↩️ Back to expense`. The bot re-anchors the card, **selects the new store**, and continues at AE-06.
 4. Alternatively, the user taps `Continue creating expense` (or `/add`) → AE-00 → AE-02 to reopen the paused draft. The new store is then available in the list but is **not** selected automatically unless the Stores flow's `Back to expense` action is used.
@@ -438,7 +389,7 @@ Requirements §6.2: stores are created only in the Stores section, and the in-pr
 **Category search and creation detour**
 
 - Search is scoped to the active family. If no result is suitable, including when similar-name suggestions are shown, `➕ Create category “{query}”` opens the Categories section create form with the exact trimmed search query prefilled and editable. The Categories section enforces hard-key uniqueness and handles similar-name warnings. Category creation happens only in that separate section.
-- Before leaving, mark the expense draft Paused (reason `category_creation`) and pass the logical return context (originating user/family, return step, optional search query) to Categories. The Categories section opens its own create form as a separate message. Preserve the draft until 24 hours after its last meaningful change.
+- Before leaving, mark the expense draft Paused (reason `category_creation`) and pass the logical return context to Categories. The Categories section opens its own create form as a separate message; expiry follows Requirements §6.2.1.
 - After the category is created, the Categories section offers `↩️ Back to expense`. On return, revalidate the draft and select the new category in the preserved category picker. If returning from AE-09a, continue to amount entry for the new split row; otherwise continue to AE-10.
 - If the family has no categories, `➕ Add first category` opens the same Categories section create form without a prefilled name. Do not allow continuing or saving until at least one category is selected.
 - Category uniqueness validation and any similar-name warning are owned by the Categories scenario. Never create the category inline in expense entry.
@@ -618,7 +569,7 @@ The same card message is edited into the final view.
 
 **Controls:** `➕ Start new expense` (`btn.expired_restart`) · `✖️ Close` (`btn.expired_close`).
 
-Shown when the stale dynamic Continue action finds no draft because the 24-hour TTL removed it. This is a UI response only; the expired draft record no longer exists. `Start new expense` creates a fresh draft for the active family after revalidating membership; closing leaves no expense. If an old-card callback arrives after its draft record is gone, treat it as stale/unavailable and offer a fresh start without implying the data can be recovered. Proactive editing of old cards at TTL expiry is not required.
+Shown when a stale Continue action finds no draft. This is a UI response, not a stored status; the draft record no longer exists. `Start new expense` creates a fresh draft for the active family after revalidating membership; closing leaves no expense. If an old-card callback arrives after its draft record is gone, treat it as stale/unavailable and offer a fresh start without implying the data can be recovered. Proactive editing of old cards at TTL expiry is not required.
 
 ### AE-18 — Stale callbacks and unexpected input
 
@@ -753,7 +704,7 @@ The bot revalidates: user and Telegram identity, active family membership, draft
 
 | Field | Notes |
 |-------|-------|
-| Draft ID, status | Active, Paused, Saving, SaveUnknown, Saved, Discarded. TTL expiry removes an Active/Paused draft record; `Expired` is a UI response, not a persisted status. |
+| Draft ID, status | Active, Paused, Saving, SaveUnknown, Saved, Discarded. |
 | Telegram user ID, chat ID, family ID | Authorization and scoping: strictly identified and keyed by `(user_id, family_id)`. Re-checked on every update. |
 | Current step, `awaiting_input` type, `return_step` | For cancel/back and re-anchoring. |
 | Card message ID, card revision | Revision increments on every state change. |
@@ -764,21 +715,19 @@ The bot revalidates: user and Telegram identity, active family membership, draft
 | Purchase date | Explicit date. |
 | Conversion snapshot | Mode (automatic/manual), source/target currency, rate or rate reference, rate date, converted amount; or "unavailable". |
 | Idempotency key | Created with the draft and reused for every save attempt. |
-| Created, updated, expires timestamps | Active/Paused drafts expire 24 hours after the last meaningful draft change. Opening/viewing without changing does not extend expiry. Meaningful changes include accepting a new store/category/amount/currency/date/rate value or changing allocation rows. SaveUnknown is retained until its outcome is reconciled; it is not expired or replaced by a new draft while unresolved. |
+| Created, updated, expires timestamps | Active/Paused draft TTL follows Requirements §6.2.1. |
 
 No note field exists in MVP.
 
 ### 8.2 Requirements
 
-- **Two kinds of data.** *Dialog state* (current step, awaiting-input flag, card message ID) and *draft content* have different guarantees. Redis or a cloud equivalent suits dialog state; the draft must additionally survive process restarts for its 24-hour lifetime. The technology is chosen in System Design.
-- **Per-user, per-family draft scoping:** Drafts are strictly scoped and keyed by `(user_id, family_id)`. Different members of the same family can simultaneously have their own independent drafts in progress without colliding or overwriting each other. Drafts remain private to the author until confirmed and committed.
-- **Multi-family context isolation:** If a user belongs to multiple families, switching active family switches the draft context. A draft belonging to Family A is strictly inaccessible while working in Family B. When switching back to Family A within 24 hours, any unexpired draft for `(user_id, Family A)` can be resumed or discarded; unresolved SaveUnknown must be reconciled before a new draft can start. At most one nonterminal draft (Active, Paused, Saving, or SaveUnknown) exists per `(user_id, family_id)`.
-- A meaningful change to an active or paused draft refreshes its 24-hour expiry; merely opening/viewing it, a no-op callback, or an invalid input does not. A bot restart or a redelivered Telegram update must neither lose the draft nor create a duplicate expense.
+- Dialog state and draft content may use different storage. Draft content must survive process restarts during its 24-hour TTL; choose the storage technology in System Design.
+- Draft scope, family switching, one-draft limit, expiry, and `SaveUnknown` retention follow Requirements §6.2.1 and §15.
+- A redelivered Telegram update must not create a duplicate expense.
 - Process updates for one draft sequentially (lock or optimistic revision check).
 - Deduplicate updates by `update_id`; deduplicate saves by the idempotency key.
 - Validate user, membership, draft status, and referenced entities on every callback and message. Do not trust callback payloads as authorization.
-- Save the expense and all allocations in **one** transaction; if conversion is required (different currencies) and an automatic or manual rate is available, save the conversion in that same transaction. If no rate is available and the user chooses `Save without conversion`, do not create a conversion record. Database constraints are authoritative.
-- Expiry never leaves a partially persisted expense.
+- Save expenses and allocations atomically under Requirements §6.7. Apply the conversion transaction rule in AE-13.
 - Do not log message content or amounts unnecessarily.
 
 ### 8.3 Telegram constraints
@@ -809,89 +758,11 @@ No note field exists in MVP.
 
 ## 10. Acceptance criteria
 
-### Entry, family, and card model
-
-- [ ] The flow cannot start without valid membership and a clear active family; the active family name appears in the card header.
-- [ ] A draft is represented by **one card** that is edited in place when a step changes.
-- [ ] Drafts are strictly scoped to `(user_id, family_id)`: multiple members in the same family can maintain independent drafts concurrently without collisions or state leaks.
-- [ ] Switching active family switches draft scope; drafts created in other families are not visible or accessible in the new family context.
-- [ ] Switching back to a family with an unexpired draft prompts to resume or discard that family's draft.
-- [ ] Typed input stays in the chat; the bot never deletes user messages.
-- [ ] If the card cannot be edited, a new card is sent and the old one is closed with no buttons.
-- [ ] Stale buttons are rejected with a toast and do not change the draft.
-- [ ] Switching family never retargets an existing draft; it remains scoped to its original `(user_id, family_id)` and can be resumed only in that family's context while unexpired.
-- [ ] The expense reply-keyboard label is `Add expense` when no resumable unfinished draft exists for the active family, and `Continue creating expense` when one does. Both labels and `/add` invoke the same handler.
-- [ ] The handler checks membership and active family before looking up a draft; it directly resumes an Active/Paused draft, reports Saving as in progress, reconciles SaveUnknown by idempotency key, or starts a new draft when none exists.
-- [ ] For SaveUnknown, reconciliation and any retry reuse the original idempotency key; do not start a new draft until the uncertain save is resolved.
-- [ ] TTL removes an Active/Paused draft record; `Expired` is not persisted as a draft status. A stale Continue menu tap reports expiry and offers `Start new expense`; ordinary `Add expense` or `/add` with no draft starts a new one directly.
-
-### Store
-
-- [ ] Store lists and search are family-scoped and never leak across families.
-- [ ] Search finds `Biedronka` for `biedronka`, `Бєдронка`, and `бедронка`, and `Żabka` for `zabka`.
-- [ ] Similarity never selects a store automatically.
-- [ ] There is no store creation inside the add-expense flow; the draft is paused and the user goes to the Stores section.
-- [ ] After creating a store, `Back to expense` returns to the draft with the new store selected.
-- [ ] The paused draft survives for 24 hours.
-
-### Amount and currency
-
-- [ ] The default currency comes from `default_expense_currency`; chips PLN/UAH/EUR/USD select a different currency for this draft only.
-- [ ] All §6.1 test vectors behave as specified.
-- [ ] Thousands separators are rejected; comma and dot are both accepted as decimal separators.
-- [ ] Extended currencies come from the central configuration using the approved European ISO-code set and the additional currencies in §7; each is searchable by code or name.
-- [ ] A currency without an available rate can still be selected.
-
-### Category
-
-- [ ] The store's default category is preselected in the draft when available; the category step is always shown and the user can change it.
-- [ ] Split allocations must sum exactly to the total; `Done` is rejected otherwise. The configurable default maximum is 20 rows.
-- [ ] A missing category can be created in the separate Categories section via a prefilled create action; the expense draft resumes with the new category selected. The same applies when adding a category to a split.
-- [ ] An incomplete split row is never persisted.
-- [ ] Changing the total with a split open forces the split to be reconciled.
-- [ ] Changing the currency or amount re-evaluates conversion; a manual rate is never reused for another pair or date.
-
-### Date
-
-- [ ] The date defaults to today in the family time zone and can be changed with the inline calendar, Today, Yesterday, or typed input; output follows the user's locale.
-- [ ] Dates earlier than 2020-01-01 (configurable) and future dates are rejected at entry and at save.
-
-### Conversion and save
-
-- [ ] No conversion is created or shown for matching currencies.
-- [ ] A found rate shows source and date; a missing rate shows a warning and `Save without conversion`.
-- [ ] A manual rate can be entered even when an automatic rate exists.
-- [ ] No rate is ever invented.
-- [ ] Success appears only after the transaction commits.
-- [ ] Double-tapping `Confirm` or a Telegram retry creates exactly one expense.
-- [ ] After an unknown outcome, `Retry` never creates a duplicate; `Cancel` reconciles first.
-- [ ] Expense and allocations are saved atomically; a conversion is included in that transaction only when needed and a rate is available.
-- [ ] Deleting a store/category or losing membership while the draft is open produces the specified return path, not a partial save.
-
-### Errors, cancellation, expiry, localization
-
-- [ ] Invalid input re-asks only for the affected value, with a specific message on the card.
-- [ ] `Back` preserves valid values.
-- [ ] Cancel asks for confirmation once a store is chosen and creates no expense when confirmed.
-- [ ] A draft expires 24 hours after its last meaningful change (accepted values/allocation changes); opening/viewing without changing it does not extend expiry; expiration leaves no partial expense.
-- [ ] A bot restart does not lose an active draft.
-- [ ] There is no note field anywhere in the flow.
-- [ ] All user-visible text comes from localization keys; the English source exists for every key.
-
----
-
-## 11. Implementation notes
-
-| Topic | Decision / follow-up |
-|-------|----------------------|
-| Store/category creation | From expense entry, offer a create action prefilled with the search query. Creation takes place in the separate Stores or Categories section; the paused draft resumes with the new entity selected. |
-| Currency change | Keep the entered amount and show a brief non-blocking notice. Do not request the amount again; it remains explicitly editable. |
-| Rate retry policy | The UI has no retry-rate button. Cache lookup precedes provider requests; retry count/backoff, request timeout, and suppression while a provider is unhealthy remain System Design decisions. |
-| European currency set | Approved: see the list below. |
-
-Approved European ISO 4217 currencies: `ALL` Albanian lek, `BAM` Bosnia and Herzegovina convertible mark, `CHF` Swiss franc, `CZK` Czech koruna, `DKK` Danish krone, `EUR` euro, `GBP` pound sterling, `HUF` Hungarian forint, `ISK` Icelandic króna, `MDL` Moldovan leu, `MKD` North Macedonian denar, `NOK` Norwegian krone, `PLN` Polish złoty, `RON` Romanian leu, `RSD` Serbian dinar, `SEK` Swedish krona, and `UAH` Ukrainian hryvnia. The additional approved currencies are `USD`, `CAD`, `TRY`, `GEL`, `AMD`, `AZN`, and `KZT`.
-
-**Recommended implementation order:** draft/state store and card renderer → store/category selection and separate-section creation detours → amount/currency → split validation → review, conversion, and manual rate → transactional save and idempotency → error, cancellation, and expiry handling.
+- **Entry and draft routing:** Exercise the menu and `/add` paths from Requirements §5, including each draft state and a stale Continue label; verify the family context and card behavior in §§2 and 5.
+- **Store and category detours:** Exercise search, separate-section creation, return, and selection flows in AE-03–AE-09 and Appendix B.
+- **Input validation:** Run the amount, date, and allocation boundary cases in §§6.1, 6.3–6.4, and AE-06–AE-12.
+- **Conversion and saving:** Exercise matching currencies, automatic/manual/unavailable rates, save retries, and uncertain outcomes under AE-10–AE-15.
+- **Recovery and localization:** Exercise cancellation, expiry, stale callbacks, restart recovery, and localized strings under AE-16–AE-18 and §9.
 
 ---
 
@@ -906,20 +777,15 @@ Shown in the **Stores section** when the new store name has fuzzy matches but a 
 
 Controls for the warning: `Create new store` · `Show similar stores` · `Cancel`. A hard-key collision cannot be overridden.
 
-## Appendix B — Contract with the Stores scenario (draft return)
+## Appendix B — Return from Stores and Categories
 
-- The Stores flow receives the logical return context (originating user/family, expense-draft scope, and optional `prefill_name` from the trimmed no-results search query). It may use the existing draft reference used by expense-card callbacks; this contract does not require a second token just for the detour.
-- The Stores section owns the create form and all store validation. The bot opens that form as a separate message, with the name editable before creation.
-- After a store is created, the Stores flow offers `↩️ Back to expense` associated with the originating user, family, draft context, and newly created store.
-- On tap, the add-expense flow revalidates the draft (alive, same user, same family membership), re-anchors the card, selects the store, and continues at AE-06. If the active family changed during the detour, the flow must not silently switch family or resume the draft in the wrong context; the exact return interaction is deferred to System Design/product review.
-- The contract does not prescribe a dedicated return token or callback payload. Keep the callback within Telegram's 64-byte limit; store/query/entity-reference mechanics are decided in System Design.
-- If the draft expired, the Stores flow shows `expired` text and does not recreate it.
+Both sections receive the originating user, family, expense-draft reference, and return step. A trimmed search query may be passed as `prefill_name`. The existing expense-card draft reference may be reused; no additional token is required by this contract.
 
-## Appendix C — Contract with the Categories scenario (draft return)
+| Section | Return behavior |
+|---------|-----------------|
+| Stores | After creation, offer `↩️ Back to expense`; select the new store and continue at AE-06. |
+| Categories | After creation, offer `↩️ Back to expense`; select the new category. Return from AE-09a to AE-09b, or from AE-08 to AE-10. |
 
-- The Categories flow receives the logical return context (originating user/family, expense-draft scope, return step, and optional `prefill_name` from the trimmed no-results search query). It may use the existing draft reference used by expense-card callbacks; this contract does not require a second token just for the detour.
-- The Categories section owns the create form and all category validation. The bot opens that form as a separate message, with the name editable before creation.
-- After a category is created, the Categories flow offers `↩️ Back to expense` associated with the originating user, family, draft context, return step, and newly created category.
-- On tap, the add-expense flow revalidates the draft (alive, same user, same family membership), re-anchors the card, and selects the new category. From AE-09a it returns to split-row amount entry; from AE-08 it proceeds to AE-10. If the active family changed during the detour, the flow must not silently switch family or resume the draft in the wrong context; the exact return interaction is deferred to System Design/product review.
-- The contract does not prescribe a dedicated return token or callback payload. Keep the callback within Telegram's 64-byte limit; store/query/entity-reference mechanics are decided in System Design.
-- If the draft expired, the Categories flow shows `expired` text and does not recreate it.
+Each section owns its create form and validation. On return, revalidate that the draft is still available and belongs to the same user and family, then re-anchor the expense card. If the active family changed, do not silently switch families or resume the draft in the wrong context. The precise return mechanism is a System Design decision; callback data must stay within Telegram's 64-byte limit.
+
+If the draft has expired, explain that it is unavailable and do not recreate it.
