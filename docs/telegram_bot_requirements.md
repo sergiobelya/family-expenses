@@ -105,7 +105,7 @@ Use standard Telegram controls. The MVP supports private chats with the bot only
 
 ### Reply-keyboard main menu
 
-- **Add expense**
+- Expense action: **Add expense** when the active family has no resumable unfinished draft for this user; **Continue creating expense** when one exists for `(user_id, active_family_id)`. Both labels and `/add` invoke the same handler. After checking membership and active family, the handler resumes/re-anchors an Active or Paused draft, reports `Saving` as in progress, and routes `SaveUnknown` to the reconciliation flow in §15. If the handler receives the stale Continue label after the 24-hour TTL has removed an Active/Paused draft, it explains expiry and offers a fresh start. If `Add expense` or `/add` finds no draft, it starts a new expense directly. Refresh the label when draft status or active family changes and whenever a new keyboard is rendered. A stale label is safe because the handler rechecks the current family-scoped state. Never expose a draft belonging to another family through this menu.
 - **Reports**
 - **History / Search**
 - **Stores**
@@ -148,11 +148,21 @@ Use the following flow:
 
 Date defaults to the current date and can be edited. A manually entered expense cannot have a future purchase date. Historical dates are allowed when valid. Recurring occurrences use their scheduled date by default and may be changed before confirmation; provide a one-tap **Today** option.
 
-The expense-entry currency defaults to the family's `default_expense_currency`, but the user can select another currency for an individual purchase. The supported currency list must use valid ISO 4217 currency codes and be centrally configurable.
+The expense-entry currency defaults to the family's `default_expense_currency`, but the user can select another currency for an individual purchase. The centrally configured MVP currency list uses valid ISO 4217 codes and includes `ALL`, `AMD`, `AZN`, `BAM`, `CAD`, `CHF`, `CZK`, `DKK`, `EUR`, `GBP`, `GEL`, `HUF`, `ISK`, `KZT`, `MDL`, `MKD`, `NOK`, `PLN`, `RON`, `RSD`, `SEK`, `TRY`, `UAH`, and `USD`.
 
-A store may have a default category. When the store is selected, preselect that category, but allow the user to change it.
+A store may have a default category. When the store is selected, preselect that category, but allow the user to change it. A category is required for every expense; if no suitable category exists, direct the user to the separate Categories section and preserve the in-progress draft so they can return after creating one. Do not create a category inline.
 
 Store creation and management take place in the separate Stores section, not inside the add-expense flow. If no matching store exists, direct the user to the separate Stores section and preserve the in-progress expense draft so the user can return to it after creating the store. Do not create a store inline. Drafts paused for this navigation are retained for 24 hours; if the draft expires, tell the user clearly and offer to restart without implying the old data is recoverable.
+
+### 6.2.1 Expense draft scoping and lifecycle
+
+- An expense draft is strictly scoped to the tuple `(user_id, family_id)`.
+- Different members of the same family can concurrently create and maintain their own independent expense drafts without interference or state overwrites. A draft remains private to its author until confirmed and saved as a shared family expense.
+- A user can have at most one nonterminal expense draft per family at any given time, including Saving and SaveUnknown states.
+- If a user belongs to multiple families and switches active families, any draft from another family is inaccessible within the new family context.
+- If the user switches back to the previous family within the 24-hour draft lifetime, their unfinished draft for that family becomes available again to resume or discard.
+- The 24-hour TTL removes Active/Paused draft records; expiry is not a persisted draft status. SaveUnknown retention is defined in §15.
+- Save outcome and idempotency rules, including `SaveUnknown`, are defined in §15; reply-keyboard entry behavior is defined in §5.
 
 ### 6.3 Store search and creation
 
@@ -210,6 +220,7 @@ An expense may be assigned to one or multiple categories, with an amount allocat
 
 Rules:
 - The sum of category allocations must equal the original expense amount. The allocation editor is a draft and must not persist incomplete rows.
+- The configurable maximum number of category allocation rows is 20 by default.
 - If the user changes the total or category amounts, show the remaining amount and offer to add a draft allocation row for it when the remaining amount is positive. The user must assign that row to a category before saving.
 - Remaining amount = total expense amount − sum of existing category allocations.
 - Do not create an extra row when the remaining amount is zero.
@@ -255,8 +266,8 @@ The MVP should use a chat-based editable expense card, not a Mini App.
 - Accept only currencies from the centrally configured supported ISO 4217 currency list.
 - Expense amounts and category allocations must be strictly positive; zero and negative amounts are invalid.
 - Parse and store monetary values and exchange rates using decimal types, never binary floating point. Respect each currency's configured minor-unit precision.
-- Enforce a configurable maximum amount/precision limit and return a user-readable validation error for overflow or unsupported precision; do not silently round user input.
-- A normal expense purchase date must be a valid date and cannot be in the future. A recurring template may have a future scheduled date, but confirming an occurrence as an ordinary expense must reject a future purchase date.
+- Enforce a configurable maximum amount of 100,000,000 in the expense currency and each currency's configured minor-unit precision; return a user-readable validation error for overflow or unsupported precision and do not silently round user input.
+- A normal expense purchase date must be a valid date, no earlier than the configurable minimum date (default `2020-01-01`), and cannot be in the future. A recurring template may have a future scheduled date, but confirming an occurrence as an ordinary expense must reject a future purchase date.
 - Store and category must belong to the same family as the expense. Archiving stores/categories is out of scope for MVP. Existing store/category references must remain readable.
 - Saving is atomic: an expense and all category allocations are committed together only after validation passes. Incomplete allocation rows exist only in the chat draft and are not persisted.
 
@@ -653,9 +664,10 @@ Use a layered design:
 
 Important principles:
 - Keep authorization outside individual Telegram handlers.
-- Scope repositories and service calls to a family.
+- Scope repositories, service calls, and transient draft states to a family (drafts scoped to `(user_id, family_id)`).
 - Use database transactions for saving expenses and category splits.
 - Use idempotency for Telegram retries and recurring occurrences.
+- If an expense save has an unknown outcome, retain the draft as `SaveUnknown` with the original idempotency key. Reconciliation by that key returns the existing expense if committed; retrying with the same key must create at most one expense. Do not expire or replace an unresolved `SaveUnknown` draft with a new one.
 - Keep exchange-rate retrieval replaceable behind an interface.
 - Do not block the bot's interaction flow indefinitely while calling external rate services.
 - Log errors without exposing sensitive data.
@@ -687,6 +699,7 @@ Important principles:
 - A user cannot view or modify a family's data without membership.
 - Switching families changes the scope of all subsequent actions.
 - No report or search result includes another family's data.
+- Expense drafts are scoped to `(user_id, family_id)`: multiple members in the same family can have concurrent, independent drafts without interference, and switching families isolates drafts (a draft from Family A is never visible, accessible, or resumed in Family B; returning to Family A restores access to its unexpired draft).
 
 ### Expense creation
 - A new expense defaults to the family's expense-entry currency.
@@ -812,4 +825,5 @@ Important principles:
 - User language is independent of family settings; supported languages are English, Ukrainian, Polish, and Russian, with English as the initial fallback.
 - Report generation is read-only for expenses and saved conversions; report-only manual rates and automatic fallbacks are session-scoped, with exports from the same report session using the same rates. Automatic historical provider rates are the default; the user may instead choose an explicit report-only manual override-all rate per currency pair. A one-tap continue action uses automatic rates. Current-rate fallback is used only when an automatic historical rate is unavailable and is clearly labeled; report sessions expire after 24 hours with a warning that regenerating may change totals.
 - Automatic provider rates are cached in `ExchangeRate`; manually entered rates belong only to the relevant `ExpenseConversion`. There is no family-wide manual-rate entity or setting.
+- Expense drafts are strictly scoped to `(user_id, family_id)`, enabling independent concurrent drafts for different family members and strict draft isolation across families.
 - Private bot chats are in MVP; group-chat interaction and family membership lifecycle management are out of scope.
