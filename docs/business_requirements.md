@@ -227,6 +227,10 @@ Rules:
 - Provide clear validation feedback.
 - All category allocation amounts use the expense's original currency.
 
+#### 6.4.1 Reporting-currency allocation
+
+Allocate each converted expense total proportionally to its original category allocation amounts. Round each category to the reporting currency's minor unit, then distribute any rounding remainder using a deterministic largest-remainder rule so the amounts reconcile to the converted expense total. This is a reporting allocation rule, not an accounting ledger.
+
 ### 6.5 Expense card
 
 After entry, display a concise editable summary including:
@@ -368,26 +372,26 @@ A conversion result is not required when the expense currency equals the active 
 
 ## 8. Reports and Analytics
 
-### 8.1 Period selection
+### 8.1 Report filters and grouping
 
-Support:
+Users select a report period:
 - A single calendar month.
 - A range of months.
 - An exact start and end date.
 
-Allow a convenient default period, such as the current month, while keeping all period options available.
+Allow a convenient default period, such as the current month, while keeping all period options available. Users also select the time grouping: entire selected period, month, week, or day. Weeks run Monday through Sunday. Choose a suitable default based on the selected period, but keep every grouping available. `Entire selected period` omits the time bucket and aggregates selected dimensions across the full period.
+
+Users may independently group rows by category and/or by store; both dimensions are optional. Each row represents one unique combination of the selected time bucket and enabled dimensions. An unselected dimension is aggregated. For example, with monthly, store, and category grouping, October may have separate rows for Biedronka / groceries and Biedronka / drugstore.
 
 ### 8.2 Report content
 
-Reports should include:
-- Total expenses in the reporting currency.
-- Breakdown by category.
-- Breakdown by store.
-- Spending dynamics over time.
+Reports should include the total expenses in the reporting currency and rows grouped according to §8.1. If no dimensions are selected with `Entire selected period`, show only the report total.
 
 Do **not** include per-person spending totals in the MVP.
 
 Reports must be scoped to the selected family and period, and exclude soft-deleted expenses. Report generation must not modify expenses or persist report-only conversions. If a current-rate fallback is used, label it clearly; totals may vary between reports generated at different times when the fallback rate changes. If any expense remains unconverted, disclose it and do not present the converted subtotal as a complete total.
+
+Calculate category breakdowns using the rule in §6.4.1.
 
 ### 8.3 Output formats
 
@@ -395,7 +399,7 @@ Reports must be scoped to the selected family and period, and exclude soft-delet
 - CSV export.
 - XLSX export.
 
-Exports should include period, reporting currency, totals, and relevant category/store breakdowns. Where an expense-level export is offered, include original amount/currency, the applicable reporting-currency amount, and conversion basis/rate date where applicable. Do not include `created_by_user_id` or per-person totals in report exports. Creating an export file does not create or modify domain entities.
+Exports should include the period, reporting currency, totals, selected time grouping, and aggregate rows for the selected category/store dimensions. Reports and exports must not list individual expenses; users view them in History. Do not include `created_by_user_id` or per-person totals in report exports. Creating an export file does not create or modify domain entities.
 
 Clearly indicate when an expense cannot be converted so that report totals are not misleading.
 

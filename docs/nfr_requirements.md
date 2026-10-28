@@ -76,7 +76,7 @@ Unique constraint: (`family_id`, `user_id`). Leaving/removing membership is out 
 - `created_at`
 - `updated_at`
 
-The sum of `ExpenseCategory.amount` must equal `Expense.original_amount` at the original currency's supported minor-unit precision. Reporting-currency allocation follows Business Requirements §8.2.
+The sum of `ExpenseCategory.amount` must equal `Expense.original_amount` at the original currency's supported minor-unit precision. Reporting-currency allocation follows Business Requirements §6.4.1.
 
 **Store**
 - `id`
