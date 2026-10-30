@@ -94,6 +94,7 @@ Text: `Delete “{category_name}”? This cannot be undone.`
 ## 4. Shared behavior
 
 - If a category is created from Add expense, offer `↩️ Back to expense`. Returning selects the new category in the preserved expense draft as specified in add_expense.md Appendix A. From the split editor, continue to enter the new row's amount. Other navigation remains available; do not force a return.
+- If a category is created from a recurring-template form, offer `↩️ Back to recurring template`. Return to the preserved form with the new category selected; if creating a split row, continue to allocation amount entry. Revalidate the family context. Other navigation remains available.
 - If a category is created from a store's default-category picker, offer `↩️ Back to store`. Return to the preserved picker with the new category preselected; setting the default requires the user's confirmation there. Revalidate that the store and family context are still available. If they are not, do not apply the category as a default. Other navigation remains available.
 - If the draft has expired, use the response in add_expense.md Appendix A; do not imply its data can be recovered.
 - If a card is stale or the category was deleted, reload the current family-scoped state; show an unavailable message and return to the list if it no longer exists.
@@ -102,4 +103,4 @@ Text: `Delete “{category_name}”? This cannot be undone.`
 
 ## 5. Coverage
 
-- Cover list/search, create/rename collisions, deletion eligibility, family switching, and return to expense creation or store settings. Business rules and security constraints remain in the linked requirements.
+- Cover list/search, create/rename collisions, deletion eligibility, family switching, and return to expense, recurring-template, or store settings. Business rules and security constraints remain in the linked requirements.
