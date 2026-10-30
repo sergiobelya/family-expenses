@@ -277,7 +277,7 @@ The MVP should use a chat-based editable expense card, not a Mini App.
 
 ### 7.1 Family Settings
 
-The family must have three independent settings:
+The family must have three independent currency settings:
 
 1. `default_expense_currency` — the currency preselected when adding a new expense. It can be changed temporarily, for example during a holiday.
 2. `reporting_currency` — the currency used for reports, summaries, analytics, and exports.
@@ -436,16 +436,25 @@ Recurring expense templates are included in MVP and have a dedicated **Recurring
 
 A recurring template should support:
 - Store, amount, currency, and category allocation(s).
-- Schedule/frequency: weekly, monthly, or a configurable interval.
-- Start date, optional end date, and next due date.
+- Optional template name.
+- Schedule: every N days, every N weeks, or every N months. The interval is capped at 730 days, 104 weeks, or 24 calendar months, respectively. Weekly schedules select one or more weekdays; monthly schedules select one or more days from 1–31. The start date anchors the schedule.
+- Start date, optional inclusive end date, and next due date.
 - Active, paused, and cancelled states.
 - Family ID and creator ID.
 
-A due occurrence does not silently create an expense. It creates a pending occurrence and prompts the template creator to **Confirm**, **Edit**, or **Skip** it. Pending occurrences never block other bot actions. When the creator next interacts with the bot, show a non-blocking reminder and a list of pending occurrences; allow handling them individually or explicitly skipping all currently listed occurrences. Ignored occurrences remain pending and are shown again. Do not create duplicate pending occurrences. `next_due_date` advances when a pending occurrence is generated, not when it is confirmed, so later schedules can proceed while older occurrences remain pending. No automatic catch-up expense is created without confirmation. Deletion of stores/categories is allowed only when they are unreferenced; deleting referenced records and all archiving/replacement flows are out of scope for MVP.
+All family members can view family recurring templates; only the template creator can edit, pause, or cancel them in MVP. Once no scheduled date remains to be processed through the inclusive `end_date`, the template has no `next_due_date` and appears at the bottom of the list. Do not add a persisted `Finished` status; the template remains editable.
 
-The proposed expense date defaults to the scheduled date and is editable, with a one-tap **Today** choice. Confirmation validates the final date as a normal expense date and rejects future dates. The exchange rate is selected based on the final confirmed expense date, not necessarily the originally scheduled date. The creator alone may edit, pause, or cancel their recurring template in MVP.
+A due occurrence does not silently create an expense. At `next_due_date` and the template's `reminder_time`, create a pending occurrence. Each template has its own reminder time, defaulting to 09:00 in the family's time zone. Advance `next_due_date` to the next scheduled event after creating the pending occurrence; do not wait for confirmation. Do not schedule occurrences after the inclusive `end_date`.
 
-For monthly schedules on days 29–31, use the last calendar day in months that do not contain the scheduled day; in following months, resume the original intended day. Occurrence generation must be idempotent. Confirming creates an ordinary expense and follows the same validation, conversion, audit, and author-only edit/delete rules. The created expense author is the template creator.
+If a technical outage causes scheduled events to pass without creating pending occurrences, do not automatically create pending occurrences with past scheduled dates. On recovery, record the missed events as skipped with reason `technical_delay` and advance `next_due_date` to the next future scheduled event. Notify the creator in a family-scoped message with a button to review missed events. If the creator explicitly restores a missed event, change that event to pending using the template's current values; preserve the original scheduled date and do not change `next_due_date`. The creator may edit the pending event before confirming it.
+
+When a schedule, start date, end date, reminder time, or family time zone changes, recalculate `next_due_date` to the nearest matching future event for which no occurrence already exists. It may be today only if the scheduled reminder time has not passed in the family's time zone. Show the updated date and time to the user. After all due occurrences are saved, send each affected creator one Telegram message per family stating their total number of unresolved pending occurrences in that family and linking to that family's pending list. The creator can then **Confirm**, **Edit**, or **Skip** each occurrence.
+
+Pending occurrences never block other bot actions. When the creator next interacts with the bot, show a non-blocking reminder and a list of unresolved pending occurrences; allow handling them individually or explicitly skipping all currently listed occurrences. Ignored occurrences remain pending. Do not create duplicate pending occurrences. Pausing or cancelling stops occurrence generation. At pause or cancellation, mark scheduled events already due but not yet generated as skipped with reason `template_paused` or `template_cancelled`. Also mark any unrestored `technical_delay` events with the relevant reason; they cannot be restored later, even if the template resumes. Existing pending occurrences remain unchanged and actionable. While paused, do not create occurrences for dates that pass; on resume, record those dates as skipped with reason `template_paused` and recalculate `next_due_date` to the nearest future scheduled event. Missed events skipped because a template was paused or cancelled cannot be restored. Deletion of stores/categories is allowed only when they are unreferenced; deleting referenced records and all archiving/replacement flows are out of scope for MVP.
+
+The proposed expense date defaults to the scheduled date and is editable, with a one-tap **Today** choice. Confirmation validates the final date as a normal expense date and rejects future dates. The exchange rate is selected based on the final confirmed expense date, not necessarily the originally scheduled date.
+
+For weekly intervals, count interval weeks from the Monday–Sunday week containing `start_date`; for monthly intervals, count interval months from the calendar month containing `start_date`. The first occurrence must not precede `start_date`. For monthly schedules on days 29–31, including intervals in months, use the last calendar day in months that do not contain the selected day; in following interval months, resume the original intended day. If multiple selected days resolve to the same last calendar day, create only one occurrence for that date. Set `next_due_date` to null when no scheduled date remains to be processed on or before `end_date`. Do not modify existing pending occurrences when a template is edited. Occurrence generation must be idempotent. Confirming creates an ordinary expense and follows the same validation, conversion, audit, and author-only edit/delete rules. The created expense author is the template creator.
 
 ## 12. Localization
 
@@ -465,7 +474,7 @@ Use this section as a test index; the requirements themselves are defined in the
 - **Family isolation:** verify membership checks and family-scoped access (§4, §6.2.1, §9).
 - **Expenses:** verify entry, validation, category allocation, editing, and deletion (§6.1–6.7).
 - **Currency:** verify settings, conversion, reports, and exports (§7–8).
-- **Recurring expenses:** verify scheduling, pending occurrences, and confirmation (§11).
+- **Recurring expenses:** verify scheduling, delayed-event recovery and opt-in restoration, pause/resume/cancel skip records, grouped notifications, pending occurrences, and confirmation (§11).
 - **Invitations:** verify expiry, revocation, and membership flow (§4.3).
 - **Stores and categories:** run the canonical name test vectors and verify search, uniqueness, aliases, deletion, and family isolation (§6.3–6.4, §10).
 - **Localization and Telegram:** verify language selection and date/number formatting (§12), plus private-chat scope (§5).

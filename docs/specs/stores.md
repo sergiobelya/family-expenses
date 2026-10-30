@@ -118,10 +118,11 @@ Text: `Delete “{store_name}”? This cannot be undone.`
 ## 4. Shared behavior
 
 - If a store is created from the Add expense flow, offer `↩️ Back to expense`. Returning selects the new store in the preserved draft as specified in add_expense.md Appendix A. Other navigation remains available; do not force a return.
+- If a store is created from a recurring-template form, offer `↩️ Back to recurring template`. Return to the preserved form with the new store selected; revalidate its family context.
 - If a card is stale or its store was deleted, reload the current family-scoped state; show an unavailable message and return to the list if it no longer exists.
 - On a family switch, do not keep showing or mutate the previous family's stores. Re-enter the section in the newly active family after membership validation.
 - If Telegram cannot edit the current card, send a new card and close the old one without buttons.
 
 ## 5. Coverage
 
-- Cover list/search, create/rename collisions, default-category selection, alias management, deletion eligibility, family switching, and return to expense creation. Business rules and security constraints remain in the linked requirements.
+- Cover list/search, create/rename collisions, default-category selection, alias management, deletion eligibility, family switching, and return to expense or recurring-template creation. Business rules and security constraints remain in the linked requirements.

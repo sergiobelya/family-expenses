@@ -140,14 +140,16 @@ Create a conversion record only when source currency differs from target/reporti
 - `id`
 - `family_id`
 - `created_by_user_id`
+- `name` (nullable)
 - `store_id`
 - `amount`
 - `currency`
 - `start_date`
 - `end_date` (nullable)
+- `reminder_time` (local time of day, minute precision; defaults to 09:00 in the family's time zone)
 - `schedule_type`
-- `schedule_interval` / schedule configuration
-- `next_due_date`
+- `schedule_interval` / schedule configuration (interval count/unit and selected weekdays or days of the month)
+- `next_due_date` (nullable when no scheduled date remains to be processed)
 - `status`
 - `created_at`
 - `updated_at`
@@ -162,7 +164,7 @@ Use a `RecurringExpenseCategory` table to represent template category splits. Us
 - `proposed_amount` (nullable; defaults to template amount)
 - `proposed_currency` (nullable; defaults to template currency)
 - `status` (`pending_confirmation`/`created`/`skipped`)
-- `skipped_reason` (nullable; e.g. `creator_skipped`, `template_paused`, `template_cancelled`)
+- `skipped_reason` (nullable; e.g. `creator_skipped`, `technical_delay`, `template_paused`, `template_cancelled`)
 - `created_expense_id` (nullable)
 - `resolved_at` (nullable)
 - Unique constraint to prevent duplicate processing of the same occurrence. Editing a proposed occurrence updates its persisted draft values until confirmation; the final expense is created only on confirmation. Store proposed category allocations in a separate `RecurringOccurrenceCategory` table or equivalent draft structure.
@@ -214,6 +216,9 @@ Important principles:
 - Enforce the family scoping rules in Business Requirements §§4 and 6.2.1 at repository and service boundaries.
 - Save each expense, its category allocations, and any required available conversion in one database transaction. If conversion is unavailable and the user chooses `Save without conversion`, do not create a conversion record. Never leave a partially saved expense.
 - Use idempotency for Telegram retries and recurring occurrence generation.
+- A `technical_delay` occurrence may be explicitly restored to `pending_confirmation`; initialize its store, amount, currency, and category allocations from the current template, retain its original scheduled date, clear `skipped_reason` and `resolved_at`, audit the transition, and do not change the template's `next_due_date`. Make restoration idempotent and disallow it for pause/cancellation skips.
+- When a template is paused or cancelled, reclassify its unrestored `technical_delay` occurrences as pause/cancellation skips and audit the change.
+- Process recurring schedules in the background, independently of Telegram app activity or user interaction. Persist all due pending occurrences before sending one grouped notification per family and creator; its count follows Business Requirements §11. Retry notification delivery with exponential backoff only when Telegram confirms the message was not sent. The Bot API does not expose the bot chat's message history for checking an ambiguous send result; do not retry an unknown outcome.
 - If an expense save has an unknown outcome, retain the draft as `SaveUnknown` with the original idempotency key. Reconciliation by that key returns the existing expense if committed; retrying with the same key must create at most one expense. Do not expire or replace an unresolved `SaveUnknown` draft with a new one.
 - Parse and store money and exchange rates as decimals, never binary floating-point values; enforce each currency's configured minor-unit precision.
 - Enforce invitation-use limits atomically with the successful join and `InvitationUse` insert.
