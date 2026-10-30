@@ -97,7 +97,7 @@ Support:
 
 Invitation tokens must be unguessable, revocable, and associated with a specific family. Use Telegram bot deep links as the primary invitation mechanism. A username is only a user-provided hint; it must never be used as the identity key or as proof of membership. Do not promise username/contact lookup or proactive messaging where Telegram does not support it.
 
-For MVP, invitations expire after 48 hours by default and allow one successful use by default (`max_uses = 1`); the creator may choose a different maximum-use limit. Store `expires_at` and `revoked_at`. `InvitationUse` is the source of truth for use count; do not store a redundant `use_count`. Record each successful use and enforce the configured maximum. Revocation blocks future joins only and does not remove users who already joined. Audit invitation creation, revocation, and successful use. Joining must be an explicit action by the recipient after opening the bot.
+For MVP, invitations expire after 48 hours by default and allow one successful use by default (`max_uses = 1`); the creator may choose a different positive maximum-use limit or no limit. Store `expires_at` and `revoked_at`. `InvitationUse` is the source of truth for use count; do not store a redundant `use_count`. Record each successful use and enforce the configured maximum when one is set. Revocation blocks future joins only and does not remove users who already joined. Audit invitation creation, revocation, and successful use. Joining must be an explicit action by the recipient after opening the bot.
 
 ## 5. Main Telegram Navigation
 
@@ -472,10 +472,11 @@ Requirements:
 Use this section as a test index; the requirements themselves are defined in the referenced sections.
 
 - **Family isolation:** verify membership checks and family-scoped access (§4, §6.2.1, §9).
+- **Family management:** verify family creation and switching, invitation joining, expiry, revocation, use limits, and explicit consent (§4).
+- **Navigation and settings:** verify menu routes, active-family selection, user language, and family settings (§4–5, 7.1, 12).
 - **Expenses:** verify entry, validation, category allocation, editing, and deletion (§6.1–6.7).
 - **Currency:** verify settings, conversion, reports, and exports (§7–8).
 - **Recurring expenses:** verify scheduling, delayed-event recovery and opt-in restoration, pause/resume/cancel skip records, grouped notifications, pending occurrences, and confirmation (§11).
-- **Invitations:** verify expiry, revocation, and membership flow (§4.3).
 - **Stores and categories:** run the canonical name test vectors and verify search, uniqueness, aliases, deletion, and family isolation (§6.3–6.4, §10).
 - **Localization and Telegram:** verify language selection and date/number formatting (§12), plus private-chat scope (§5).
 
