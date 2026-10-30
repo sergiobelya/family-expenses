@@ -203,16 +203,26 @@ Use appropriate foreign keys, indexes, decimal precision, and transactional vali
 
 ## 3. Reliability and Technical Constraints
 
-Use a layered design:
+Use a modular monolith for the MVP, organized by the bounded contexts defined in System Design. Keep a shared domain glossary and use its terms in code.
 
-1. **Telegram handlers/UI** — receive updates and render keyboards/cards.
-2. **Application services** — orchestrate add/edit/report/invitation flows.
-3. **Domain/business logic** — expense validation, category reconciliation, conversion rules, recurrence scheduling, authorization.
-4. **Repositories/data access** — family-scoped persistence.
-5. **External integrations** — Telegram Bot API, exchange-rate provider adapters (including NBP where appropriate), CSV/XLSX generation.
+Build it as a layered architecture guided by Clean Architecture, DDD, and logical CQRS; the rules below define how these principles apply.
+
+Keep these layers separate:
+
+1. **Domain** — enforce business rules and invariants.
+2. **Application** — coordinate use cases through Command and Query handlers. Define the ports (interfaces) these use cases need, such as persistence, queues, and external services.
+3. **Adapters and infrastructure** — implement those ports and connect the application to Telegram, databases, queues, exchange-rate providers, and file generation. The Telegram adapter receives updates, maps them to application requests, and renders responses.
+
+Dependencies point inward: adapters and infrastructure may depend on application/domain contracts; inner layers must not depend on Telegram, databases, queues, or provider SDKs. Ports belong to the inner layer that defines them; infrastructure implements them.
+
+Use DDD to define bounded contexts, shared terminology, and domain models. Use entities and value objects where they express identity or business rules. Use aggregates to protect consistency boundaries; do not require every entity or database table to be an aggregate.
+
+Separate application code into **Command** handlers for business-state changes and **Query** handlers for reads. This logical CQRS does not require separate databases or read-model infrastructure globally. Use the shared search-index abstraction required by Business Requirements §6.3; choose its engine in System Design. System Design may also choose dedicated read models or a columnar database for reports when justified. Event sourcing is optional and may be applied selectively; it is not a system-wide requirement. A query may update a technical cache but must not change business state.
 
 Important principles:
 - Keep authorization outside individual Telegram handlers.
+- Use queues for asynchronous commands and background work. Keep queue technology and the choice between synchronous and asynchronous execution for each use case in System Design. Make queued commands idempotent, revalidate authorization when executing them, and retain their outcome until it can be shown to the requesting user.
+- For queued commands, acknowledge Telegram callback queries promptly, tell the user when processing has started, and send the success or failure result in a later bot message. Where useful, update a bot message with progress or the final result. Do not report success before the command commits.
 - Enforce the family scoping rules in Business Requirements §§4 and 6.2.1 at repository and service boundaries.
 - Save each expense, its category allocations, and any required available conversion in one database transaction. If conversion is unavailable and the user chooses `Save without conversion`, do not create a conversion record. Never leave a partially saved expense.
 - Use idempotency for Telegram retries and recurring occurrence generation.
