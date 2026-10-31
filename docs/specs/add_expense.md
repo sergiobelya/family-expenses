@@ -721,7 +721,7 @@ No note field exists in MVP.
 
 ### 8.2 Draft guarantees
 
-- Dialog state and draft content may use different storage. Draft content must survive process restarts during its 24-hour TTL; choose the storage technology in System Design.
+- Dialog state and draft content may use different storage. Active/Paused draft storage and durable `SaveUnknown` recovery follow [System Design — Temporary state](../system_design.md#temporary-state).
 - Draft scope, family switching, one-draft limit, and expiry follow Business Requirements §6.2.1; `SaveUnknown` retention follows NFR §3.
 - A redelivered Telegram update must not create a duplicate expense.
 - Process updates for one draft sequentially (lock or optimistic revision check).

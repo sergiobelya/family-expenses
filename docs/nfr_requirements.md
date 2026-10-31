@@ -1,7 +1,8 @@
 # Family Expenses Telegram Bot — Non-Functional Requirements
 
 **Document status:** Consolidated NFRs and current technical constraints for MVP
-**Scope:** System qualities and technical constraints that support the business requirements. Detailed system design is deferred.
+**Scope:** System qualities and technical constraints that support the business requirements.
+Phase 1 design is in [system_design.md](system_design.md); later phases are deferred.
 
 ## 1. Authorization and Auditability
 
@@ -99,7 +100,7 @@ The sum of `ExpenseCategory.amount` must equal `Expense.original_amount` at the 
 - Unique constraint: `(family_id, alias_dedupe_key)`; enforce atomically with checks against canonical store keys and other aliases in the same family
 - `created_at`
 
-Store and category search use the shared search-index abstraction described in Business Requirements §6.3; matching behavior and hard-key generation are defined there. The concrete engine is deferred to system design. Do not add `dedupe_key_version` in MVP; a future algorithm change requires a migration to recalculate keys and resolve collisions. A separate category index is not required. Keep explicit `StoreAlias` values optional and family-scoped. Enforce uniqueness of `(family_id, alias_dedupe_key)` and ensure `StoreAlias.family_id` matches its store's family with a composite foreign key or equivalent database constraint. Alias-key writes and checks against canonical store keys and other aliases must be atomic. Canonical-name creation and rename must also check aliases in that family, excluding the same store when appropriate. Every query must filter by `family_id`. Use Telegram `update_id` for message-update idempotency and `callback_query.id` for callback actions; derive a stable request key from update type, ID, and operation, and persist/process it atomically. If the index is unavailable, database constraints remain authoritative for hard collisions; use database lookup for those and disclose when fuzzy suggestions cannot be checked. Treat index results as candidates: re-fetch each within `family_id`, discard missing/deleted records, and use the live database record for selection and persistence.
+Store and category matching behavior and hard-key generation follow Business Requirements §6.3. The search adapter and engine are recorded in System Design. Do not add `dedupe_key_version` in MVP; a future algorithm change requires a migration to recalculate keys and resolve collisions. A separate category index is not required. Keep explicit `StoreAlias` values optional and family-scoped. Enforce uniqueness of `(family_id, alias_dedupe_key)` and ensure `StoreAlias.family_id` matches its store's family with a composite foreign key or equivalent database constraint. Alias-key writes and checks against canonical store keys and other aliases must be atomic. Canonical-name creation and rename must also check aliases in that family, excluding the same store when appropriate. Every query must filter by `family_id`. If search is unavailable, database constraints remain authoritative for hard collisions; use database lookup for those and disclose when fuzzy suggestions cannot be checked. Treat search results as candidates: re-fetch each within `family_id`, discard missing/deleted records, and use the live database record for selection and persistence.
 
 ### Currency entities
 
@@ -217,7 +218,7 @@ Dependencies point inward: adapters and infrastructure may depend on application
 
 Use DDD to define bounded contexts, shared terminology, and domain models. Use entities and value objects where they express identity or business rules. Use aggregates to protect consistency boundaries; do not require every entity or database table to be an aggregate.
 
-Separate application code into **Command** handlers for business-state changes and **Query** handlers for reads. This logical CQRS does not require separate databases or read-model infrastructure globally. Use the shared search-index abstraction required by Business Requirements §6.3; choose its engine in System Design. System Design may also choose dedicated read models or a columnar database for reports when justified. Event sourcing is optional and may be applied selectively; it is not a system-wide requirement. A query may update a technical cache but must not change business state.
+Separate application code into **Command** handlers for business-state changes and **Query** handlers for reads. This logical CQRS does not require separate databases or read-model infrastructure globally. Keep store and category search behind a shared search abstraction; System Design records candidate engines. System Design may also choose dedicated read models or a columnar database for reports when justified. Event sourcing is optional and may be applied selectively; it is not a system-wide requirement. A query may update a technical cache but must not change business state.
 
 Important principles:
 - Keep authorization outside individual Telegram handlers.
