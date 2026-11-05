@@ -12,7 +12,7 @@ services:
       - .:/app
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-family_expenses}:${POSTGRES_PASSWORD:-local-dev-only}@postgres:5432/${POSTGRES_DB:-family_expenses}?serverVersion=18&charset=utf8
-      MESSENGER_TRANSPORT_DSN: amqp://${RABBITMQ_DEFAULT_USER:-family_expenses}:${RABBITMQ_DEFAULT_PASS:-local-dev-only}@rabbitmq:5672/%2f/messages
+      MESSENGER_TRANSPORT_DSN: ${MESSENGER_TRANSPORT_DSN:-doctrine://default?auto_setup=0}
       REDIS_URL: redis://redis:6379
     command: ["php", "-v"]
 

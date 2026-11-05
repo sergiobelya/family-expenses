@@ -1,0 +1,30 @@
+parameters:
+    app.telegram_bot_token: '%env(TELEGRAM_BOT_TOKEN)%'
+    app.telegram_bot_username: '%env(TELEGRAM_BOT_USERNAME)%'
+    app.telegram_webhook_secret: '%env(TELEGRAM_WEBHOOK_SECRET)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/**/Domain/Entity/'
+            - '../src/**/Domain/ValueObject/'
+            - '../src/**/Domain/Event/'
+            - '../src/**/Domain/Exception/'
+            - '../src/**/Application/Command/*Command.php'
+            - '../src/**/Application/Query/*Query.php'
+            - '../src/Core/Infrastructure/Outbox/OutboxEnvelope.php'
+            - '../src/Core/Infrastructure/Persistence/Doctrine/Entity/'
+            - '../src/Core/Infrastructure/Persistence/Redis/UserInteractionState.php'
+            - '../src/Presentation/Telegram/DTO/'
+            - '../src/Presentation/Telegram/Context/TelegramUserContext.php'
+            - '../src/Kernel.php'
+
+    Predis\ClientInterface:
+        class: Predis\Client
+        arguments:
+            - '%env(REDIS_URL)%'

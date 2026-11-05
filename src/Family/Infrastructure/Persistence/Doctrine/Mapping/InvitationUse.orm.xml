@@ -1,0 +1,20 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Family\Domain\Entity\InvitationUse" table="invitation_uses">
+        <indexes>
+            <index name="idx_invitation_uses_joined_user_id" columns="joined_user_id"/>
+        </indexes>
+        <unique-constraints>
+            <unique-constraint name="uniq_invitation_uses_invitation_user" columns="invitation_id,joined_user_id"/>
+        </unique-constraints>
+
+        <id name="id" type="uuid"/>
+        <field name="invitationId" column="invitation_id" type="uuid"/>
+        <field name="joinedUserId" column="joined_user_id" type="uuid"/>
+        <field name="usedAt" column="used_at" type="datetime_immutable"/>
+    </entity>
+
+</doctrine-mapping>

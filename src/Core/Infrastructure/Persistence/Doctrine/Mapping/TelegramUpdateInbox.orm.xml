@@ -1,0 +1,17 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Core\Infrastructure\Persistence\Doctrine\Entity\TelegramUpdateInbox" table="telegram_update_inbox">
+        <unique-constraints>
+            <unique-constraint name="uniq_telegram_update_inbox_update_id" columns="update_id"/>
+        </unique-constraints>
+
+        <id name="id" type="uuid"/>
+        <field name="updateId" column="update_id" type="bigint" unique="true"/>
+        <field name="receivedAt" column="received_at" type="datetime_immutable"/>
+        <field name="processedAt" column="processed_at" type="datetime_immutable" nullable="true"/>
+    </entity>
+
+</doctrine-mapping>

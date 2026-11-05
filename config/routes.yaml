@@ -1,0 +1,5 @@
+controllers:
+    resource:
+        path: ../src/Presentation/Telegram/Controller/
+        namespace: App\Presentation\Telegram\Controller
+    type: attribute

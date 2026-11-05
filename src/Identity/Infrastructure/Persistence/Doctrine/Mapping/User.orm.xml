@@ -1,0 +1,19 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Identity\Domain\Entity\User" table="users">
+        <unique-constraints>
+            <unique-constraint name="uniq_users_telegram_user_id" columns="telegram_user_id"/>
+        </unique-constraints>
+
+        <id name="id" type="uuid"/>
+        <field name="telegramUserId" column="telegram_user_id" type="bigint" unique="true"/>
+        <field name="language" column="language" type="string" length="10"/>
+        <field name="activeFamilyId" column="active_family_id" type="uuid" nullable="true"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
+    </entity>
+
+</doctrine-mapping>

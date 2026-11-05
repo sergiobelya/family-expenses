@@ -1,0 +1,22 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Family\Domain\Entity\FamilyMember" table="family_members">
+        <indexes>
+            <index name="idx_family_members_user_id" columns="user_id"/>
+        </indexes>
+        <unique-constraints>
+            <unique-constraint name="uniq_family_members_family_user" columns="family_id,user_id"/>
+        </unique-constraints>
+
+        <id name="id" type="uuid"/>
+        <field name="familyId" column="family_id" type="uuid"/>
+        <field name="userId" column="user_id" type="uuid"/>
+        <field name="status" column="status" type="string" length="20"/>
+        <field name="joinedAt" column="joined_at" type="datetime_immutable"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+    </entity>
+
+</doctrine-mapping>

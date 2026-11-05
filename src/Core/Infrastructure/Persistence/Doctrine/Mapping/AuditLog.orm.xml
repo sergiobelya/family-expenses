@@ -1,0 +1,24 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Core\Infrastructure\Persistence\Doctrine\Entity\AuditLog" table="audit_logs">
+        <indexes>
+            <index name="idx_audit_logs_family_id" columns="family_id"/>
+            <index name="idx_audit_logs_actor_user_id" columns="actor_user_id"/>
+            <index name="idx_audit_logs_entity" columns="entity_type,entity_id"/>
+        </indexes>
+
+        <id name="id" type="uuid"/>
+        <field name="familyId" column="family_id" type="uuid" nullable="true"/>
+        <field name="actorUserId" column="actor_user_id" type="uuid" nullable="true"/>
+        <field name="entityType" column="entity_type" type="string" length="100"/>
+        <field name="entityId" column="entity_id" type="string" length="255"/>
+        <field name="action" column="action" type="string" length="50"/>
+        <field name="beforeData" column="before_data" type="json" nullable="true"/>
+        <field name="afterData" column="after_data" type="json" nullable="true"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+    </entity>
+
+</doctrine-mapping>
