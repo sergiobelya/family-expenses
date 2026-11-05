@@ -30,6 +30,17 @@ RUN apt-get update \
         unzip \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && printf '%s\n' \
+        'xdebug.mode=debug,develop' \
+        'xdebug.start_with_request=trigger' \
+        'xdebug.client_host=host.docker.internal' \
+        'xdebug.client_port=9003' \
+        > /usr/local/etc/php/conf.d/99-xdebug.ini
+
+ENV PHP_IDE_CONFIG="serverName=family-expenses"
+
 USER app
 
 FROM base AS prod
