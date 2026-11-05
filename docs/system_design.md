@@ -82,7 +82,7 @@ For every request, resolve the Telegram user, active family, and relevant entity
 
 ## 5. Telegram updates and interaction state
 
-Use a Telegram webhook for production update delivery. Verify Telegram's webhook secret token. Persist each incoming `update_id` once before acknowledging the webhook; duplicate deliveries must not repeat an application action.
+Support Telegram webhooks and long polling as interchangeable delivery adapters into the same update processor. Use a webhook for production and long polling for local development. Run only one delivery mode at a time for a bot: clear its webhook before starting polling, and stop polling before registering a webhook. Verify the webhook secret token. Persist each incoming `update_id` before processing it; advance the polling offset only after processing succeeds, and do not repeat already processed updates.
 
 The Telegram adapter maps messages and callback queries to application requests. It handles Telegram-specific formatting, keyboards, callback answers, and message delivery. Callback data carries relevant IDs when they fit; otherwise it carries a short opaque reference to server-side interaction state plus an action/revision. Resolve references and recheck authorization on the server; never treat callback data as authorization.
 

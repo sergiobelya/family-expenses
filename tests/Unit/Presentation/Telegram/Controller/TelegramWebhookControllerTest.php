@@ -2,10 +2,8 @@
 
 namespace App\Tests\Unit\Presentation\Telegram\Controller;
 
-use App\Core\Infrastructure\Persistence\Doctrine\Entity\TelegramUpdateInbox;
-use App\Core\Infrastructure\Persistence\Doctrine\Repository\TelegramUpdateInboxRepository;
 use App\Presentation\Telegram\Controller\TelegramWebhookController;
-use App\Presentation\Telegram\Flow\TelegramUpdateRouter;
+use App\Presentation\Telegram\TelegramUpdateProcessor;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,9 +13,8 @@ class TelegramWebhookControllerTest extends TestCase
 {
     public function testRejectsInvalidSecretToken(): void
     {
-        $router = $this->createMock(TelegramUpdateRouter::class);
-        $inboxRepo = $this->createMock(TelegramUpdateInboxRepository::class);
-        $controller = new TelegramWebhookController($router, $inboxRepo, new NullLogger(), 'expected_secret');
+        $processor = $this->createMock(TelegramUpdateProcessor::class);
+        $controller = new TelegramWebhookController($processor, new NullLogger(), 'expected_secret');
 
         $request = new Request([], [], [], [], [], [
             'HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN' => 'wrong_secret',
@@ -30,16 +27,10 @@ class TelegramWebhookControllerTest extends TestCase
 
     public function testAcceptsValidSecretAndProcessesUpdate(): void
     {
-        $router = $this->createMock(TelegramUpdateRouter::class);
-        $router->expects($this->once())->method('route');
+        $processor = $this->createMock(TelegramUpdateProcessor::class);
+        $processor->expects($this->once())->method('process')->willReturn(true);
 
-        $inboxRepo = $this->createMock(TelegramUpdateInboxRepository::class);
-        $inboxRepo->expects($this->once())
-            ->method('recordIfNew')
-            ->with(123)
-            ->willReturn(new TelegramUpdateInbox(123));
-
-        $controller = new TelegramWebhookController($router, $inboxRepo, new NullLogger(), 'my_secret');
+        $controller = new TelegramWebhookController($processor, new NullLogger(), 'my_secret');
 
         $payload = json_encode([
             'update_id' => 123,
@@ -62,16 +53,10 @@ class TelegramWebhookControllerTest extends TestCase
 
     public function testSkipsDuplicateUpdate(): void
     {
-        $router = $this->createMock(TelegramUpdateRouter::class);
-        $router->expects($this->never())->method('route');
+        $processor = $this->createMock(TelegramUpdateProcessor::class);
+        $processor->expects($this->once())->method('process')->willReturn(false);
 
-        $inboxRepo = $this->createMock(TelegramUpdateInboxRepository::class);
-        $inboxRepo->expects($this->once())
-            ->method('recordIfNew')
-            ->with(123)
-            ->willReturn(null); // Already exists
-
-        $controller = new TelegramWebhookController($router, $inboxRepo, new NullLogger(), null);
+        $controller = new TelegramWebhookController($processor, new NullLogger(), null);
 
         $request = new Request([], [], [], [], [], [], json_encode(['update_id' => 123]));
         $response = $controller($request);

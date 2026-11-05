@@ -5,6 +5,11 @@ namespace App\Presentation\Telegram\Client;
 interface TelegramApiClientInterface
 {
     /**
+     * @return list<array<string, mixed>>
+     */
+    public function getUpdates(?int $offset, int $timeout = 30): array;
+
+    /**
      * @param array<string, mixed>|null $replyMarkup
      * @return array<string, mixed>
      */

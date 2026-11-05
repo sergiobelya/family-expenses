@@ -8,6 +8,10 @@ services:
         autowire: true
         autoconfigure: true
 
+    _instanceof:
+        App\Presentation\Telegram\Flow\FlowHandlerInterface:
+            tags: ['app.telegram_flow_handler']
+
     App\:
         resource: '../src/'
         exclude:
@@ -28,3 +32,7 @@ services:
         class: Predis\Client
         arguments:
             - '%env(REDIS_URL)%'
+
+    App\Presentation\Telegram\Client\TelegramApiClient:
+        arguments:
+            $botToken: '%app.telegram_bot_token%'

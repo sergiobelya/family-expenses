@@ -1,5 +1,5 @@
 services:
-  php:
+  php-app:
     build:
       context: .
       target: dev
@@ -15,6 +15,30 @@ services:
       MESSENGER_TRANSPORT_DSN: ${MESSENGER_TRANSPORT_DSN:-doctrine://default?auto_setup=0}
       REDIS_URL: redis://redis:6379
     command: ["php", "-v"]
+
+  php-telegram-poll:
+    build:
+      context: .
+      target: dev
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    profiles: [bot]
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-family_expenses}:${POSTGRES_PASSWORD:-local-dev-only}@postgres:5432/${POSTGRES_DB:-family_expenses}?serverVersion=18&charset=utf8
+      MESSENGER_TRANSPORT_DSN: ${MESSENGER_TRANSPORT_DSN:-doctrine://default?auto_setup=0}
+      REDIS_URL: redis://redis:6379
+      XDEBUG_TRIGGER: ${XDEBUG_TRIGGER:-}
+    command: ["php", "bin/console", "app:telegram:poll"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
   postgres:
     image: postgres:18-alpine

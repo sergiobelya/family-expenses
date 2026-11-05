@@ -13,7 +13,7 @@ class TelegramUpdateRouter
      */
     public function __construct(
         private TelegramUserContextResolver $contextResolver,
-        #[AutowireIterator(FlowHandlerInterface::class)]
+        #[AutowireIterator('app.telegram_flow_handler')]
         private iterable $handlers
     ) {}
 

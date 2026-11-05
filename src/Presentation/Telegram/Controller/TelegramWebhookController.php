@@ -2,9 +2,8 @@
 
 namespace App\Presentation\Telegram\Controller;
 
-use App\Core\Infrastructure\Persistence\Doctrine\Repository\TelegramUpdateInboxRepository;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
-use App\Presentation\Telegram\Flow\TelegramUpdateRouter;
+use App\Presentation\Telegram\TelegramUpdateProcessor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,8 +16,7 @@ use Throwable;
 class TelegramWebhookController
 {
     public function __construct(
-        private TelegramUpdateRouter $updateRouter,
-        private TelegramUpdateInboxRepository $inboxRepository,
+        private TelegramUpdateProcessor $updateProcessor,
         private LoggerInterface $logger,
         #[Autowire('%app.telegram_webhook_secret%')]
         private ?string $expectedSecret = null
@@ -44,25 +42,26 @@ class TelegramWebhookController
             return new JsonResponse(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
         }
 
-        $updateId = (int) ($data['update_id'] ?? 0);
-        if ($updateId > 0) {
-            $inboxRecord = $this->inboxRepository->recordIfNew($updateId);
-            if ($inboxRecord === null) {
-                // Duplicate update, skip processing
-                $this->logger->info('Duplicate Telegram update ignored', ['update_id' => $updateId]);
-                return new JsonResponse(['ok' => true, 'duplicate' => true]);
-            }
+        $updateId = filter_var($data['update_id'] ?? null, FILTER_VALIDATE_INT);
+        if ($updateId === false || $updateId < 1) {
+            return new JsonResponse(['error' => 'Invalid update_id'], Response::HTTP_BAD_REQUEST);
         }
 
         try {
-            $update = TelegramUpdate::fromArray($data);
-            $this->updateRouter->route($update);
+            $processed = $this->updateProcessor->process(TelegramUpdate::fromArray($data));
         } catch (Throwable $e) {
             $this->logger->error('Error processing Telegram update', [
                 'update_id' => $updateId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
+            return new JsonResponse(['error' => 'Update processing failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        if (!$processed) {
+            $this->logger->info('Duplicate Telegram update ignored', ['update_id' => $updateId]);
+            return new JsonResponse(['ok' => true, 'duplicate' => true]);
         }
 
         return new JsonResponse(['ok' => true]);

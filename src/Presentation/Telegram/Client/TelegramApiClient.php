@@ -4,6 +4,7 @@ namespace App\Presentation\Telegram\Client;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
@@ -40,6 +41,24 @@ class TelegramApiClient implements TelegramApiClientInterface
         }
 
         return $this->request('sendMessage', $payload);
+    }
+
+    public function getUpdates(?int $offset, int $timeout = 30): array
+    {
+        $payload = ['timeout' => $timeout];
+        if ($offset !== null) {
+            $payload['offset'] = $offset;
+        }
+
+        $response = $this->request('getUpdates', $payload, $timeout + 5);
+        if (!($response['ok'] ?? false) || !is_array($response['result'] ?? null)) {
+            throw new RuntimeException(sprintf(
+                'Telegram getUpdates failed: %s',
+                $response['description'] ?? 'invalid API response'
+            ));
+        }
+
+        return $response['result'];
     }
 
     public function editMessageText(
@@ -98,14 +117,14 @@ class TelegramApiClient implements TelegramApiClientInterface
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    private function request(string $method, array $payload): array
+    private function request(string $method, array $payload, int $timeout = 10): array
     {
         $url = sprintf('https://api.telegram.org/bot%s/%s', $this->botToken, $method);
 
         try {
             $response = $this->httpClient->request('POST', $url, [
                 'json' => $payload,
-                'timeout' => 10,
+                'timeout' => $timeout,
             ]);
 
             $statusCode = $response->getStatusCode();
