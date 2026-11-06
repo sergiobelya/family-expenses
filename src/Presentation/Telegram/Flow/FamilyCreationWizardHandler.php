@@ -11,6 +11,7 @@ use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
+use App\Presentation\Telegram\Keyboard\TimezoneSelector;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class FamilyCreationWizardHandler implements FlowHandlerInterface
@@ -22,6 +23,7 @@ class FamilyCreationWizardHandler implements FlowHandlerInterface
         private UserInteractionStateRepository $stateRepository,
         private CreateFamilyHandler $createFamilyHandler,
         private MainMenuKeyboard $mainMenuKeyboard,
+        private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator
     ) {}
 
@@ -82,6 +84,11 @@ class FamilyCreationWizardHandler implements FlowHandlerInterface
         $data = $state->data;
         $step = $state->step;
 
+        if ($step === 'timezone_search' && $update->text !== null && !str_starts_with($update->text, '/')) {
+            $this->renderTimezoneSelector($context, $data, trim($update->text));
+            return;
+        }
+
         if ($step === 'name' && $update->text !== null) {
             $name = trim($update->text);
             if (mb_strlen($name) < 2) {
@@ -93,28 +100,69 @@ class FamilyCreationWizardHandler implements FlowHandlerInterface
             }
 
             $data['name'] = $name;
-            $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'timezone', $data));
+            $this->renderTimezoneSelector($context, $data);
+            return;
+        }
 
-            $kb = (new InlineKeyboardBuilder())
-                ->button('Europe/Warsaw', 'family:create:tz:Europe/Warsaw')
-                ->button('Europe/Kyiv', 'family:create:tz:Europe/Kyiv')
-                ->row()
-                ->button('UTC', 'family:create:tz:UTC')
-                ->button('Europe/London', 'family:create:tz:Europe/London')
-                ->row()
-                ->button($this->translator->trans('common.cancel'), 'family:create:cancel')
-                ->toArray();
-
+        if ($step === 'timezone' && $update->callbackData === 'family:create:timezone:search') {
+            $this->stateRepository->set(new UserInteractionState(
+                $userId,
+                self::FLOW_NAME,
+                'timezone_search',
+                $data + ['query' => '', 'page' => 0]
+            ));
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
-                text: $this->translator->trans('family.create.step_timezone'),
-                replyMarkup: $kb
+                text: $this->translator->trans('selector.search_prompt'),
+                replyMarkup: (new InlineKeyboardBuilder())
+                    ->button($this->translator->trans('common.back'), 'family:create:timezone:select')
+                    ->toArray()
             );
             return;
         }
 
-        if ($step === 'timezone' && str_starts_with($update->callbackData ?? '', 'family:create:tz:')) {
-            $tz = substr($update->callbackData, strlen('family:create:tz:'));
+        if (
+            in_array($step, ['timezone', 'timezone_search'], true)
+            && $update->callbackData === 'family:create:timezone:select'
+        ) {
+            $this->renderTimezoneSelector(
+                $context,
+                $data,
+                (string) ($data['query'] ?? ''),
+                (int) ($data['page'] ?? 0)
+            );
+            return;
+        }
+
+        if (
+            in_array($step, ['timezone', 'timezone_search'], true)
+            && $update->callbackData === 'family:create:timezone:clear'
+        ) {
+            $this->renderTimezoneSelector($context, $data);
+            return;
+        }
+
+        if (
+            in_array($step, ['timezone', 'timezone_search'], true)
+            && preg_match('/^family:create:timezone:page:(\d+)$/', $update->callbackData ?? '', $matches) === 1
+        ) {
+            $this->renderTimezoneSelector($context, $data, (string) ($data['query'] ?? ''), (int) $matches[1]);
+            return;
+        }
+
+        if (
+            in_array($step, ['timezone', 'timezone_search'], true)
+            && (str_starts_with($update->callbackData ?? '', 'family:create:timezone:set:')
+                || str_starts_with($update->callbackData ?? '', 'family:create:tz:'))
+        ) {
+            $prefix = str_starts_with($update->callbackData, 'family:create:timezone:set:')
+                ? 'family:create:timezone:set:'
+                : 'family:create:tz:';
+            $tz = substr($update->callbackData, strlen($prefix));
+            if (!$this->timezoneSelector->contains($tz)) {
+                return;
+            }
+
             $data['timezone'] = $tz;
             $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'default_currency', $data));
 
@@ -230,5 +278,45 @@ class FamilyCreationWizardHandler implements FlowHandlerInterface
                 replyMarkup: $this->mainMenuKeyboard->build(false)
             );
         }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function renderTimezoneSelector(
+        TelegramUserContext $context,
+        array $data,
+        string $query = '',
+        int $page = 0
+    ): void {
+        $suggestedTimezone = $context->activeFamily?->getTimezone()->value ?? 'UTC';
+        $selection = $this->timezoneSelector->build(
+            callbackPrefix: 'family:create:timezone',
+            selectedValue: $suggestedTimezone,
+            query: $query,
+            page: $page,
+            backLabel: $this->translator->trans('common.cancel'),
+            backCallback: 'family:create:cancel',
+            preferredTimezone: $suggestedTimezone
+        );
+        $page = $selection['page'];
+        $data['query'] = $query;
+        $data['page'] = $page;
+        unset($data['timezone']);
+
+        $this->stateRepository->set(new UserInteractionState(
+            $context->telegramUserId,
+            self::FLOW_NAME,
+            'timezone',
+            $data
+        ));
+
+        $this->telegramClient->sendMessage(
+            chatId: $context->chatId,
+            text: !$selection['has_results']
+                ? $this->translator->trans('selector.no_results')
+                : $this->translator->trans('family.create.step_timezone'),
+            replyMarkup: $selection['keyboard']
+        );
     }
 }

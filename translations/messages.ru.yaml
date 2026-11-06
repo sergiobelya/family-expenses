@@ -22,6 +22,14 @@ common:
     success: "Готово!"
     error: "Произошла ошибка. Попробуйте еще раз."
 
+selector:
+    search: "🔎 Поиск"
+    search_prompt: "Отправьте название или код для поиска."
+    clear_search: "✖️ Очистить поиск"
+    no_results: "Совпадений не найдено. Попробуйте другой запрос."
+    previous: "⬅️ Назад"
+    next: "Далее ➡️"
+
 family:
     onboarding:
         title: "👋 Добро пожаловать в <b>Family Expenses</b>!"

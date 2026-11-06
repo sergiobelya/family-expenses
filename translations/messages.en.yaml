@@ -22,6 +22,14 @@ common:
     success: "Done!"
     error: "An error occurred. Please try again."
 
+selector:
+    search: "🔎 Search"
+    search_prompt: "Send a name or code to search."
+    clear_search: "✖️ Clear search"
+    no_results: "No matching options. Try another search."
+    previous: "⬅️ Previous"
+    next: "Next ➡️"
+
 family:
     onboarding:
         title: "👋 Welcome to <b>Family Expenses</b>!"

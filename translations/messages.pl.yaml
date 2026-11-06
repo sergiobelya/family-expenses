@@ -22,6 +22,14 @@ common:
     success: "Gotowe!"
     error: "Wystąpił błąd. Spróbuj ponownie."
 
+selector:
+    search: "🔎 Szukaj"
+    search_prompt: "Wyślij nazwę lub kod do wyszukania."
+    clear_search: "✖️ Wyczyść wyszukiwanie"
+    no_results: "Nie znaleziono pasujących opcji. Spróbuj innego zapytania."
+    previous: "⬅️ Wstecz"
+    next: "Dalej ➡️"
+
 family:
     onboarding:
         title: "👋 Witaj w <b>Family Expenses</b>!"

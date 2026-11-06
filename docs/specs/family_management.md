@@ -57,7 +57,7 @@ List the user's active families in an inline keyboard and mark the current famil
 
 ## 5. FM-03 — Create family
 
-Ask for the family name, then collect required family settings using [Settings UI SE-03](settings.md). Suggest a time zone using available context and ask the user to confirm or change it. Preselect the reporting currency as the expense-entry currency; allow the user to choose them independently. Suggest an exchange-rate provider based on country or reporting currency when possible.
+Ask for the family name, then collect required family settings using [Settings UI SE-03](settings.md). Show a short list of common time zones first, putting the user's current family time zone first when available. Search across the full time-zone list and paginate matching results. Preselect the reporting currency as the expense-entry currency; allow the user to choose them independently. Suggest an exchange-rate provider based on country or reporting currency when possible.
 
 **Controls:** `✅ Create family` · `✖️ Cancel`.
 

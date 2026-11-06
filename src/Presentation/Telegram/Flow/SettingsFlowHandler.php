@@ -12,6 +12,7 @@ use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
+use App\Presentation\Telegram\Keyboard\TimezoneSelector;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -24,6 +25,7 @@ class SettingsFlowHandler implements FlowHandlerInterface
         private ChangeUserLanguageHandler $changeUserLanguageHandler,
         private UpdateFamilySettingsHandler $updateFamilySettingsHandler,
         private UserInteractionStateRepository $stateRepository,
+        private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator,
         private LocaleAwareInterface $localeAwareTranslator
     ) {}
@@ -39,7 +41,15 @@ class SettingsFlowHandler implements FlowHandlerInterface
         }
 
         $state = $this->stateRepository->get($context->telegramUserId);
-        if ($state !== null && $state->flow === self::FLOW_NAME && $update->text !== null && !str_starts_with($update->text, '/')) {
+        if (
+            $state !== null
+            && (
+                $state->flow === self::FLOW_NAME
+                || ($state->flow === 'settings_timezone_selector' && $state->step === 'search')
+            )
+            && $update->text !== null
+            && !str_starts_with($update->text, '/')
+        ) {
             return true;
         }
 
@@ -54,33 +64,32 @@ class SettingsFlowHandler implements FlowHandlerInterface
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
+        $state = $this->stateRepository->get($userId);
+        if (
+            $state !== null
+            && $state->flow === 'settings_timezone_selector'
+            && $state->step === 'search'
+            && $update->text !== null
+            && !str_starts_with($update->text, '/')
+        ) {
+            $this->renderTimezoneSelector($context, trim($update->text));
+            return;
+        }
+
         // 1. Language selector
         if ($update->callbackData === 'settings:lang:select') {
-            $builder = new InlineKeyboardBuilder();
-            $languages = [
-                'en' => 'English',
-                'uk' => 'Українська',
-                'pl' => 'Polski',
-                'ru' => 'Русский',
-            ];
-
-            foreach ($languages as $code => $name) {
-                $badge = $context->user->getLanguage() === $code ? ' ✅' : '';
-                $builder->button($name . $badge, 'settings:lang:set:' . $code)->row();
-            }
-            $builder->button($this->translator->trans('common.back'), 'settings:main')->row();
-
-            $this->telegramClient->sendMessage(
-                chatId: $context->chatId,
-                text: $this->translator->trans('settings.lang_selector_title'),
-                replyMarkup: $builder->toArray()
-            );
+            $this->renderLanguageSelector($context);
             return;
         }
 
         // 2. Set Language
         if (str_starts_with($update->callbackData ?? '', 'settings:lang:set:')) {
             $lang = substr($update->callbackData, strlen('settings:lang:set:'));
+            if (!array_key_exists($lang, $this->getLanguages())) {
+                return;
+            }
+
+            $this->stateRepository->clear($userId);
             ($this->changeUserLanguageHandler)(new ChangeUserLanguageCommand(
                 userId: $context->user->getId(),
                 language: $lang
@@ -99,7 +108,14 @@ class SettingsFlowHandler implements FlowHandlerInterface
 
         // 3. Family Settings View
         if ($update->callbackData === 'settings:family:view') {
+            $this->clearTimezoneSelectorState($userId, $state);
             $this->renderFamilySettings($context);
+            return;
+        }
+
+        if ($update->callbackData === 'settings:main') {
+            $this->clearTimezoneSelectorState($userId, $state);
+            $this->renderMainSettings($context);
             return;
         }
 
@@ -142,26 +158,60 @@ class SettingsFlowHandler implements FlowHandlerInterface
 
         // 5. Family Settings Edit: Timezone
         if ($update->callbackData === 'settings:family:edit:tz') {
-            $kb = (new InlineKeyboardBuilder())
-                ->button('Europe/Warsaw', 'settings:family:set:tz:Europe/Warsaw')
-                ->button('Europe/Kyiv', 'settings:family:set:tz:Europe/Kyiv')
-                ->row()
-                ->button('UTC', 'settings:family:set:tz:UTC')
-                ->button('Europe/London', 'settings:family:set:tz:Europe/London')
-                ->row()
-                ->button($this->translator->trans('common.back'), 'settings:family:view')
-                ->toArray();
+            $this->renderTimezoneSelector($context);
+            return;
+        }
 
+        if ($update->callbackData === 'settings:family:timezone:search') {
+            $this->stateRepository->set(new UserInteractionState(
+                $userId,
+                'settings_timezone_selector',
+                'search',
+                ['query' => (string) ($state?->data['query'] ?? ''), 'page' => (int) ($state?->data['page'] ?? 0)]
+            ));
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
-                text: $this->translator->trans('settings.prompt_select_timezone'),
-                replyMarkup: $kb
+                text: $this->translator->trans('selector.search_prompt'),
+                replyMarkup: (new InlineKeyboardBuilder())
+                    ->button($this->translator->trans('common.back'), 'settings:family:timezone:select')
+                    ->toArray()
             );
             return;
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'settings:family:set:tz:') && $context->hasActiveFamily()) {
-            $tz = substr($update->callbackData, strlen('settings:family:set:tz:'));
+        if ($update->callbackData === 'settings:family:timezone:select') {
+            $this->renderTimezoneSelector(
+                $context,
+                (string) ($state?->data['query'] ?? ''),
+                (int) ($state?->data['page'] ?? 0)
+            );
+            return;
+        }
+
+        if ($update->callbackData === 'settings:family:timezone:clear') {
+            $this->renderTimezoneSelector($context);
+            return;
+        }
+
+        if (preg_match('/^settings:family:timezone:page:(\d+)$/', $update->callbackData ?? '', $matches) === 1) {
+            $this->renderTimezoneSelector($context, (string) ($state?->data['query'] ?? ''), (int) $matches[1]);
+            return;
+        }
+
+        if (
+            (str_starts_with($update->callbackData ?? '', 'settings:family:timezone:set:')
+                || str_starts_with($update->callbackData ?? '', 'settings:family:set:tz:'))
+            && $context->hasActiveFamily()
+        ) {
+            $prefix = str_starts_with($update->callbackData, 'settings:family:timezone:set:')
+                ? 'settings:family:timezone:set:'
+                : 'settings:family:set:tz:';
+            $tz = substr($update->callbackData, strlen($prefix));
+            if (!$this->timezoneSelector->contains($tz)) {
+                return;
+            }
+
+            $this->clearTimezoneSelectorState($userId, $state);
             ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
                 familyId: $context->activeFamily->getId(),
                 userId: $context->user->getId(),
@@ -322,6 +372,73 @@ class SettingsFlowHandler implements FlowHandlerInterface
             text: implode("\n", $lines),
             replyMarkup: $builder->toArray()
         );
+    }
+
+    private function renderLanguageSelector(TelegramUserContext $context): void
+    {
+        $builder = new InlineKeyboardBuilder();
+        foreach ($this->getLanguages() as $code => $name) {
+            $badge = $context->user->getLanguage() === $code ? ' ✅' : '';
+            $builder->button($name . $badge, 'settings:lang:set:' . $code)->row();
+        }
+        $builder->button($this->translator->trans('common.back'), 'settings:main')->row();
+
+        $this->telegramClient->sendMessage(
+            chatId: $context->chatId,
+            text: $this->translator->trans('settings.lang_selector_title'),
+            replyMarkup: $builder->toArray()
+        );
+    }
+
+    private function renderTimezoneSelector(
+        TelegramUserContext $context,
+        string $query = '',
+        int $page = 0
+    ): void {
+        $selection = $this->timezoneSelector->build(
+            callbackPrefix: 'settings:family:timezone',
+            selectedValue: $context->activeFamily?->getTimezone()->value,
+            query: $query,
+            page: $page,
+            backLabel: $this->translator->trans('common.back'),
+            backCallback: 'settings:family:view',
+            preferredTimezone: $context->activeFamily?->getTimezone()->value
+        );
+        $page = $selection['page'];
+        $this->stateRepository->set(new UserInteractionState(
+            $context->telegramUserId,
+            'settings_timezone_selector',
+            'select',
+            ['query' => $query, 'page' => $page]
+        ));
+
+        $this->telegramClient->sendMessage(
+            chatId: $context->chatId,
+            text: !$selection['has_results']
+                ? $this->translator->trans('selector.no_results')
+                : $this->translator->trans('settings.prompt_select_timezone'),
+            replyMarkup: $selection['keyboard']
+        );
+    }
+
+    private function clearTimezoneSelectorState(int $userId, ?UserInteractionState $state): void
+    {
+        if ($state?->flow === 'settings_timezone_selector') {
+            $this->stateRepository->clear($userId);
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function getLanguages(): array
+    {
+        return [
+            'en' => 'English',
+            'uk' => 'Українська',
+            'pl' => 'Polski',
+            'ru' => 'Русский',
+        ];
     }
 
     private function renderFamilySettings(TelegramUserContext $context): void

@@ -37,6 +37,9 @@ use App\Presentation\Telegram\Flow\JoinFamilyFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Flow\SettingsFlowHandler;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
+use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
+use App\Presentation\Telegram\Keyboard\TimezoneOptions;
+use App\Presentation\Telegram\Keyboard\TimezoneSelector;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -122,6 +125,7 @@ class TelegramFlowHandlersTest extends TestCase
             $stateRepo,
             $createFamilyHandler,
             $mainMenuKb,
+            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator
         );
 
@@ -303,6 +307,7 @@ class TelegramFlowHandlersTest extends TestCase
             $changeLangHandler,
             $updateFamilySettingsHandler,
             $stateRepo,
+            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
             $translator
         );
@@ -318,5 +323,142 @@ class TelegramFlowHandlersTest extends TestCase
 
         $this->assertTrue($handler->supports($update, $context));
         $handler->handle($update, $context);
+    }
+
+    public function testLanguageSelectorUsesTheFourSupportedLanguagesWithoutSearch(): void
+    {
+        $messages = [];
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $telegramClient->expects($this->once())
+            ->method('sendMessage')
+            ->willReturnCallback(function ($chatId, $text, $replyMarkup) use (&$messages): array {
+                $messages[] = ['text' => $text, 'reply_markup' => $replyMarkup];
+                return [];
+            });
+
+        $stateRepo = $this->createMock(UserInteractionStateRepository::class);
+        $stateRepo->expects($this->once())->method('get')->willReturn(null);
+
+        $handler = new SettingsFlowHandler(
+            $telegramClient,
+            $this->createMock(ChangeUserLanguageHandler::class),
+            $this->createMock(UpdateFamilySettingsHandler::class),
+            $stateRepo,
+            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $this->createTranslator()),
+            $this->createTranslator(),
+            $this->createTranslator()
+        );
+
+        $user = new User(123456);
+        $context = new TelegramUserContext($user, null, 'en', 123456, 111);
+        $languageCallback = TelegramUpdate::fromArray([
+            'update_id' => 1,
+            'callback_query' => ['id' => 'cb1', 'data' => 'settings:lang:select', 'message' => ['chat' => ['id' => 111]]],
+        ]);
+
+        $handler->handle($languageCallback, $context);
+
+        $buttons = $messages[0]['reply_markup']['inline_keyboard'];
+        $this->assertCount(5, $buttons);
+        $this->assertSame('settings:lang:set:en', $buttons[0][0]['callback_data']);
+        $this->assertSame('settings:lang:set:uk', $buttons[1][0]['callback_data']);
+        $this->assertSame('settings:lang:set:pl', $buttons[2][0]['callback_data']);
+        $this->assertSame('settings:lang:set:ru', $buttons[3][0]['callback_data']);
+        $this->assertSame('settings:main', $buttons[4][0]['callback_data']);
+    }
+
+    public function testSettingsTimezoneSelectorCanSearchByIanaIdentifier(): void
+    {
+        $messages = [];
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $telegramClient->expects($this->exactly(2))
+            ->method('sendMessage')
+            ->willReturnCallback(function ($chatId, $text, $replyMarkup) use (&$messages): array {
+                $messages[] = ['text' => $text, 'reply_markup' => $replyMarkup];
+                return [];
+            });
+
+        $stateRepo = $this->createMock(UserInteractionStateRepository::class);
+        $stateRepo->method('get')->willReturn(
+            new UserInteractionState(123456, 'settings_timezone_selector', 'search', ['query' => '', 'page' => 0])
+        );
+        $stateRepo->expects($this->exactly(2))->method('set');
+
+        $translator = $this->createTranslator();
+        $handler = new SettingsFlowHandler(
+            $telegramClient,
+            $this->createMock(ChangeUserLanguageHandler::class),
+            $this->createMock(UpdateFamilySettingsHandler::class),
+            $stateRepo,
+            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
+            $translator,
+            $translator
+        );
+
+        $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
+        $context = new TelegramUserContext(new User(123456), $family, 'en', 123456, 111);
+        $searchCallback = TelegramUpdate::fromArray([
+            'update_id' => 1,
+            'callback_query' => ['id' => 'cb1', 'data' => 'settings:family:timezone:search', 'message' => ['chat' => ['id' => 111]]],
+        ]);
+        $searchText = TelegramUpdate::fromArray([
+            'update_id' => 2,
+            'message' => ['message_id' => 11, 'chat' => ['id' => 111], 'text' => 'America/New_York'],
+        ]);
+
+        $handler->handle($searchCallback, $context);
+        $handler->handle($searchText, $context);
+
+        $buttons = $messages[1]['reply_markup']['inline_keyboard'];
+        $this->assertSame('America/New_York', $buttons[2][0]['text']);
+        $this->assertSame('settings:family:timezone:set:America/New_York', $buttons[2][0]['callback_data']);
+    }
+
+    public function testFamilyCreationTimezoneSelectorCanSearchByIanaIdentifier(): void
+    {
+        $messages = [];
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $telegramClient->expects($this->exactly(2))
+            ->method('sendMessage')
+            ->willReturnCallback(function ($chatId, $text, $replyMarkup) use (&$messages): array {
+                $messages[] = ['text' => $text, 'reply_markup' => $replyMarkup];
+                return [];
+            });
+
+        $stateRepo = $this->createMock(UserInteractionStateRepository::class);
+        $stateRepo->expects($this->exactly(2))
+            ->method('get')
+            ->willReturnOnConsecutiveCalls(
+                new UserInteractionState(123456, 'family_create', 'timezone', ['name' => 'Smiths']),
+                new UserInteractionState(123456, 'family_create', 'timezone_search', ['name' => 'Smiths', 'query' => '', 'page' => 0])
+            );
+        $stateRepo->expects($this->exactly(2))->method('set');
+
+        $translator = $this->createTranslator();
+        $handler = new FamilyCreationWizardHandler(
+            $telegramClient,
+            $stateRepo,
+            $this->createMock(CreateFamilyHandler::class),
+            new MainMenuKeyboard($translator),
+            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
+            $translator
+        );
+
+        $context = new TelegramUserContext(new User(123456), null, 'en', 123456, 111);
+        $searchCallback = TelegramUpdate::fromArray([
+            'update_id' => 1,
+            'callback_query' => ['id' => 'cb1', 'data' => 'family:create:timezone:search', 'message' => ['chat' => ['id' => 111]]],
+        ]);
+        $searchText = TelegramUpdate::fromArray([
+            'update_id' => 2,
+            'message' => ['message_id' => 11, 'chat' => ['id' => 111], 'text' => 'America/New_York'],
+        ]);
+
+        $handler->handle($searchCallback, $context);
+        $handler->handle($searchText, $context);
+
+        $buttons = $messages[1]['reply_markup']['inline_keyboard'];
+        $this->assertSame('America/New_York', $buttons[2][0]['text']);
+        $this->assertSame('family:create:timezone:set:America/New_York', $buttons[2][0]['callback_data']);
     }
 }

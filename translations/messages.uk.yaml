@@ -22,6 +22,14 @@ common:
     success: "Готово!"
     error: "Виникла помилка. Спробуйте ще раз."
 
+selector:
+    search: "🔎 Пошук"
+    search_prompt: "Надішліть назву або код для пошуку."
+    clear_search: "✖️ Очистити пошук"
+    no_results: "Варіантів не знайдено. Спробуйте інший запит."
+    previous: "⬅️ Назад"
+    next: "Далі ➡️"
+
 family:
     onboarding:
         title: "👋 Ласкаво просимо до <b>Family Expenses</b>!"

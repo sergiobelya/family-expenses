@@ -42,7 +42,7 @@ If the user has no family, show only user settings and a link to [Family Managem
 
 ## 4. SE-02 — Language
 
-Show the supported languages in Business Requirements §12 and mark the current selection.
+Show the four supported languages in Business Requirements §12 and mark the current selection.
 
 - Selecting a language saves it to the user profile and applies it immediately across all families, including the current settings screen.
 - Use the fallback behavior in Business Requirements §12 when the Telegram language is unsupported and the user has not selected a language.
@@ -53,7 +53,7 @@ Show each setting's current value. Use the same screen during family setup, wher
 
 - **Family name:** edit and save the name.
 - **Country:** optionally select or clear a country. Use it only for provider and time-zone suggestions; changing it does not silently change other settings.
-- **Time zone:** show the IANA time-zone identifier, such as `Europe/Warsaw`. During setup, preselect a suggestion based on available context and ask the user to confirm or change it; use UTC if no reasonable suggestion exists (Business Requirements §7.1). When changed later, confirm the new value before saving. After saving, show the recalculated `next_due_date` and reminder time for affected recurring templates.
+- **Time zone:** show the IANA time-zone identifier, such as `Europe/Warsaw`. Start with common options, putting the active family's time zone first when available; search across all valid IANA identifiers and paginate matching results. During setup, mark the active family's time zone as the suggestion, or UTC if no family context exists, and ask the user to confirm or change it (Business Requirements §7.1). When changed later, confirm the new value before saving. After saving, show the recalculated `next_due_date` and reminder time for affected recurring templates.
 - **Expense-entry currency:** select from the supported currency list (Business Requirements §6.1). This changes only the default for new expenses.
 - **Reporting currency:** select from the supported currency list. Do not change the expense-entry currency automatically. Offer the current or suggested exchange-rate provider for explicit selection as described below. Explain that saving does not rewrite historical conversions.
 - **Default exchange-rate provider:** show the current provider and a suggestion based on country or reporting currency when available. Allow selection from supported providers. Changing it affects future automatic retrieval; it does not rewrite historical conversions.
