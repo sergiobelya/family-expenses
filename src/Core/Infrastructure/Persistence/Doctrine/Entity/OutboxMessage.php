@@ -18,6 +18,9 @@ class OutboxMessage
     private string $status;
     private DateTimeImmutable $createdAt;
     private ?DateTimeImmutable $publishedAt = null;
+    private int $attemptCount = 0;
+    private DateTimeImmutable $nextAttemptAt;
+    private ?string $lastError = null;
 
     public function __construct(
         string $eventType,
@@ -31,6 +34,7 @@ class OutboxMessage
         $this->payload = $payload;
         $this->status = $status;
         $this->createdAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $this->nextAttemptAt = $this->createdAt;
     }
 
     public function getId(): Uuid
@@ -63,14 +67,44 @@ class OutboxMessage
         return $this->publishedAt;
     }
 
+    public function getAttemptCount(): int
+    {
+        return $this->attemptCount;
+    }
+
+    public function getNextAttemptAt(): DateTimeImmutable
+    {
+        return $this->nextAttemptAt;
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
+    }
+
     public function markAsPublished(?DateTimeImmutable $now = null): void
     {
         $this->status = self::STATUS_PUBLISHED;
         $this->publishedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $this->nextAttemptAt = $this->publishedAt;
+        $this->lastError = null;
     }
 
-    public function markAsFailed(): void
+    public function scheduleRetry(string $error, DateTimeImmutable $nextAttemptAt): void
+    {
+        $this->status = self::STATUS_PENDING;
+        ++$this->attemptCount;
+        $this->nextAttemptAt = $nextAttemptAt;
+        $this->publishedAt = null;
+        $this->lastError = $error;
+    }
+
+    public function markAsFailed(string $error): void
     {
         $this->status = self::STATUS_FAILED;
+        ++$this->attemptCount;
+        $this->nextAttemptAt = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $this->publishedAt = null;
+        $this->lastError = $error;
     }
 }

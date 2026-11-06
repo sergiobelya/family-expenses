@@ -5,8 +5,7 @@
 
     <entity name="App\Core\Infrastructure\Persistence\Doctrine\Entity\OutboxMessage" table="outbox_messages">
         <indexes>
-            <index name="idx_outbox_messages_status" columns="status"/>
-            <index name="idx_outbox_messages_created_at" columns="created_at"/>
+            <index name="idx_outbox_messages_ready" columns="status, next_attempt_at, created_at"/>
         </indexes>
 
         <id name="id" type="uuid"/>
@@ -15,6 +14,9 @@
         <field name="status" column="status" type="string" length="20"/>
         <field name="createdAt" column="created_at" type="datetime_immutable"/>
         <field name="publishedAt" column="published_at" type="datetime_immutable" nullable="true"/>
+        <field name="attemptCount" column="attempt_count" type="integer"/>
+        <field name="nextAttemptAt" column="next_attempt_at" type="datetime_immutable"/>
+        <field name="lastError" column="last_error" type="text" nullable="true"/>
     </entity>
 
 </doctrine-mapping>

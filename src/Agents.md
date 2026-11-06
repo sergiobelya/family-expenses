@@ -37,7 +37,7 @@ Code is organized by Bounded Contexts in `src/`:
 ## 4. Domain Events, Outbox & AuditLog
 - Aggregates record domain events via `$this->recordEvent(DomainEventInterface $event)`.
 - Events are released using a generator via `$aggregate->releaseEvents()` during Doctrine unit of work flush (`DomainEventsFlushListener`).
-- Every domain event is automatically serialized and saved to `OutboxMessage` in the same database transaction (Transactional Outbox).
+- Auditable domain events are recorded in `AuditLog` in the same database transaction. Only events implementing `AsyncDomainEventInterface` are serialized into `OutboxMessage` in that transaction.
 - Events implementing `AuditableEventInterface` are automatically recorded in `AuditLog` in the same database transaction.
 - **Do not manually instantiate or persist `OutboxMessage` or `AuditLog` in Command Handlers.**
 

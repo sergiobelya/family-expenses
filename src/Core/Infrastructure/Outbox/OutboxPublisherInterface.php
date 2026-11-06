@@ -12,6 +12,11 @@ interface OutboxPublisherInterface
     public function publish(OutboxMessage $message): void;
 
     /**
+     * Makes one publishing attempt for a failed message.
+     */
+    public function retryFailed(OutboxMessage $message): bool;
+
+    /**
      * Publishes a batch of pending outbox messages.
      *
      * @return int Number of successfully published messages.
