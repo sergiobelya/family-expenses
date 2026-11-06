@@ -11,6 +11,7 @@ use App\Identity\Application\Command\ChangeUserLanguageHandler;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
+use App\Presentation\Telegram\Keyboard\ExchangeRateProviderOptions;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\TimezoneSelector;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
@@ -300,13 +301,14 @@ class SettingsFlowHandler implements FlowHandlerInterface
 
         // 8. Family Settings Edit: Provider
         if ($update->callbackData === 'settings:family:edit:provider') {
-            $kb = (new InlineKeyboardBuilder())
-                ->button('NBP (Poland)', 'settings:family:set:provider:nbp')
-                ->button('NBU (Ukraine)', 'settings:family:set:provider:nbu')
-                ->row()
-                ->button('ECB (Europe)', 'settings:family:set:provider:ecb')
-                ->button('Manual', 'settings:family:set:provider:manual')
-                ->row()
+            $builder = new InlineKeyboardBuilder();
+            foreach (array_chunk(ExchangeRateProviderOptions::ALL, 2, true) as $providers) {
+                foreach ($providers as $provider => $label) {
+                    $builder->button($label, 'settings:family:set:provider:' . $provider);
+                }
+                $builder->row();
+            }
+            $kb = $builder
                 ->button($this->translator->trans('common.back'), 'settings:family:view')
                 ->toArray();
 
@@ -320,6 +322,14 @@ class SettingsFlowHandler implements FlowHandlerInterface
 
         if (str_starts_with($update->callbackData ?? '', 'settings:family:set:provider:') && $context->hasActiveFamily()) {
             $prov = substr($update->callbackData, strlen('settings:family:set:provider:'));
+            if (!ExchangeRateProviderOptions::contains($prov)) {
+                $this->telegramClient->sendMessage(
+                    chatId: $context->chatId,
+                    text: $this->translator->trans('settings.unsupported_provider')
+                );
+                return;
+            }
+
             ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
                 familyId: $context->activeFamily->getId(),
                 userId: $context->user->getId(),

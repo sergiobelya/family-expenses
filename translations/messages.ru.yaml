@@ -44,6 +44,7 @@ family:
         step_confirm: "<b>Создание семьи · Подтверждение</b>\n\nНазвание: <b>%{name}</b>\nЧасовой пояс: <code>%{timezone}</code>\nВалюта расходов: <code>%{default_currency}</code>\nВалюта отчетности: <code>%{reporting_currency}</code>\nПровайдер курсов: <code>%{provider}</code>\n\nСоздать эту семью?"
         created_success: "🎉 Семья <b>%{name}</b> успешно создана!"
         cancelled: "Создание семьи отменено."
+        unsupported_provider: "Этот провайдер курсов не поддерживается. Выберите одного из доступных провайдеров."
     selector:
         title: "👪 <b>Выберите активную семью:</b>"
         current_badge: " (активная)"
@@ -94,4 +95,5 @@ settings:
     prompt_select_timezone: "Выберите часовой пояс:"
     prompt_select_currency: "Выберите валюту:"
     prompt_select_provider: "Выберите провайдера курсов:"
+    unsupported_provider: "Этот провайдер курсов не поддерживается. Выберите одного из доступных провайдеров."
     saved: "Настройки успешно сохранены."

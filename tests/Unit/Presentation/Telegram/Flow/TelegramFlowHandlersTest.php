@@ -325,6 +325,126 @@ class TelegramFlowHandlersTest extends TestCase
         $handler->handle($update, $context);
     }
 
+    public function testSettingsProviderSelectorDoesNotOfferManualAsAProvider(): void
+    {
+        $messages = [];
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $telegramClient->expects($this->once())
+            ->method('sendMessage')
+            ->willReturnCallback(function ($chatId, $text, $replyMarkup) use (&$messages): array {
+                $messages[] = ['text' => $text, 'reply_markup' => $replyMarkup];
+                return [];
+            });
+
+        $translator = $this->createTranslator();
+        $handler = new SettingsFlowHandler(
+            $telegramClient,
+            $this->createMock(ChangeUserLanguageHandler::class),
+            $this->createMock(UpdateFamilySettingsHandler::class),
+            $this->createMock(UserInteractionStateRepository::class),
+            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
+            $translator,
+            $translator
+        );
+
+        $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
+        $context = new TelegramUserContext(new User(123456), $family, 'en', 123456, 111);
+        $update = TelegramUpdate::fromArray([
+            'update_id' => 1,
+            'callback_query' => [
+                'id' => 'cb1',
+                'data' => 'settings:family:edit:provider',
+                'message' => ['chat' => ['id' => 111]],
+            ],
+        ]);
+
+        $handler->handle($update, $context);
+
+        $buttons = $messages[0]['reply_markup']['inline_keyboard'];
+        $callbacks = array_map(
+            static fn(array $button): string => $button['callback_data'],
+            array_merge(...$buttons)
+        );
+
+        self::assertSame([
+            'settings:family:set:provider:nbp',
+            'settings:family:set:provider:nbu',
+            'settings:family:set:provider:ecb',
+            'settings:family:view',
+        ], $callbacks);
+    }
+
+    public function testSettingsFlowRejectsManualAsAnExchangeRateProvider(): void
+    {
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $telegramClient->expects($this->once())
+            ->method('sendMessage')
+            ->with(111, 'settings.unsupported_provider', $this->anything());
+
+        $updateFamilySettingsHandler = $this->createMock(UpdateFamilySettingsHandler::class);
+        $updateFamilySettingsHandler->expects($this->never())->method('__invoke');
+
+        $translator = $this->createTranslator();
+        $handler = new SettingsFlowHandler(
+            $telegramClient,
+            $this->createMock(ChangeUserLanguageHandler::class),
+            $updateFamilySettingsHandler,
+            $this->createMock(UserInteractionStateRepository::class),
+            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
+            $translator,
+            $translator
+        );
+
+        $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
+        $context = new TelegramUserContext(new User(123456), $family, 'en', 123456, 111);
+        $update = TelegramUpdate::fromArray([
+            'update_id' => 1,
+            'callback_query' => [
+                'id' => 'cb1',
+                'data' => 'settings:family:set:provider:manual',
+                'message' => ['chat' => ['id' => 111]],
+            ],
+        ]);
+
+        $handler->handle($update, $context);
+    }
+
+    public function testFamilyCreationRejectsManualAsAnExchangeRateProvider(): void
+    {
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $telegramClient->expects($this->once())
+            ->method('sendMessage')
+            ->with(111, 'family.create.unsupported_provider', $this->anything());
+
+        $stateRepo = $this->createMock(UserInteractionStateRepository::class);
+        $stateRepo->method('get')->willReturn(
+            new UserInteractionState(123456, 'family_create', 'provider', [])
+        );
+        $stateRepo->expects($this->never())->method('set');
+
+        $translator = $this->createTranslator();
+        $handler = new FamilyCreationWizardHandler(
+            $telegramClient,
+            $stateRepo,
+            $this->createMock(CreateFamilyHandler::class),
+            new MainMenuKeyboard($translator),
+            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
+            $translator
+        );
+
+        $context = new TelegramUserContext(new User(123456), null, 'en', 123456, 111);
+        $update = TelegramUpdate::fromArray([
+            'update_id' => 1,
+            'callback_query' => [
+                'id' => 'cb1',
+                'data' => 'family:create:provider:manual',
+                'message' => ['chat' => ['id' => 111]],
+            ],
+        ]);
+
+        $handler->handle($update, $context);
+    }
+
     public function testLanguageSelectorUsesTheFourSupportedLanguagesWithoutSearch(): void
     {
         $messages = [];

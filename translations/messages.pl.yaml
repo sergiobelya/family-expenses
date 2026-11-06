@@ -44,6 +44,7 @@ family:
         step_confirm: "<b>Utwórz rodzinę · Potwierdzenie</b>\n\nNazwa: <b>%{name}</b>\nStrefa czasowa: <code>%{timezone}</code>\nWaluta wydatków: <code>%{default_currency}</code>\nWaluta raportowania: <code>%{reporting_currency}</code>\nDostawca kursów: <code>%{provider}</code>\n\nUtworzyć tę rodzinę?"
         created_success: "🎉 Rodzina <b>%{name}</b> została pomyślnie utworzona!"
         cancelled: "Tworzenie rodziny zostało anulowane."
+        unsupported_provider: "Ten dostawca kursów walut nie jest obsługiwany. Wybierz jednego z dostępnych dostawców."
     selector:
         title: "👪 <b>Wybierz aktywną rodzinę:</b>"
         current_badge: " (aktywna)"
@@ -94,4 +95,5 @@ settings:
     prompt_select_timezone: "Wybierz nową strefę czasową:"
     prompt_select_currency: "Wybierz walutę:"
     prompt_select_provider: "Wybierz dostawcę kursów:"
+    unsupported_provider: "Ten dostawca kursów walut nie jest obsługiwany. Wybierz jednego z dostępnych dostawców."
     saved: "Ustawienia zostały zapisane."

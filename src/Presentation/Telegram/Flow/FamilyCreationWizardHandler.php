@@ -9,6 +9,7 @@ use App\Family\Application\Command\CreateFamilyHandler;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
+use App\Presentation\Telegram\Keyboard\ExchangeRateProviderOptions;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\TimezoneSelector;
@@ -212,13 +213,14 @@ class FamilyCreationWizardHandler implements FlowHandlerInterface
             $data['reporting_currency'] = $curr;
             $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'provider', $data));
 
-            $kb = (new InlineKeyboardBuilder())
-                ->button('NBP (Poland)', 'family:create:provider:nbp')
-                ->button('NBU (Ukraine)', 'family:create:provider:nbu')
-                ->row()
-                ->button('ECB (Europe)', 'family:create:provider:ecb')
-                ->button('Manual', 'family:create:provider:manual')
-                ->row()
+            $builder = new InlineKeyboardBuilder();
+            foreach (array_chunk(ExchangeRateProviderOptions::ALL, 2, true) as $providers) {
+                foreach ($providers as $provider => $label) {
+                    $builder->button($label, 'family:create:provider:' . $provider);
+                }
+                $builder->row();
+            }
+            $kb = $builder
                 ->button($this->translator->trans('common.cancel'), 'family:create:cancel')
                 ->toArray();
 
@@ -232,6 +234,14 @@ class FamilyCreationWizardHandler implements FlowHandlerInterface
 
         if ($step === 'provider' && str_starts_with($update->callbackData ?? '', 'family:create:provider:')) {
             $provider = substr($update->callbackData, strlen('family:create:provider:'));
+            if (!ExchangeRateProviderOptions::contains($provider)) {
+                $this->telegramClient->sendMessage(
+                    chatId: $context->chatId,
+                    text: $this->translator->trans('family.create.unsupported_provider')
+                );
+                return;
+            }
+
             $data['provider'] = $provider;
             $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'confirm', $data));
 

@@ -44,6 +44,7 @@ family:
         step_confirm: "<b>Create family · Confirmation</b>\n\nFamily name: <b>%{name}</b>\nTime zone: <code>%{timezone}</code>\nDefault currency: <code>%{default_currency}</code>\nReporting currency: <code>%{reporting_currency}</code>\nProvider: <code>%{provider}</code>\n\nCreate this family?"
         created_success: "🎉 Family <b>%{name}</b> successfully created!"
         cancelled: "Family creation cancelled."
+        unsupported_provider: "That exchange-rate provider is not supported. Please choose one of the listed providers."
     selector:
         title: "👪 <b>Select active family:</b>"
         current_badge: " (active)"
@@ -94,4 +95,5 @@ settings:
     prompt_select_timezone: "Select new time zone:"
     prompt_select_currency: "Select currency:"
     prompt_select_provider: "Select default rate provider:"
+    unsupported_provider: "That exchange-rate provider is not supported. Please choose one of the listed providers."
     saved: "Settings updated successfully."
