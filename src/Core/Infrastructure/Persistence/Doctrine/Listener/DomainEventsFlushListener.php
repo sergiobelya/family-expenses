@@ -3,6 +3,7 @@
 namespace App\Core\Infrastructure\Persistence\Doctrine\Listener;
 
 use App\Core\Domain\Aggregate\ContainsDomainEventsInterface;
+use App\Core\Domain\Event\AsyncDomainEventInterface;
 use App\Core\Domain\Event\AuditableEventInterface;
 use App\Core\Domain\Event\DomainEventInterface;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\AuditLog;
@@ -59,14 +60,16 @@ class DomainEventsFlushListener
                     $uow->computeChangeSet($em->getClassMetadata(AuditLog::class), $auditLog);
                 }
 
-                $outboxMessage = new OutboxMessage(
-                    eventType: $event->getEventName(),
-                    payload: $event->toPayload(),
-                    status: OutboxMessage::STATUS_PENDING,
-                    now: $event->getOccurredAt()
-                );
-                $em->persist($outboxMessage);
-                $uow->computeChangeSet($em->getClassMetadata(OutboxMessage::class), $outboxMessage);
+                if ($event instanceof AsyncDomainEventInterface) {
+                    $outboxMessage = new OutboxMessage(
+                        eventType: $event->getEventName(),
+                        payload: $event->toPayload(),
+                        status: OutboxMessage::STATUS_PENDING,
+                        now: $event->getOccurredAt()
+                    );
+                    $em->persist($outboxMessage);
+                    $uow->computeChangeSet($em->getClassMetadata(OutboxMessage::class), $outboxMessage);
+                }
 
                 $this->eventsToDispatch[] = $event;
             }

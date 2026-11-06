@@ -21,11 +21,6 @@ final readonly class MemberJoined implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getEventName(): string
-    {
-        return 'family.member_joined';
-    }
-
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
@@ -71,13 +66,4 @@ final readonly class MemberJoined implements AuditableEventInterface
         ];
     }
 
-    public function toPayload(): array
-    {
-        return [
-            'family_id' => (string) $this->familyId,
-            'user_id' => (string) $this->userId,
-            'invitation_id' => $this->invitationId ? (string) $this->invitationId : null,
-            'joined_at' => $this->occurredAt->format(\DateTimeInterface::ATOM),
-        ];
-    }
 }

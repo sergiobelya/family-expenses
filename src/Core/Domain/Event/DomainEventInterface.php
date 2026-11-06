@@ -6,12 +6,5 @@ use DateTimeImmutable;
 
 interface DomainEventInterface
 {
-    public function getEventName(): string;
-
     public function getOccurredAt(): DateTimeImmutable;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toPayload(): array;
 }

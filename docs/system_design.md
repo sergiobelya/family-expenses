@@ -42,7 +42,7 @@ Own families, family settings, memberships, invitations, and invitation uses. Fa
 
 This context enforces the family and invitation rules in Business Requirements §4.
 
-Keep auditing as a cross-cutting application capability, not part of any aggregate. Deliver audit snapshots through the outbox described in §6 so the audit store can be moved independently. Never include a plaintext invitation token in logs or audit messages.
+Keep auditing as a cross-cutting application capability, not part of any aggregate. Write audit snapshots in the same transaction as the business mutation. Use the outbox only for domain events that have an asynchronous consumer; keep those integration payloads limited to the consumer's needs. Never include a plaintext invitation token in logs or audit messages.
 
 Do not define expense, catalog, reporting, or recurring-expense contexts in this Phase 1 design. Define them before their implementation phases.
 
@@ -55,7 +55,7 @@ Use the logical entities in [NFR §2](nfr_requirements.md#2-suggested-data-model
 - Identity and Preferences owns `User`.
 - Family Management owns `Family`, `FamilyMember`, `Invitation`, and `InvitationUse`.
 - Store active-family selection with durable user preferences in PostgreSQL.
-- The audit consumer writes the `AuditLog` records required by NFR §§1–2; audit messages reach it through the outbox.
+- `AuditLog` records the changes required by NFR §§1–2 transactionally; it does not depend on an asynchronous consumer.
 - Infrastructure uses `TelegramUpdateInbox`, `OutboxMessage`, and `CommandExecution` records for reliable update and queued-command processing.
 
 Active-family selection is a navigation preference, not authorization. Resolve it against current membership on every family-scoped operation. Store only the update data needed for processing and replay; apply a retention policy to processed inbox records.
@@ -94,7 +94,7 @@ Process updates for one private chat in order so a delayed text reply cannot be 
 
 Use RabbitMQ for work that is asynchronous or background-driven; do not enqueue every short command by default. Keep it behind a queue port so transport details do not enter application or domain code. Queue messages use versioned, language-independent JSON contracts, not serialized framework or domain objects.
 
-Use one transactional outbox for queued work and audit messages: commit each business mutation and its outgoing record together, then publish it to the queue. Workers must tolerate duplicate delivery and use a stable command or audit ID for idempotency. Store the final command outcome in `CommandExecution` before attempting to notify the user. Keep only the minimum request and result data needed to process the command and show its outcome.
+Use the transactional outbox for domain events with asynchronous consumers: commit each business mutation and its outgoing event together, then publish it to the queue. Do not write an outbox record solely to create an audit entry; audit snapshots are written transactionally as described in §3. Consumers must tolerate duplicate delivery and use a stable message ID for idempotency. Store the final command outcome in `CommandExecution` before attempting to notify the user. Keep only the minimum request and result data needed to process the command and show its outcome.
 
 For a queued command, acknowledge a callback promptly and tell the user that processing started. After commit, send the result in the private chat or update the bot's progress message. If Telegram cannot deliver the result, retain it and show it on the user's next interaction. Never report success before commit.
 
@@ -102,7 +102,7 @@ The database remains authoritative if RabbitMQ is unavailable. Retry publishing 
 
 ## 7. Transactions and audit
 
-For each mutation below, write the required audit message to the outbox in the same transaction:
+For each mutation below, write the required audit record in the same transaction:
 
 - Create a family, its creator membership, and the user's active-family selection atomically.
 - Update a family setting.

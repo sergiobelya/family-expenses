@@ -3,6 +3,7 @@
 namespace App\Tests\Unit\Infrastructure\Core;
 
 use App\Core\Domain\Aggregate\AggregateRoot;
+use App\Core\Domain\Event\AsyncDomainEventInterface;
 use App\Core\Domain\Event\AuditableEventInterface;
 use App\Core\Domain\Event\DomainEventInterface;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\AuditLog;
@@ -26,7 +27,7 @@ class DomainEventsFlushListenerTest extends TestCase
         $familyId = Uuid::v7();
         $actorId = Uuid::v7();
 
-        $auditableEvent = new class($eventId, $familyId, $actorId) implements AuditableEventInterface {
+        $auditableEvent = new class($eventId, $familyId, $actorId) implements AuditableEventInterface, AsyncDomainEventInterface {
             public function __construct(
                 private Uuid $id,
                 private Uuid $familyId,
@@ -79,5 +80,47 @@ class DomainEventsFlushListenerTest extends TestCase
         // Test postFlush clears buffer
         $postFlushArgs = new PostFlushEventArgs($em);
         $listener->postFlush($postFlushArgs);
+    }
+
+    public function testListenerWritesAuditLogWithoutOutboxForSynchronousEvents(): void
+    {
+        $listener = new DomainEventsFlushListener();
+        $familyId = Uuid::v7();
+
+        $event = new class($familyId) implements AuditableEventInterface {
+            public function __construct(private Uuid $familyId) {}
+            public function getOccurredAt(): DateTimeImmutable { return new DateTimeImmutable(); }
+            public function getFamilyId(): ?Uuid { return $this->familyId; }
+            public function getActorUserId(): ?Uuid { return null; }
+            public function getEntityType(): string { return 'family'; }
+            public function getEntityId(): string { return (string) $this->familyId; }
+            public function getAction(): string { return 'family.settings_updated'; }
+            public function getBeforeData(): ?array { return ['name' => 'Old']; }
+            public function getAfterData(): ?array { return ['name' => 'New']; }
+        };
+
+        $entity = new class($event) extends AggregateRoot {
+            public function __construct(DomainEventInterface $event) {
+                $this->recordEvent($event);
+            }
+        };
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $uow = $this->createMock(UnitOfWork::class);
+        $em->method('getUnitOfWork')->willReturn($uow);
+        $uow->method('getScheduledEntityInsertions')->willReturn([$entity]);
+        $uow->method('getScheduledEntityUpdates')->willReturn([]);
+        $uow->method('getScheduledEntityDeletions')->willReturn([]);
+
+        $persistedEntities = [];
+        $em->method('persist')->willReturnCallback(function ($persisted) use (&$persistedEntities): void {
+            $persistedEntities[] = $persisted;
+        });
+        $uow->expects($this->once())->method('computeChangeSet');
+
+        $listener->onFlush(new OnFlushEventArgs($em));
+
+        self::assertCount(1, $persistedEntities);
+        self::assertInstanceOf(AuditLog::class, $persistedEntities[0]);
     }
 }

@@ -25,11 +25,6 @@ final readonly class FamilySettingsUpdated implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getEventName(): string
-    {
-        return 'family.settings_updated';
-    }
-
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
@@ -70,13 +65,4 @@ final readonly class FamilySettingsUpdated implements AuditableEventInterface
         return $this->afterData;
     }
 
-    public function toPayload(): array
-    {
-        return [
-            'family_id' => (string) $this->familyId,
-            'actor_user_id' => $this->actorUserId ? (string) $this->actorUserId : null,
-            'before' => $this->beforeData,
-            'after' => $this->afterData,
-        ];
-    }
 }

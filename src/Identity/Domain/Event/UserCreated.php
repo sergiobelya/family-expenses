@@ -20,11 +20,6 @@ final readonly class UserCreated implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getEventName(): string
-    {
-        return 'user.created';
-    }
-
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
@@ -64,15 +59,6 @@ final readonly class UserCreated implements AuditableEventInterface
     {
         return [
             'id' => (string) $this->userId,
-            'telegram_user_id' => $this->telegramUserId,
-            'language' => $this->language,
-        ];
-    }
-
-    public function toPayload(): array
-    {
-        return [
-            'user_id' => (string) $this->userId,
             'telegram_user_id' => $this->telegramUserId,
             'language' => $this->language,
         ];

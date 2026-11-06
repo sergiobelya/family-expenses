@@ -20,11 +20,6 @@ final readonly class InvitationRevoked implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getEventName(): string
-    {
-        return 'invitation.revoked';
-    }
-
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
@@ -65,13 +60,4 @@ final readonly class InvitationRevoked implements AuditableEventInterface
         return ['revoked_at' => $this->occurredAt->format(\DateTimeInterface::ATOM)];
     }
 
-    public function toPayload(): array
-    {
-        return [
-            'invitation_id' => (string) $this->invitationId,
-            'family_id' => (string) $this->familyId,
-            'revoked_by_user_id' => (string) $this->revokedByUserId,
-            'revoked_at' => $this->occurredAt->format(\DateTimeInterface::ATOM),
-        ];
-    }
 }

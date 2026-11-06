@@ -20,11 +20,6 @@ final readonly class UserActiveFamilySwitched implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getEventName(): string
-    {
-        return 'user.active_family_switched';
-    }
-
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
@@ -65,12 +60,4 @@ final readonly class UserActiveFamilySwitched implements AuditableEventInterface
         return ['active_family_id' => $this->newFamilyId ? (string) $this->newFamilyId : null];
     }
 
-    public function toPayload(): array
-    {
-        return [
-            'user_id' => (string) $this->userId,
-            'old_family_id' => $this->oldFamilyId ? (string) $this->oldFamilyId : null,
-            'new_family_id' => $this->newFamilyId ? (string) $this->newFamilyId : null,
-        ];
-    }
 }

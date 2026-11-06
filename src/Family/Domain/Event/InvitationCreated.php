@@ -22,11 +22,6 @@ final readonly class InvitationCreated implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getEventName(): string
-    {
-        return 'invitation.created';
-    }
-
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
@@ -72,14 +67,4 @@ final readonly class InvitationCreated implements AuditableEventInterface
         ];
     }
 
-    public function toPayload(): array
-    {
-        return [
-            'invitation_id' => (string) $this->invitationId,
-            'family_id' => (string) $this->familyId,
-            'created_by_user_id' => (string) $this->createdByUserId,
-            'expires_at' => $this->expiresAt->format(\DateTimeInterface::ATOM),
-            'max_uses' => $this->maxUses,
-        ];
-    }
 }

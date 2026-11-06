@@ -27,11 +27,6 @@ final readonly class FamilyCreated implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getEventName(): string
-    {
-        return 'family.created';
-    }
-
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
@@ -80,12 +75,4 @@ final readonly class FamilyCreated implements AuditableEventInterface
         ];
     }
 
-    public function toPayload(): array
-    {
-        return [
-            'family_id' => (string) $this->familyId,
-            'creator_user_id' => $this->creatorUserId ? (string) $this->creatorUserId : null,
-            'data' => $this->getAfterData(),
-        ];
-    }
 }

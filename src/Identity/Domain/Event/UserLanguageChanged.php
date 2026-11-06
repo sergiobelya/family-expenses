@@ -20,11 +20,6 @@ final readonly class UserLanguageChanged implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getEventName(): string
-    {
-        return 'user.language_changed';
-    }
-
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
@@ -65,12 +60,4 @@ final readonly class UserLanguageChanged implements AuditableEventInterface
         return ['language' => $this->newLanguage];
     }
 
-    public function toPayload(): array
-    {
-        return [
-            'user_id' => (string) $this->userId,
-            'old_language' => $this->oldLanguage,
-            'new_language' => $this->newLanguage,
-        ];
-    }
 }
