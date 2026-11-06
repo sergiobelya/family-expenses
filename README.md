@@ -34,7 +34,7 @@ Requirements: Docker Desktop (or Docker Engine) with the Compose plugin.
 6. Start the bot's long-polling service in the background:
 
    ```bash
-   docker compose --profile bot up -d php-telegram-poll
+   docker compose --profile bot up -d
    ```
 
    Follow its logs:
@@ -81,8 +81,8 @@ docker compose --profile bot logs -f php-telegram-poll
 Stop and start it normally to disable the trigger:
 
 ```bash
-docker compose --profile bot stop php-telegram-poll
-docker compose --profile bot up -d php-telegram-poll
+docker compose --profile bot stop
+docker compose --profile bot up -d
 ```
 
 Without the trigger, Xdebug stays inactive and does not pause normal development commands.

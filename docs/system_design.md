@@ -1,12 +1,12 @@
 # Family Expenses MVP — System Design
 
-**Status:** Phase 1 design
+**Status:** Phase 1 and Phase 2 design
 
-**Scope:** Phase 1 domain design plus cross-cutting storage and messaging choices required by existing flows. Expense, catalog, reporting, and recurring-expense domain designs remain deferred.
+**Scope:** Phase 1 and Phase 2 design. Phase 2 covers the boundaries specified in [Business Requirements §14](business_requirements.md#14-implementation-phases): stores, aliases, categories, expense create/edit/delete, category allocations, expense cards, and history. Currency conversion and reports are Phase 3; recurring expenses are Phase 4. All remain in MVP scope.
 
-**Requirements:** [Business Requirements](business_requirements.md) §§4–5, 6.2.1, 6.3, 7.1, 12; [NFRs](nfr_requirements.md) §§1–3.
+**Requirements:** [Business Requirements](business_requirements.md) §§3–6.7, 10, 12, 14; [NFRs](nfr_requirements.md) §§1–3.
 
-**UI:** [Family Management](specs/family_management.md), [Settings](specs/settings.md), and [Main Menu](specs/main_menu.md).
+**UI:** [Add Expense](specs/add_expense.md), [Expense History](specs/expense_history.md), [Stores](specs/stores.md), [Categories](specs/categories.md), [Family Management](specs/family_management.md), [Settings](specs/settings.md), and [Main Menu](specs/main_menu.md). Currency/conversion controls, report features, and recurring flows are implemented in their later phases.
 
 ## 1. Architecture
 
@@ -16,7 +16,7 @@ Build a modular monolith with layered architecture, following [NFR §3](nfr_requ
 flowchart LR
     TG[Telegram Bot API] --> TA[Telegram adapter]
     TA --> APP[Application: Commands and Queries]
-    APP --> DOM[Domain: Identity and Family Management]
+    APP --> DOM[Domain: Identity, Family, Expense, and Catalog]
     APP --> PORTS[Ports: persistence, temporary state, queue]
     APP --> MSG[Port: Telegram messaging]
     INFRA[PostgreSQL, Redis, and queue adapters] -. implements .-> PORTS
@@ -30,7 +30,7 @@ flowchart LR
 
 Ports are defined by the inner layer that needs them; infrastructure implements them. Keep Telegram types, database models, and queue messages out of domain objects.
 
-## 2. Phase 1 bounded contexts
+## 2. Bounded contexts
 
 ### Identity and Preferences
 
@@ -44,7 +44,13 @@ This context enforces the family and invitation rules in Business Requirements �
 
 Keep auditing as a cross-cutting application capability, not part of any aggregate. Write audit snapshots in the same transaction as the business mutation. Use the outbox only for domain events that have an asynchronous consumer; keep those integration payloads limited to the consumer's needs. Never include a plaintext invitation token in logs or audit messages.
 
-Do not define expense, catalog, reporting, or recurring-expense contexts in this Phase 1 design. Define them before their implementation phases.
+### Phase 2: Expenses and Catalog
+
+Expense Management owns expenses and category allocations. An `Expense` is the aggregate root; its allocations are children because their amounts must reconcile exactly to the expense total.
+
+The family-scoped Catalog owns stores, store aliases, and categories. They are separate aggregates from expenses. Expense records refer to them by IDs, not ORM associations. Catalog search is a query capability; it must not become an alternate source of truth for names or family ownership.
+
+Paginated history, expense details, and the Phase 2 search/filter behavior are Expense Management queries. Exchange-rate providers, saved conversions, amount search across currencies, reports, and recurring-expense scheduling are designed in later phases.
 
 ## 3. Domain and persistence model
 
@@ -54,19 +60,37 @@ Use the logical entities in [NFR §2](nfr_requirements.md#2-suggested-data-model
 
 - Identity and Preferences owns `User`.
 - Family Management owns `Family`, `FamilyMember`, `Invitation`, and `InvitationUse`.
+- Expense Management owns `Expense` and `ExpenseCategory`.
+- The family-scoped Catalog owns `Store`, `StoreAlias`, and `Category`.
 - Store active-family selection with durable user preferences in PostgreSQL.
 - `AuditLog` records the changes required by NFR §§1–2 transactionally; it does not depend on an asynchronous consumer.
-- Infrastructure uses `TelegramUpdateInbox`, `OutboxMessage`, and `CommandExecution` records for reliable update and queued-command processing.
+- Infrastructure uses `TelegramUpdateInbox`, `OutboxMessage`, and `CommandExecution` records for reliable update and queued-command processing. Expense Management uses a durable `ExpenseSaveAttempt` for save idempotency and recovery.
 
 Active-family selection is a navigation preference, not authorization. Resolve it against current membership on every family-scoped operation. Store only the update data needed for processing and replay; apply a retention policy to processed inbox records.
+
+### Expense persistence and consistency
+
+- Keep the original amount, currency, purchase date, creator, family, and store on `Expense`. Persist category allocations separately, with the expense ID, category ID, and allocation amount. Store money as exact decimals, enforce currency precision, and never use binary floating point.
+- Keep the database authoritative. Enforce family ownership of expense, store, category, and default-category references using composite foreign keys where practical; also validate the active member and referenced records in the application transaction. Index family-scoped history by purchase date and exclude soft-deleted expenses from normal queries.
+- Save an expense, all allocations, its audit snapshot, and the completion result for its save attempt atomically. Validate allocation reconciliation in the domain/application layer; reject incomplete or non-positive rows before persistence.
+- Persist an `ExpenseSaveAttempt` and immutable snapshot before the first save transaction, with a unique idempotency key. Use the key to return the same committed expense after retries or an ambiguous result. Do not expire unresolved attempts; an unresolved attempt is reconciled before the draft can be replaced.
+- Keep original expense amount and currency authoritative. Conversion entities, provider-rate caching, and reporting-currency behavior are Phase 3 design; do not make Phase 2 expense writes depend on an exchange-rate service.
+
+### Draft and save lifecycle
+
+Keep Active/Paused expense drafts in the durable temporary-state store keyed by `(user_id, family_id)`, with the 24-hour inactivity expiry defined in Business Requirements §6.2.1. Enforce at most one nonterminal draft per tuple and serialize changes with a lock or revision check. A family switch changes which draft is accessible; it does not move or rewrite a draft.
+
+Before saving, move the draft to `Saving` and persist its idempotency key and immutable snapshot in PostgreSQL. On commit, mark the save attempt complete and the draft saved. On an ambiguous outcome, retain `SaveUnknown` and reconcile by the same key; neither the attempt nor its snapshot may expire. See [Add Expense UI §8](specs/add_expense.md#8-draft-storage-and-lifecycle) for the user-visible lifecycle. Add conversion state to the draft only in Phase 3.
+
+### Catalog and search
+
+Keep family-scoped uniqueness in PostgreSQL using the canonical `dedupe_key` and unique constraints described in Business Requirements §6.3. Search matching may be broader than hard-key uniqueness, but fuzzy/transliterated results are suggestions only. Re-fetch selected candidates from the database, scoped to the current family. Keep the search engine behind a port; evaluate PostgreSQL `pg_trgm` against the required transliteration and edit-distance behavior before choosing an index or external service. Database constraints remain authoritative when search is unavailable.
 
 ### Temporary state
 
 Use Redis or a compatible managed key-value store as temporary storage, not as a cache. Its values are the source of truth for the workflows they hold until those workflows expire or complete. Keep this store separate from PostgreSQL business records, and configure it so application restarts do not erase unexpired state or evict it under memory pressure.
 
-Use it for short-lived Telegram conversation state and Active/Paused expense drafts. Expense draft keys are scoped to `(user_id, family_id)` and their TTL follows Business Requirements §6.2.1. The storage choice satisfies the draft restart requirement in [Add Expense UI §8.2](specs/add_expense.md#82-draft-guarantees).
-
-`Saving` and `SaveUnknown` cannot rely on an expiring draft key. Before attempting to save an expense, persist the idempotency key and immutable save snapshot in PostgreSQL as an `ExpenseSaveAttempt`. Keep an unresolved attempt there without a TTL until reconciliation; complete it atomically with the expense commit when the save succeeds. Define the full expense draft model in the expense phase.
+Use it for short-lived Telegram conversation state and Active/Paused expense drafts. Expense draft keys are scoped to `(user_id, family_id)` and their TTL follows Business Requirements §6.2.1. The storage choice satisfies the draft restart requirement in [Add Expense UI §8.2](specs/add_expense.md#82-draft-guarantees). `Saving` and `SaveUnknown` recovery is durable in PostgreSQL as described above.
 
 Treat `Family` as the aggregate for its settings. Treat each membership and invitation as separate aggregate roots; do not load all members or invitations into a Family aggregate. The aggregate defines the domain consistency boundary; a database transaction may also write technical outbox records without making them part of the aggregate. Use cross-aggregate transactions only where MVP behavior requires atomicity: family creation with its creator membership, and invitation use with membership creation. For invitation use, atomically check the limit and insert `InvitationUse`; lock or otherwise serialize concurrent use of that invitation.
 
@@ -76,9 +100,13 @@ Use database constraints for unique Telegram IDs, memberships, invitation token 
 
 Organize application use cases by bounded context. Each state-changing use case has a Command handler; reads have Query handlers. Keep validation and authorization in application/domain services, not Telegram handlers.
 
-Phase 1 commands include creating a family, changing family settings, creating/revoking invitations, and joining a family. Queries include listing the user's families, viewing members/invitations, and reading settings. The UI routes and fields remain defined in the linked UI specifications.
+Phase 1 commands include creating a family, changing family settings, creating/revoking invitations, and joining a family. Queries include listing the user's families, viewing members/invitations, and reading settings.
+
+Phase 2 commands include creating, editing, and soft-deleting expenses; creating and managing family stores/categories; and updating store aliases or default categories. Queries include family-scoped catalog selection/search and paginated history/detail reads. Keep field validation and authorization in application/domain services, not Telegram handlers. The UI routes and fields remain defined in the linked UI specifications.
 
 For every request, resolve the Telegram user, active family, and relevant entity, then revalidate membership and authorization. A queued command must repeat authorization checks when the worker executes it; captured family context alone is not authority.
+
+Expense writes are synchronous database transactions; do not send ordinary expense saves through RabbitMQ. Phase 2 expense creation and editing do not depend on external rate providers. Add bounded provider calls and conversion review in Phase 3, outside the write transaction, and revalidate the reporting-currency snapshot before committing any saved conversion. Use the outbox only if a real asynchronous consumer is introduced.
 
 ## 5. Telegram updates and interaction state
 
@@ -86,7 +114,7 @@ Support Telegram webhooks and long polling as interchangeable delivery adapters 
 
 The Telegram adapter maps messages and callback queries to application requests. It handles Telegram-specific formatting, keyboards, callback answers, and message delivery. Callback data carries relevant IDs when they fit; otherwise it carries a short opaque reference to server-side interaction state plus an action/revision. Resolve references and recheck authorization on the server; never treat callback data as authorization.
 
-Keep temporary Settings/Family Management form state in `UserInteractionState`, keyed to the user and private chat. Store the relevant family ID and revision when a flow is family-scoped. Reject stale actions and revalidate membership before applying them. The state is resumable across process restarts but is not a substitute for the business records it references.
+Keep temporary Telegram interaction state in `UserInteractionState`, keyed to the user and private chat. Store the relevant family ID and revision when a flow is family-scoped. Reject stale actions and revalidate membership before applying them. The state is resumable across process restarts but is not a substitute for the business records it references. Expense draft ownership, storage, and save recovery follow §3.
 
 Process updates for one private chat in order so a delayed text reply cannot be applied to a later prompt. Do not block webhook acknowledgment on a slow external service or background command.
 
@@ -108,12 +136,14 @@ For each mutation below, write the required audit record in the same transaction
 - Update a family setting.
 - Create or revoke an invitation.
 - Join under a transaction that validates invitation state and use limit and creates membership and `InvitationUse`.
+- Create, edit, or soft-delete an expense together with its allocations.
+- Create or change a store/category and their aliases or default-category references.
 
 If the user is already a member, do not consume an invitation use. Enforce the join checks in the transaction; if a concurrent join wins the unique membership constraint, treat the retry as already joined without recording another use.
 
-## 8. Deferred decisions
+## 8. Later system-design phases
 
+- **Phase 3 — Reporting and currencies:** provider adapters and rate cache, saved/manual expense conversions, reporting-currency changes, report aggregation, currency-aware search refinements, and CSV/XLSX export.
+- **Phase 4 — Recurring expenses and hardening:** schedule processing, occurrence lifecycle, grouped notification delivery, and complete audit/idempotency/security coverage.
 - Database and RabbitMQ deployment/operations details.
-- Keep store and category search behind a search port. Evaluate PostgreSQL with `pg_trgm` against Business Requirements §6.3; choose the engine and deployment after that evaluation.
-- Columnar/reporting read models and selective event sourcing; consider them in the relevant later system design only if justified.
-- System design for expenses, stores/categories, reporting, and recurring expenses.
+- Any columnar/reporting read model or selective event sourcing, only if later scale or requirements justify it.
