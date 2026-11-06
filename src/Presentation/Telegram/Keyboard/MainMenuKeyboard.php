@@ -48,4 +48,26 @@ class MainMenuKeyboard
             'is_persistent' => true,
         ];
     }
+
+    public function isMenuButton(string $text): bool
+    {
+        foreach ([
+            'main_menu.add_expense',
+            'main_menu.continue_expense',
+            'main_menu.reports',
+            'main_menu.history',
+            'main_menu.stores',
+            'main_menu.categories',
+            'main_menu.members',
+            'main_menu.recurring',
+            'main_menu.settings',
+            'main_menu.switch_family',
+        ] as $translationKey) {
+            if ($text === $this->translator->trans($translationKey)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

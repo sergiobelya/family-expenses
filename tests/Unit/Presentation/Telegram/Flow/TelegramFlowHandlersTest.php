@@ -294,8 +294,14 @@ class TelegramFlowHandlersTest extends TestCase
 
     public function testSettingsFlowHandler(): void
     {
+        $messages = [];
         $telegramClient = $this->createMock(TelegramApiClientInterface::class);
-        $telegramClient->expects($this->once())->method('sendMessage');
+        $telegramClient->expects($this->once())
+            ->method('sendMessage')
+            ->willReturnCallback(function ($chatId, $text, $replyMarkup) use (&$messages): array {
+                $messages[] = ['text' => $text, 'reply_markup' => $replyMarkup];
+                return [];
+            });
 
         $changeLangHandler = $this->createMock(ChangeUserLanguageHandler::class);
         $updateFamilySettingsHandler = $this->createMock(UpdateFamilySettingsHandler::class);
@@ -318,11 +324,14 @@ class TelegramFlowHandlersTest extends TestCase
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
-            'message' => ['message_id' => 10, 'chat' => ['id' => 111], 'text' => '/settings'],
+            'message' => ['message_id' => 10, 'chat' => ['id' => 111], 'text' => 'main_menu.settings'],
         ]);
 
         $this->assertTrue($handler->supports($update, $context));
         $handler->handle($update, $context);
+
+        self::assertStringContainsString('settings.title', $messages[0]['text']);
+        self::assertArrayHasKey('inline_keyboard', $messages[0]['reply_markup']);
     }
 
     public function testSettingsProviderSelectorDoesNotOfferManualAsAProvider(): void

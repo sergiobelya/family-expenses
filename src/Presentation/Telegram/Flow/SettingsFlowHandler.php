@@ -65,6 +65,14 @@ class SettingsFlowHandler implements FlowHandlerInterface
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
+        if (
+            $update->text === $this->translator->trans('main_menu.settings')
+            || $update->text === '/settings'
+        ) {
+            $this->renderMainSettings($context);
+            return;
+        }
+
         $state = $this->stateRepository->get($userId);
         if (
             $state !== null
