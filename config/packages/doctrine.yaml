@@ -23,6 +23,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Family/Infrastructure/Persistence/Doctrine/Mapping'
                 prefix: 'App\Family\Domain\Entity'
                 alias: Family
+            Catalog:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Catalog/Infrastructure/Persistence/Doctrine/Mapping'
+                prefix: 'App\Catalog\Domain\Entity'
+                alias: Catalog
             Core:
                 type: xml
                 is_bundle: false

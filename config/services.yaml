@@ -36,3 +36,6 @@ services:
     App\Presentation\Telegram\Client\TelegramApiClient:
         arguments:
             $botToken: '%app.telegram_bot_token%'
+
+    App\Catalog\Domain\Repository\CatalogRepositoryInterface:
+        alias: App\Catalog\Infrastructure\Persistence\Doctrine\Repository\DoctrineCatalogRepository

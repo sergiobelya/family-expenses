@@ -38,8 +38,6 @@ class MainMenuFlowHandler implements FlowHandlerInterface
                 $this->translator->trans('main_menu.continue_expense'),
                 $this->translator->trans('main_menu.reports'),
                 $this->translator->trans('main_menu.history'),
-                $this->translator->trans('main_menu.stores'),
-                $this->translator->trans('main_menu.categories'),
                 $this->translator->trans('main_menu.recurring'),
             ];
 
@@ -64,7 +62,7 @@ class MainMenuFlowHandler implements FlowHandlerInterface
         $hasMultipleFamilies = count($memberships) > 1;
 
         if ($update->text !== null && !in_array($update->text, ['/start', '/menu'], true)) {
-            // Placeholder for future phase buttons (Reports, History, Stores, Categories, Recurring, Add Expense)
+            // Expense, reports, history, and recurring flows are implemented in later phases.
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
                 text: $this->translator->trans('main_menu.feature_coming_soon'),

@@ -1,0 +1,21 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Catalog\Domain\Entity\Store" table="stores">
+        <indexes>
+            <index name="idx_stores_family_name" columns="family_id,name"/>
+        </indexes>
+        <unique-constraints>
+            <unique-constraint name="uniq_stores_family_dedupe" columns="family_id,dedupe_key"/>
+            <unique-constraint name="uniq_stores_family_id_id" columns="family_id,id"/>
+        </unique-constraints>
+        <id name="id" type="uuid"/>
+        <field name="familyId" column="family_id" type="uuid"/>
+        <field name="name" type="string" length="100"/>
+        <field name="dedupeKey" column="dedupe_key" type="string" length="500"/>
+        <field name="defaultCategoryId" column="default_category_id" type="uuid" nullable="true"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
+    </entity>
+</doctrine-mapping>
