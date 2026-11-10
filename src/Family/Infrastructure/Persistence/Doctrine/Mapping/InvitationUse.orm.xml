@@ -11,9 +11,9 @@
             <unique-constraint name="uniq_invitation_uses_invitation_user" columns="invitation_id,joined_user_id"/>
         </unique-constraints>
 
-        <id name="id" type="uuid"/>
-        <field name="invitationId" column="invitation_id" type="uuid"/>
-        <field name="joinedUserId" column="joined_user_id" type="uuid"/>
+        <id name="id" type="invitation_use_id"/>
+        <field name="invitationId" column="invitation_id" type="invitation_id"/>
+        <field name="joinedUserId" column="joined_user_id" type="user_id"/>
         <field name="usedAt" column="used_at" type="datetime_immutable"/>
     </entity>
 

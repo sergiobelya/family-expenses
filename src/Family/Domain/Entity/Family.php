@@ -6,17 +6,19 @@ use App\Family\Domain\Event\FamilyCreated;
 use App\Family\Domain\Event\FamilySettingsUpdated;
 use App\Core\Domain\Aggregate\AggregateRoot;
 use App\Core\Domain\ValueObject\CurrencyCode;
+use App\Core\Domain\ValueObject\CountryCode;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use App\Core\Domain\ValueObject\Timezone;
+use App\Family\Domain\ValueObject\FamilyName;
 use DateTimeImmutable;
 use DateTimeZone;
-use InvalidArgumentException;
-use Symfony\Component\Uid\Uuid;
 
 class Family extends AggregateRoot
 {
-    private Uuid $id;
-    private string $name;
-    private ?string $countryCode = null;
+    private FamilyId $id;
+    private FamilyName $name;
+    private ?CountryCode $countryCode = null;
     private string $timezone;
     private string $defaultExpenseCurrency;
     private string $reportingCurrency;
@@ -31,11 +33,11 @@ class Family extends AggregateRoot
         CurrencyCode $reportingCurrency,
         string $defaultExchangeRateProvider = 'nbp',
         ?string $countryCode = null,
-        ?Uuid $id = null,
+        ?FamilyId $id = null,
         ?DateTimeImmutable $now = null
     ) {
-        $this->id = $id ?? Uuid::v7();
-        $this->setNameInternal($name);
+        $this->id = $id ?? FamilyId::generate();
+        $this->name = FamilyName::fromString($name);
         $this->timezone = (string) $timezone;
         $this->defaultExpenseCurrency = (string) $defaultExpenseCurrency;
         $this->reportingCurrency = (string) $reportingCurrency;
@@ -52,8 +54,8 @@ class Family extends AggregateRoot
         CurrencyCode $reportingCurrency,
         string $defaultExchangeRateProvider = 'nbp',
         ?string $countryCode = null,
-        ?Uuid $creatorUserId = null,
-        ?Uuid $id = null,
+        ?UserId $creatorUserId = null,
+        ?FamilyId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
         $family = new self(
@@ -82,19 +84,19 @@ class Family extends AggregateRoot
         return $family;
     }
 
-    public function getId(): Uuid
+    public function getId(): FamilyId
     {
         return $this->id;
     }
 
     public function getName(): string
     {
-        return $this->name;
+        return $this->name->value;
     }
 
     public function getCountryCode(): ?string
     {
-        return $this->countryCode;
+        return $this->countryCode?->value;
     }
 
     public function getCountry(): ?string
@@ -139,19 +141,19 @@ class Family extends AggregateRoot
         CurrencyCode $reportingCurrency,
         string $defaultExchangeRateProvider = 'nbp',
         ?string $countryCode = null,
-        ?Uuid $actorUserId = null,
+        ?UserId $actorUserId = null,
         ?DateTimeImmutable $now = null
     ): void {
         $beforeData = [
-            'name' => $this->name,
+            'name' => $this->name->value,
             'timezone' => $this->timezone,
             'default_expense_currency' => $this->defaultExpenseCurrency,
             'reporting_currency' => $this->reportingCurrency,
             'default_exchange_rate_provider' => $this->defaultExchangeRateProvider,
-            'country_code' => $this->countryCode,
+            'country_code' => $this->countryCode?->value,
         ];
 
-        $this->setNameInternal($name);
+        $this->name = FamilyName::fromString($name);
         $this->timezone = (string) $timezone;
         $this->defaultExpenseCurrency = (string) $defaultExpenseCurrency;
         $this->reportingCurrency = (string) $reportingCurrency;
@@ -160,31 +162,21 @@ class Family extends AggregateRoot
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
         $afterData = [
-            'name' => $this->name,
+            'name' => $this->name->value,
             'timezone' => $this->timezone,
             'default_expense_currency' => $this->defaultExpenseCurrency,
             'reporting_currency' => $this->reportingCurrency,
             'default_exchange_rate_provider' => $this->defaultExchangeRateProvider,
-            'country_code' => $this->countryCode,
+            'country_code' => $this->countryCode?->value,
         ];
 
         $this->recordEvent(new FamilySettingsUpdated(
-            familyId: $this->id,
+            familyId: $this->getId(),
             beforeData: $beforeData,
             afterData: $afterData,
             actorUserId: $actorUserId,
             occurredAt: $this->updatedAt
         ));
-    }
-
-    private function setNameInternal(string $name): void
-    {
-        $normalized = trim($name);
-        if ($normalized === '' || mb_strlen($normalized) > 100) {
-            throw new InvalidArgumentException('Family name must not be empty and must be <= 100 characters.');
-        }
-
-        $this->name = $normalized;
     }
 
     private function setCountryCodeInternal(?string $countryCode): void
@@ -194,11 +186,6 @@ class Family extends AggregateRoot
             return;
         }
 
-        $normalized = strtoupper(trim($countryCode));
-        if (strlen($normalized) !== 2) {
-            throw new InvalidArgumentException('Country code must be a 2-letter ISO code or null.');
-        }
-
-        $this->countryCode = $normalized;
+        $this->countryCode = CountryCode::fromString($countryCode);
     }
 }

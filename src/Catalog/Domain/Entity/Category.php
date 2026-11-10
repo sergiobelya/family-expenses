@@ -2,61 +2,68 @@
 
 namespace App\Catalog\Domain\Entity;
 
-use App\Catalog\Domain\Event\CatalogChanged;
-use App\Catalog\Domain\ValueObject\CatalogName;
+use App\Catalog\Domain\Event\CategoryChanged;
+use App\Catalog\Domain\ValueObject\CategoryName;
 use App\Core\Domain\Aggregate\AggregateRoot;
+use App\Core\Domain\ValueObject\CategoryId;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
-use Symfony\Component\Uid\Uuid;
 
 class Category extends AggregateRoot
 {
-    private Uuid $id;
-    private string $name;
+    private CategoryId $id;
+    private CategoryName $name;
     private string $dedupeKey;
     private DateTimeImmutable $createdAt;
     private DateTimeImmutable $updatedAt;
 
     private function __construct(
-        private Uuid $familyId,
-        CatalogName $name,
-        ?Uuid $id,
+        private FamilyId $familyId,
+        CategoryName $name,
+        ?CategoryId $id,
         DateTimeImmutable $now
     ) {
-        $this->id = $id ?? Uuid::v7();
-        $this->name = $name->value;
+        $this->id = $id ?? CategoryId::generate();
+        $this->name = $name;
         $this->dedupeKey = $name->dedupeKey;
         $this->createdAt = $now;
         $this->updatedAt = $now;
     }
 
     public static function create(
-        Uuid $familyId,
+        FamilyId $familyId,
         string $name,
-        ?Uuid $createdByUserId = null,
-        ?Uuid $id = null,
+        ?UserId $createdByUserId = null,
+        ?CategoryId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $category = new self($familyId, CatalogName::fromString($name), $id, $now);
+        $category = new self(
+            $familyId,
+            CategoryName::fromString($name),
+            $id,
+            $now
+        );
         $category->recordChange('category.created', null, $category->snapshot(), $createdByUserId, $now);
 
         return $category;
     }
 
-    public function getId(): Uuid
+    public function getId(): CategoryId
     {
         return $this->id;
     }
 
-    public function getFamilyId(): Uuid
+    public function getFamilyId(): FamilyId
     {
         return $this->familyId;
     }
 
     public function getName(): string
     {
-        return $this->name;
+        return $this->name->value;
     }
 
     public function getDedupeKey(): string
@@ -74,21 +81,21 @@ class Category extends AggregateRoot
         return $this->updatedAt;
     }
 
-    public function rename(string $name, ?Uuid $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function rename(string $name, ?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
     {
-        $catalogName = CatalogName::fromString($name);
-        if ($this->name === $catalogName->value && $this->dedupeKey === $catalogName->dedupeKey) {
+        $categoryName = CategoryName::fromString($name);
+        if ($this->name->value === $categoryName->value && $this->dedupeKey === $categoryName->dedupeKey) {
             return;
         }
 
         $before = $this->snapshot();
-        $this->name = $catalogName->value;
-        $this->dedupeKey = $catalogName->dedupeKey;
+        $this->name = $categoryName;
+        $this->dedupeKey = $categoryName->dedupeKey;
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $this->recordChange('category.renamed', $before, $this->snapshot(), $actorUserId, $this->updatedAt);
     }
 
-    public function delete(?Uuid $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function delete(?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
     {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $this->recordChange('category.deleted', $this->snapshot(), null, $actorUserId, $now);
@@ -101,7 +108,7 @@ class Category extends AggregateRoot
     {
         return [
             'family_id' => (string) $this->familyId,
-            'name' => $this->name,
+            'name' => $this->name->value,
             'dedupe_key' => $this->dedupeKey,
         ];
     }
@@ -114,14 +121,13 @@ class Category extends AggregateRoot
         string $action,
         ?array $before,
         ?array $after,
-        ?Uuid $actorUserId,
+        ?UserId $actorUserId,
         DateTimeImmutable $occurredAt
     ): void {
-        $this->recordEvent(new CatalogChanged(
+        $this->recordEvent(new CategoryChanged(
             action: $action,
-            entityType: 'category',
-            entityId: (string) $this->id,
-            familyId: $this->familyId,
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
             actorUserId: $actorUserId,
             beforeData: $before,
             afterData: $after,

@@ -7,9 +7,12 @@ use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Entity\StoreAlias;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Family\Domain\Exception\FamilyNotFoundException;
+use App\Core\Domain\ValueObject\CategoryId;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\StoreAliasId;
+use App\Core\Domain\ValueObject\StoreId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 class DoctrineCatalogRepository implements CatalogRepositoryInterface
 {
@@ -29,7 +32,7 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface
         $this->aliases = $entityManager->getRepository(StoreAlias::class);
     }
 
-    public function lockFamily(Uuid $familyId): void
+    public function lockFamily(FamilyId $familyId): void
     {
         $found = $this->entityManager->getConnection()->fetchOne(
             'SELECT id FROM families WHERE id = CAST(:id AS UUID) FOR UPDATE',
@@ -70,17 +73,17 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface
         $this->entityManager->remove($alias);
     }
 
-    public function findStore(Uuid $familyId, Uuid $storeId): ?Store
+    public function findStore(FamilyId $familyId, StoreId $storeId): ?Store
     {
         return $this->stores->findOneBy(['familyId' => $familyId, 'id' => $storeId]);
     }
 
-    public function findCategory(Uuid $familyId, Uuid $categoryId): ?Category
+    public function findCategory(FamilyId $familyId, CategoryId $categoryId): ?Category
     {
         return $this->categories->findOneBy(['familyId' => $familyId, 'id' => $categoryId]);
     }
 
-    public function findStoreAlias(Uuid $familyId, Uuid $storeId, Uuid $aliasId): ?StoreAlias
+    public function findStoreAlias(FamilyId $familyId, StoreId $storeId, StoreAliasId $aliasId): ?StoreAlias
     {
         return $this->aliases->findOneBy([
             'familyId' => $familyId,
@@ -89,14 +92,15 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface
         ]);
     }
 
-    public function findStoreByDedupeKey(Uuid $familyId, string $dedupeKey, ?Uuid $excludeStoreId = null): ?Store
+    public function findStoreByDedupeKey(FamilyId $familyId, string $dedupeKey, ?StoreId $excludeStoreId = null): ?Store
     {
         $queryBuilder = $this->entityManager->createQueryBuilder()
             ->select('store')
             ->from(Store::class, 'store')
             ->where('store.familyId = :familyId')
             ->andWhere('store.dedupeKey = :dedupeKey')
-            ->setParameters(['familyId' => $familyId, 'dedupeKey' => $dedupeKey])
+            ->setParameter('familyId', $familyId)
+            ->setParameter('dedupeKey', $dedupeKey)
             ->setMaxResults(1);
         if ($excludeStoreId !== null) {
             $queryBuilder->andWhere('store.id != :excludeId')->setParameter('excludeId', $excludeStoreId);
@@ -106,16 +110,17 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface
     }
 
     public function findCategoryByDedupeKey(
-        Uuid $familyId,
+        FamilyId $familyId,
         string $dedupeKey,
-        ?Uuid $excludeCategoryId = null
+        ?CategoryId $excludeCategoryId = null
     ): ?Category {
         $queryBuilder = $this->entityManager->createQueryBuilder()
             ->select('category')
             ->from(Category::class, 'category')
             ->where('category.familyId = :familyId')
             ->andWhere('category.dedupeKey = :dedupeKey')
-            ->setParameters(['familyId' => $familyId, 'dedupeKey' => $dedupeKey])
+            ->setParameter('familyId', $familyId)
+            ->setParameter('dedupeKey', $dedupeKey)
             ->setMaxResults(1);
         if ($excludeCategoryId !== null) {
             $queryBuilder->andWhere('category.id != :excludeId')->setParameter('excludeId', $excludeCategoryId);
@@ -125,16 +130,17 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface
     }
 
     public function findStoreAliasByDedupeKey(
-        Uuid $familyId,
+        FamilyId $familyId,
         string $dedupeKey,
-        ?Uuid $excludeAliasId = null
+        ?StoreAliasId $excludeAliasId = null
     ): ?StoreAlias {
         $queryBuilder = $this->entityManager->createQueryBuilder()
             ->select('alias')
             ->from(StoreAlias::class, 'alias')
             ->where('alias.familyId = :familyId')
             ->andWhere('alias.aliasDedupeKey = :dedupeKey')
-            ->setParameters(['familyId' => $familyId, 'dedupeKey' => $dedupeKey])
+            ->setParameter('familyId', $familyId)
+            ->setParameter('dedupeKey', $dedupeKey)
             ->setMaxResults(1);
 
         if ($excludeAliasId !== null) {
@@ -145,17 +151,17 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface
         return $queryBuilder->getQuery()->getOneOrNullResult();
     }
 
-    public function findStores(Uuid $familyId): array
+    public function findStores(FamilyId $familyId): array
     {
         return $this->stores->findBy(['familyId' => $familyId], ['name' => 'ASC', 'id' => 'ASC']);
     }
 
-    public function findCategories(Uuid $familyId): array
+    public function findCategories(FamilyId $familyId): array
     {
         return $this->categories->findBy(['familyId' => $familyId], ['name' => 'ASC', 'id' => 'ASC']);
     }
 
-    public function findStoreAliases(Uuid $familyId, Uuid $storeId): array
+    public function findStoreAliases(FamilyId $familyId, StoreId $storeId): array
     {
         return $this->aliases->findBy(
             ['familyId' => $familyId, 'storeId' => $storeId],
@@ -163,21 +169,21 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface
         );
     }
 
-    public function findStoreAliasesInFamily(Uuid $familyId): array
+    public function findStoreAliasesInFamily(FamilyId $familyId): array
     {
         return $this->aliases->findBy(['familyId' => $familyId], ['alias' => 'ASC', 'id' => 'ASC']);
     }
 
-    public function isCategoryUsedAsStoreDefault(Uuid $familyId, Uuid $categoryId): bool
+    public function isCategoryUsedAsStoreDefault(FamilyId $familyId, CategoryId $categoryId): bool
     {
         return (int) $this->entityManager->createQueryBuilder()
             ->select('COUNT(store.id)')
             ->from(Store::class, 'store')
             ->where('store.familyId = :familyId')
             ->andWhere('store.defaultCategoryId = :categoryId')
-            ->setParameters(['familyId' => $familyId, 'categoryId' => $categoryId])
+            ->setParameter('familyId', $familyId)
+            ->setParameter('categoryId', $categoryId)
             ->getQuery()
             ->getSingleScalarResult() > 0;
     }
-
 }

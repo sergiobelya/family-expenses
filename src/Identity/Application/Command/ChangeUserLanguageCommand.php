@@ -2,12 +2,12 @@
 
 namespace App\Identity\Application\Command;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class ChangeUserLanguageCommand
 {
     public function __construct(
-        public Uuid $userId,
+        public UserId $userId,
         public string $language
     ) {
     }

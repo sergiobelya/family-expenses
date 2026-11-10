@@ -117,7 +117,10 @@ class JoinFamilyFlowHandler implements FlowHandlerInterface
             }
 
             // Check if already a member
-            $member = $this->familyMemberRepository->findByFamilyAndUser($family->getId(), $context->user->getId());
+            $member = $this->familyMemberRepository->findByFamilyAndUser(
+                $family->getId(),
+                $context->user->getId()
+            );
             if ($member !== null && $member->isActive()) {
                 $alreadyMemberMsg = $this->translator->trans('family.join.already_member', [
                     '%{family_name}' => htmlspecialchars($family->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),

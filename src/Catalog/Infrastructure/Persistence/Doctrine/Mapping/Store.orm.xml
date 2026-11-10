@@ -10,11 +10,11 @@
             <unique-constraint name="uniq_stores_family_dedupe" columns="family_id,dedupe_key"/>
             <unique-constraint name="uniq_stores_family_id_id" columns="family_id,id"/>
         </unique-constraints>
-        <id name="id" type="uuid"/>
-        <field name="familyId" column="family_id" type="uuid"/>
-        <field name="name" type="string" length="100"/>
+        <id name="id" type="store_id"/>
+        <field name="familyId" column="family_id" type="family_id"/>
+        <field name="name" type="store_name" length="100"/>
         <field name="dedupeKey" column="dedupe_key" type="string" length="500"/>
-        <field name="defaultCategoryId" column="default_category_id" type="uuid" nullable="true"/>
+        <field name="defaultCategoryId" column="default_category_id" type="category_id" nullable="true"/>
         <field name="createdAt" column="created_at" type="datetime_immutable"/>
         <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
     </entity>

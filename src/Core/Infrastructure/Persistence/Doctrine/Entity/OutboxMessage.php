@@ -2,20 +2,18 @@
 
 namespace App\Core\Infrastructure\Persistence\Doctrine\Entity;
 
+use App\Core\Domain\ValueObject\OutboxMessageId;
+use App\Core\Infrastructure\Outbox\OutboxMessageStatus;
 use DateTimeImmutable;
 use DateTimeZone;
 use Symfony\Component\Uid\Uuid;
 
 class OutboxMessage
 {
-    public const string STATUS_PENDING = 'pending';
-    public const string STATUS_PUBLISHED = 'published';
-    public const string STATUS_FAILED = 'failed';
-
-    private Uuid $id;
+    private OutboxMessageId $id;
     private string $eventType;
     private array $payload;
-    private string $status;
+    private OutboxMessageStatus $status;
     private DateTimeImmutable $createdAt;
     private ?DateTimeImmutable $publishedAt = null;
     private int $attemptCount = 0;
@@ -25,11 +23,11 @@ class OutboxMessage
     public function __construct(
         string $eventType,
         array $payload,
-        string $status = self::STATUS_PENDING,
+        OutboxMessageStatus $status = OutboxMessageStatus::PENDING,
         ?Uuid $id = null,
         ?DateTimeImmutable $now = null
     ) {
-        $this->id = $id ?? Uuid::v7();
+        $this->id = $id === null ? OutboxMessageId::generate() : OutboxMessageId::fromString((string) $id);
         $this->eventType = $eventType;
         $this->payload = $payload;
         $this->status = $status;
@@ -37,7 +35,7 @@ class OutboxMessage
         $this->nextAttemptAt = $this->createdAt;
     }
 
-    public function getId(): Uuid
+    public function getId(): OutboxMessageId
     {
         return $this->id;
     }
@@ -52,7 +50,7 @@ class OutboxMessage
         return $this->payload;
     }
 
-    public function getStatus(): string
+    public function getStatus(): OutboxMessageStatus
     {
         return $this->status;
     }
@@ -84,7 +82,7 @@ class OutboxMessage
 
     public function markAsPublished(?DateTimeImmutable $now = null): void
     {
-        $this->status = self::STATUS_PUBLISHED;
+        $this->status = OutboxMessageStatus::PUBLISHED;
         $this->publishedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $this->nextAttemptAt = $this->publishedAt;
         $this->lastError = null;
@@ -92,7 +90,7 @@ class OutboxMessage
 
     public function scheduleRetry(string $error, DateTimeImmutable $nextAttemptAt): void
     {
-        $this->status = self::STATUS_PENDING;
+        $this->status = OutboxMessageStatus::PENDING;
         ++$this->attemptCount;
         $this->nextAttemptAt = $nextAttemptAt;
         $this->publishedAt = null;
@@ -101,7 +99,7 @@ class OutboxMessage
 
     public function markAsFailed(string $error): void
     {
-        $this->status = self::STATUS_FAILED;
+        $this->status = OutboxMessageStatus::FAILED;
         ++$this->attemptCount;
         $this->nextAttemptAt = new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $this->publishedAt = null;

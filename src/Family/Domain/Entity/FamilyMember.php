@@ -3,30 +3,32 @@
 namespace App\Family\Domain\Entity;
 
 use App\Family\Domain\Event\MemberJoined;
+use App\Family\Domain\Enum\FamilyMemberStatus;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\FamilyMemberId;
+use App\Core\Domain\ValueObject\UserId;
+use App\Core\Domain\ValueObject\InvitationId;
 use App\Core\Domain\Aggregate\AggregateRoot;
 use DateTimeImmutable;
 use DateTimeZone;
-use Symfony\Component\Uid\Uuid;
 
 class FamilyMember extends AggregateRoot
 {
-    public const string STATUS_ACTIVE = 'active';
-
-    private Uuid $id;
-    private Uuid $familyId;
-    private Uuid $userId;
-    private string $status;
+    private FamilyMemberId $id;
+    private FamilyId $familyId;
+    private UserId $userId;
+    private FamilyMemberStatus $status;
     private DateTimeImmutable $joinedAt;
     private DateTimeImmutable $createdAt;
 
     public function __construct(
-        Uuid $familyId,
-        Uuid $userId,
-        string $status = self::STATUS_ACTIVE,
-        ?Uuid $id = null,
+        FamilyId $familyId,
+        UserId $userId,
+        FamilyMemberStatus $status = FamilyMemberStatus::ACTIVE,
+        ?FamilyMemberId $id = null,
         ?DateTimeImmutable $now = null
     ) {
-        $this->id = $id ?? Uuid::v7();
+        $this->id = $id ?? FamilyMemberId::generate();
         $this->familyId = $familyId;
         $this->userId = $userId;
         $this->status = $status;
@@ -35,11 +37,11 @@ class FamilyMember extends AggregateRoot
     }
 
     public static function join(
-        Uuid $familyId,
-        Uuid $userId,
-        ?Uuid $invitationId = null,
-        string $status = self::STATUS_ACTIVE,
-        ?Uuid $id = null,
+        FamilyId $familyId,
+        UserId $userId,
+        ?InvitationId $invitationId = null,
+        FamilyMemberStatus $status = FamilyMemberStatus::ACTIVE,
+        ?FamilyMemberId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
         $member = new self($familyId, $userId, $status, $id, $now);
@@ -54,29 +56,29 @@ class FamilyMember extends AggregateRoot
         return $member;
     }
 
-    public function getId(): Uuid
+    public function getId(): FamilyMemberId
     {
         return $this->id;
     }
 
-    public function getFamilyId(): Uuid
+    public function getFamilyId(): FamilyId
     {
         return $this->familyId;
     }
 
-    public function getUserId(): Uuid
+    public function getUserId(): UserId
     {
         return $this->userId;
     }
 
-    public function getStatus(): string
+    public function getStatus(): FamilyMemberStatus
     {
         return $this->status;
     }
 
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === FamilyMemberStatus::ACTIVE;
     }
 
     public function getJoinedAt(): DateTimeImmutable

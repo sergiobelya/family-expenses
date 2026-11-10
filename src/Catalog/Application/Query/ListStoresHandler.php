@@ -3,14 +3,14 @@
 namespace App\Catalog\Application\Query;
 
 use App\Catalog\Application\CatalogAccess;
-use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
+use App\Catalog\Domain\Repository\StoreCatalogRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
 final class ListStoresHandler
 {
     public function __construct(
-        private CatalogRepositoryInterface $catalog,
+        private StoreCatalogRepositoryInterface $catalog,
         private CatalogAccess $access
     ) {
     }

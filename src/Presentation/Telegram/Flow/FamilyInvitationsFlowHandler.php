@@ -9,6 +9,7 @@ use App\Family\Application\Command\RevokeInvitationHandler;
 use App\Family\Application\Query\GetFamilyInvitationsHandler;
 use App\Family\Application\Query\GetFamilyInvitationsQuery;
 use App\Family\Domain\Entity\Invitation;
+use App\Core\Domain\ValueObject\InvitationId;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
@@ -16,7 +17,6 @@ use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class FamilyInvitationsFlowHandler implements FlowHandlerInterface
@@ -97,8 +97,7 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
 
         // 2. Revoke Invitation
         if (str_starts_with($update->callbackData ?? '', 'family:invitation:revoke:')) {
-            $invitationIdStr = substr($update->callbackData, strlen('family:invitation:revoke:'));
-            $invitationId = Uuid::fromString($invitationIdStr);
+            $invitationId = InvitationId::fromString(substr($update->callbackData, strlen('family:invitation:revoke:')));
 
             ($this->revokeInvitationHandler)(new RevokeInvitationCommand(
                 invitationId: $invitationId,
@@ -117,8 +116,8 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
 
         // 3. View Invitation Details
         if (str_starts_with($update->callbackData ?? '', 'family:invitation:view:')) {
-            $invitationIdStr = substr($update->callbackData, strlen('family:invitation:view:'));
-            $invitation = $this->invitationRepository->findById(Uuid::fromString($invitationIdStr));
+            $invitationId = InvitationId::fromString(substr($update->callbackData, strlen('family:invitation:view:')));
+            $invitation = $this->invitationRepository->findById($invitationId);
 
             if ($invitation === null || !$invitation->getFamilyId()->equals($activeFamily->getId())) {
                 $this->renderList($context, $activeFamily);
@@ -157,7 +156,10 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
 
     private function renderList(TelegramUserContext $context, $activeFamily): void
     {
-        $invitations = ($this->getFamilyInvitationsHandler)(new GetFamilyInvitationsQuery($activeFamily->getId(), $context->user->getId()));
+        $invitations = ($this->getFamilyInvitationsHandler)(new GetFamilyInvitationsQuery(
+            $activeFamily->getId(),
+            $context->user->getId()
+        ));
 
         $builder = new InlineKeyboardBuilder();
         $builder->button($this->translator->trans('family.members.invite_btn'), 'family:invite:create')->row();

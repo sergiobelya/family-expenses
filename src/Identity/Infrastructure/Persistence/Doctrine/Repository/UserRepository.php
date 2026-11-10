@@ -4,9 +4,9 @@ namespace App\Identity\Infrastructure\Persistence\Doctrine\Repository;
 
 use App\Identity\Domain\Entity\User;
 use App\Identity\Domain\Repository\UserRepositoryInterface;
+use App\Core\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 class UserRepository implements UserRepositoryInterface
 {
@@ -23,7 +23,7 @@ class UserRepository implements UserRepositoryInterface
         $this->entityManager->persist($user);
     }
 
-    public function findById(Uuid $id): ?User
+    public function findById(UserId $id): ?User
     {
         return $this->repository->find($id);
     }

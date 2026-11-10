@@ -5,23 +5,24 @@ namespace App\Family\Domain\Event;
 use App\Core\Domain\Event\AuditableEventInterface;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
-use Symfony\Component\Uid\Uuid;
 
 final readonly class FamilyCreated implements AuditableEventInterface
 {
     private DateTimeImmutable $occurredAt;
 
     public function __construct(
-        public Uuid $familyId,
+        public FamilyId $familyId,
         public string $name,
         public Timezone $timezone,
         public CurrencyCode $defaultExpenseCurrency,
         public CurrencyCode $reportingCurrency,
         public string $defaultExchangeRateProvider,
         public ?string $countryCode,
-        public ?Uuid $creatorUserId = null,
+        public ?UserId $creatorUserId = null,
         ?DateTimeImmutable $occurredAt = null
     ) {
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -32,12 +33,12 @@ final readonly class FamilyCreated implements AuditableEventInterface
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?Uuid
+    public function getFamilyId(): ?FamilyId
     {
         return $this->familyId;
     }
 
-    public function getActorUserId(): ?Uuid
+    public function getActorUserId(): ?UserId
     {
         return $this->creatorUserId;
     }

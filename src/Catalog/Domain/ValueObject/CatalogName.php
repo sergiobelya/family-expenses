@@ -5,14 +5,14 @@ namespace App\Catalog\Domain\ValueObject;
 use InvalidArgumentException;
 use Normalizer;
 
-final readonly class CatalogName
+readonly class CatalogName
 {
-    private function __construct(
+    protected function __construct(
         public string $value,
         public string $dedupeKey
     ) {}
 
-    public static function fromString(string $value): self
+    public static function fromString(string $value): static
     {
         $displayName = preg_replace('/^\s+|\s+$/u', '', $value);
         if (!is_string($displayName)) {
@@ -96,7 +96,7 @@ final readonly class CatalogName
             throw new InvalidArgumentException('Catalog name must contain at least one letter or digit.');
         }
 
-        return new self($displayName, $key);
+        return new static($displayName, $key);
     }
 
     private static function transliterateUkrainianCyrillic(string $value): string

@@ -2,13 +2,14 @@
 
 namespace App\Identity\Application\Command;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class SwitchActiveFamilyCommand
 {
     public function __construct(
-        public Uuid $userId,
-        public ?Uuid $activeFamilyId
+        public UserId $userId,
+        public ?FamilyId $activeFamilyId
     ) {
     }
 }

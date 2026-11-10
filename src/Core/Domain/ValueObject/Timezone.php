@@ -13,7 +13,7 @@ final readonly class Timezone
     {
         $normalized = trim($value);
         if ($normalized === '' || !in_array($normalized, DateTimeZone::listIdentifiers(), true)) {
-            throw new InvalidArgumentException(sprintf('Invalid IANA timezone identifier: "%s".', $value));
+            throw new InvalidArgumentException('Timezone must be a valid IANA identifier.');
         }
 
         $this->value = $normalized;

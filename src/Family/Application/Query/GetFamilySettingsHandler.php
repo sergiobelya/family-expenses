@@ -20,11 +20,13 @@ class GetFamilySettingsHandler
 
     public function __invoke(GetFamilySettingsQuery $query): Family
     {
-        if (!$this->familyMemberRepository->isMember($query->familyId, $query->requestedByUserId)) {
+        $familyId = $query->familyId;
+        $userId = $query->requestedByUserId;
+        if (!$this->familyMemberRepository->isMember($familyId, $userId)) {
             throw NotFamilyMemberException::forFamily((string) $query->familyId, (string) $query->requestedByUserId);
         }
 
-        $family = $this->familyRepository->findById($query->familyId);
+        $family = $this->familyRepository->findById($familyId);
         if ($family === null) {
             throw FamilyNotFoundException::withId((string) $query->familyId);
         }

@@ -3,6 +3,7 @@
 namespace App\Tests\Unit\Core\Infrastructure\Outbox\Command;
 
 use App\Core\Infrastructure\Outbox\Console\RetryFailedOutboxMessagesCommand;
+use App\Core\Infrastructure\Outbox\OutboxMessageStatus;
 use App\Core\Infrastructure\Outbox\OutboxPublisherInterface;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\OutboxMessage;
 use App\Core\Infrastructure\Persistence\Doctrine\Repository\OutboxRepository;
@@ -14,7 +15,7 @@ class RetryFailedOutboxMessagesCommandTest extends TestCase
 {
     public function testMakesOnePublishingAttemptForFailedMessages(): void
     {
-        $message = new OutboxMessage('family.created', [], OutboxMessage::STATUS_FAILED);
+        $message = new OutboxMessage('family.created', [], OutboxMessageStatus::FAILED);
         $repository = $this->createMock(OutboxRepository::class);
         $repository->expects(self::once())
             ->method('findFailed')

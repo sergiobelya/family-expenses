@@ -41,8 +41,18 @@ Code is organized by Bounded Contexts in `src/`:
 - Events implementing `AuditableEventInterface` are automatically recorded in `AuditLog` in the same database transaction.
 - **Do not manually instantiate or persist `OutboxMessage` or `AuditLog` in Command Handlers.**
 
-## 5. Transactions & Execution Flow
+## 5. Domain Types & Errors
+
+- Entity and relationship IDs use distinct immutable identifier value objects (for example, `FamilyId`, `UserId`, `StoreId`, and `CategoryId`) throughout Domain APIs, including entity constructors/factories/mutators, domain events, and repository interfaces. Do not expose Symfony `Uuid` in Domain APIs; convert raw UUIDs at application or transport boundaries and never accept an unrelated identifier type.
+- Entity ID getters return their corresponding identifier value object. Application Command and Query DTOs, as well as Application services that accept entity IDs, use the corresponding identifier value objects. Use scalar types for other input fields unless they represent an established domain value object. Convert raw UUIDs into identifier value objects at transport boundaries.
+- Persist domain value objects through explicit Doctrine DBAL/XML mappings. Keep serialization and database conversion in Infrastructure, not in domain entities.
+- Use value objects for validated entity names and domain codes. Use backed enums for finite state sets instead of string constants.
+- Exception messages are static by default because they may be logged. Put variable values in structured exception properties and pass them as logging context. A finite set of distinct messages or a dynamic suffix is acceptable when it materially helps and structured context is unsuitable; keep the leading message static. User-facing messages must be translated in the presentation layer. When wrapping an exception, preserve the original as `previous` and retain relevant context.
+- Give each auditable domain event a specific type and entity meaning; avoid generic event classes whose action string carries the actual event type.
+
+## 6. Transactions & Execution Flow
 - Every Command handled by `command.bus` executes inside an automatic transaction (`DoctrineTransactionMiddleware`).
 - Keep command handlers focused on loading aggregates, invoking domain methods, and saving through repository interfaces.
 - Use `symfony/lock` (Redis store) for concurrent critical operations (e.g. user drafts, multi-step wizards) when required.
 - Deduplicate incoming Telegram updates via `TelegramUpdateInbox` using unique `update_id`.
+- A pessimistic database lock is held for the duration of its enclosing Doctrine transaction and is released on commit or rollback. Acquire it only through a command dispatched on `command.bus`; do not assume it protects work after the transaction ends.

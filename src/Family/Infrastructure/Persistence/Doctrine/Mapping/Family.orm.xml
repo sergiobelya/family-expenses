@@ -4,9 +4,9 @@
                           https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
     <entity name="App\Family\Domain\Entity\Family" table="families">
-        <id name="id" type="uuid"/>
-        <field name="name" column="name" type="string" length="100"/>
-        <field name="countryCode" column="country_code" type="string" length="2" nullable="true"/>
+        <id name="id" type="family_id"/>
+        <field name="name" column="name" type="family_name" length="100"/>
+        <field name="countryCode" column="country_code" type="country_code" length="2" nullable="true"/>
         <field name="timezone" column="timezone" type="string" length="50"/>
         <field name="defaultExpenseCurrency" column="default_expense_currency" type="string" length="3"/>
         <field name="reportingCurrency" column="reporting_currency" type="string" length="3"/>

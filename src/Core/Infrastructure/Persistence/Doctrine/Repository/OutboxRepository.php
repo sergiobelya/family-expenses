@@ -2,6 +2,7 @@
 
 namespace App\Core\Infrastructure\Persistence\Doctrine\Repository;
 
+use App\Core\Infrastructure\Outbox\OutboxMessageStatus;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\OutboxMessage;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,7 +44,7 @@ class OutboxRepository
         return $this->repository->createQueryBuilder('message')
             ->where('message.status = :pending')
             ->andWhere('message.nextAttemptAt <= :now')
-            ->setParameter('pending', OutboxMessage::STATUS_PENDING)
+            ->setParameter('pending', OutboxMessageStatus::PENDING)
             ->setParameter('now', $now)
             ->orderBy('message.nextAttemptAt', 'ASC')
             ->addOrderBy('message.createdAt', 'ASC')
@@ -58,7 +59,7 @@ class OutboxRepository
     public function findFailed(int $limit = 100): array
     {
         return $this->repository->findBy(
-            ['status' => OutboxMessage::STATUS_FAILED],
+            ['status' => OutboxMessageStatus::FAILED],
             ['createdAt' => 'ASC'],
             $limit
         );
@@ -66,11 +67,11 @@ class OutboxRepository
 
     public function countPending(): int
     {
-        return (int) $this->repository->count(['status' => OutboxMessage::STATUS_PENDING]);
+        return (int) $this->repository->count(['status' => OutboxMessageStatus::PENDING]);
     }
 
     public function countFailed(): int
     {
-        return (int) $this->repository->count(['status' => OutboxMessage::STATUS_FAILED]);
+        return (int) $this->repository->count(['status' => OutboxMessageStatus::FAILED]);
     }
 }

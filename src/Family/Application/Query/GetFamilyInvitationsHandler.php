@@ -22,10 +22,12 @@ class GetFamilyInvitationsHandler
      */
     public function __invoke(GetFamilyInvitationsQuery $query): array
     {
-        if (!$this->familyMemberRepository->isMember($query->familyId, $query->requestedByUserId)) {
+        $familyId = $query->familyId;
+        $userId = $query->requestedByUserId;
+        if (!$this->familyMemberRepository->isMember($familyId, $userId)) {
             throw NotFamilyMemberException::forFamily((string) $query->familyId, (string) $query->requestedByUserId);
         }
 
-        return $this->invitationRepository->findByFamilyId($query->familyId);
+        return $this->invitationRepository->findByFamilyId($familyId);
     }
 }

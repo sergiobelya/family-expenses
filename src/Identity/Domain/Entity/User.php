@@ -5,30 +5,30 @@ namespace App\Identity\Domain\Entity;
 use App\Identity\Domain\Event\UserActiveFamilySwitched;
 use App\Identity\Domain\Event\UserCreated;
 use App\Identity\Domain\Event\UserLanguageChanged;
+use App\Identity\Domain\Enum\UserLanguage;
+use App\Identity\Domain\Exception\UnsupportedUserLanguageException;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use App\Core\Domain\Aggregate\AggregateRoot;
 use DateTimeImmutable;
 use DateTimeZone;
-use InvalidArgumentException;
-use Symfony\Component\Uid\Uuid;
 
 class User extends AggregateRoot
 {
-    public const array SUPPORTED_LANGUAGES = ['en', 'uk', 'pl', 'ru'];
-
-    private Uuid $id;
+    private UserId $id;
     private int $telegramUserId;
-    private string $language;
-    private ?Uuid $activeFamilyId = null;
+    private UserLanguage $language;
+    private ?FamilyId $activeFamilyId = null;
     private DateTimeImmutable $createdAt;
     private DateTimeImmutable $updatedAt;
 
     public function __construct(
         int $telegramUserId,
         string $language = 'en',
-        ?Uuid $id = null,
+        ?UserId $id = null,
         ?DateTimeImmutable $now = null
     ) {
-        $this->id = $id ?? Uuid::v7();
+        $this->id = $id ?? UserId::generate();
         $this->telegramUserId = $telegramUserId;
         $this->setLanguageInternal($language);
         $this->createdAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -38,16 +38,21 @@ class User extends AggregateRoot
     public static function create(
         int $telegramUserId,
         string $language = 'en',
-        ?Uuid $id = null,
+        ?UserId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
         $user = new self($telegramUserId, $language, $id, $now);
-        $user->recordEvent(new UserCreated($user->getId(), $telegramUserId, $user->getLanguage(), $user->getCreatedAt()));
+        $user->recordEvent(new UserCreated(
+            $user->getId(),
+            $telegramUserId,
+            $user->getLanguage(),
+            $user->getCreatedAt()
+        ));
 
         return $user;
     }
 
-    public function getId(): Uuid
+    public function getId(): UserId
     {
         return $this->id;
     }
@@ -59,39 +64,50 @@ class User extends AggregateRoot
 
     public function getLanguage(): string
     {
-        return $this->language;
+        return $this->language->value;
     }
 
     public function setLanguage(string $language, ?DateTimeImmutable $now = null): void
     {
-        $oldLanguage = $this->language;
+        $oldLanguage = $this->language->value;
         $this->setLanguageInternal($language);
 
-        if ($oldLanguage !== $this->language) {
+        if ($oldLanguage !== $this->language->value) {
             $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
-            $this->recordEvent(new UserLanguageChanged($this->id, $oldLanguage, $this->language, $this->updatedAt));
+            $this->recordEvent(new UserLanguageChanged(
+                $this->getId(),
+                $oldLanguage,
+                $this->language->value,
+                $this->updatedAt
+            ));
         }
     }
 
-    public function getActiveFamilyId(): ?Uuid
+    public function getActiveFamilyId(): ?FamilyId
     {
         return $this->activeFamilyId;
     }
 
-    public function setActiveFamilyId(?Uuid $activeFamilyId, ?DateTimeImmutable $now = null): void
+    public function setActiveFamilyId(?FamilyId $activeFamilyId, ?DateTimeImmutable $now = null): void
     {
         $oldFamilyId = $this->activeFamilyId;
-        $this->activeFamilyId = $activeFamilyId;
+        $newFamilyId = $activeFamilyId;
+        $this->activeFamilyId = $newFamilyId;
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
-        if (($oldFamilyId === null && $activeFamilyId !== null) ||
-            ($oldFamilyId !== null && $activeFamilyId === null) ||
-            ($oldFamilyId !== null && $activeFamilyId !== null && !$oldFamilyId->equals($activeFamilyId))) {
-            $this->recordEvent(new UserActiveFamilySwitched($this->id, $oldFamilyId, $activeFamilyId, $this->updatedAt));
+        if (($oldFamilyId === null && $newFamilyId !== null) ||
+            ($oldFamilyId !== null && $newFamilyId === null) ||
+            ($oldFamilyId !== null && $newFamilyId !== null && !$oldFamilyId->equals($newFamilyId))) {
+            $this->recordEvent(new UserActiveFamilySwitched(
+                $this->getId(),
+                $oldFamilyId,
+                $newFamilyId,
+                $this->updatedAt
+            ));
         }
     }
 
-    public function switchActiveFamily(?Uuid $activeFamilyId, ?DateTimeImmutable $now = null): void
+    public function switchActiveFamily(?FamilyId $activeFamilyId, ?DateTimeImmutable $now = null): void
     {
         $this->setActiveFamilyId($activeFamilyId, $now);
     }
@@ -109,14 +125,11 @@ class User extends AggregateRoot
     private function setLanguageInternal(string $language): void
     {
         $normalized = strtolower(trim($language));
-        if (!in_array($normalized, self::SUPPORTED_LANGUAGES, true)) {
-            throw new InvalidArgumentException(sprintf(
-                'Unsupported language "%s". Supported languages: %s',
-                $language,
-                implode(', ', self::SUPPORTED_LANGUAGES)
-            ));
+        $userLanguage = UserLanguage::tryFrom($normalized);
+        if ($userLanguage === null) {
+            throw UnsupportedUserLanguageException::forLanguage($language);
         }
 
-        $this->language = $normalized;
+        $this->language = $userLanguage;
     }
 }

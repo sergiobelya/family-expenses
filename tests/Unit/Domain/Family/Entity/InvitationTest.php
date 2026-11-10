@@ -3,6 +3,8 @@
 namespace App\Tests\Unit\Domain\Family\Entity;
 
 use App\Family\Domain\Entity\Invitation;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
@@ -20,8 +22,8 @@ class InvitationTest extends TestCase
 
         $now = new DateTimeImmutable('2026-10-31 12:00:00', new DateTimeZone('UTC'));
         $invitation = new Invitation(
-            familyId: $familyId,
-            createdByUserId: $userId,
+            familyId: new FamilyId($familyId),
+            createdByUserId: new UserId($userId),
             tokenHash: $tokenHash,
             maxUses: 2,
             now: $now
@@ -39,7 +41,7 @@ class InvitationTest extends TestCase
         $this->assertFalse($invitation->canBeUsed(0, $after49h));
 
         // Test revocation
-        $invitation->revoke($userId, $now);
+        $invitation->revoke(new UserId($userId), $now);
         $this->assertTrue($invitation->isRevoked());
         $this->assertFalse($invitation->canBeUsed(0, $now));
     }
@@ -48,8 +50,8 @@ class InvitationTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         new Invitation(
-            familyId: Uuid::v7(),
-            createdByUserId: Uuid::v7(),
+            familyId: new FamilyId(Uuid::v7()),
+            createdByUserId: new UserId(Uuid::v7()),
             tokenHash: 'hash',
             maxUses: 0
         );

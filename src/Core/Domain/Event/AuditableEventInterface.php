@@ -2,13 +2,14 @@
 
 namespace App\Core\Domain\Event;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 
 interface AuditableEventInterface extends DomainEventInterface
 {
-    public function getFamilyId(): ?Uuid;
+    public function getFamilyId(): ?FamilyId;
 
-    public function getActorUserId(): ?Uuid;
+    public function getActorUserId(): ?UserId;
 
     public function getEntityType(): string;
 

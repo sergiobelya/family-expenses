@@ -3,16 +3,16 @@
 namespace App\Family\Domain\Repository;
 
 use App\Family\Domain\Entity\Family;
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\FamilyId;
 
 interface FamilyRepositoryInterface
 {
     public function save(Family $family): void;
 
-    public function findById(Uuid $id): ?Family;
+    public function findById(FamilyId $id): ?Family;
 
     /**
-     * @param Uuid[] $ids
+     * @param FamilyId[] $ids
      * @return Family[]
      */
     public function findByIds(array $ids): array;

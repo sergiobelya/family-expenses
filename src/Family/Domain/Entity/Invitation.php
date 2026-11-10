@@ -4,35 +4,37 @@ namespace App\Family\Domain\Entity;
 
 use App\Family\Domain\Event\InvitationCreated;
 use App\Family\Domain\Event\InvitationRevoked;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\InvitationId;
+use App\Core\Domain\ValueObject\UserId;
 use App\Core\Domain\Aggregate\AggregateRoot;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Symfony\Component\Uid\Uuid;
 
 class Invitation extends AggregateRoot
 {
     public const int DEFAULT_EXPIRATION_HOURS = 48;
 
-    private Uuid $id;
-    private Uuid $familyId;
+    private InvitationId $id;
+    private FamilyId $familyId;
     private string $tokenHash;
-    private Uuid $createdByUserId;
+    private UserId $createdByUserId;
     private DateTimeImmutable $expiresAt;
     private ?DateTimeImmutable $revokedAt = null;
     private ?int $maxUses = null;
     private DateTimeImmutable $createdAt;
 
     public function __construct(
-        Uuid $familyId,
-        Uuid $createdByUserId,
+        FamilyId $familyId,
+        UserId $createdByUserId,
         string $tokenHash,
         ?DateTimeImmutable $expiresAt = null,
         ?int $maxUses = null,
-        ?Uuid $id = null,
+        ?InvitationId $id = null,
         ?DateTimeImmutable $now = null
     ) {
-        $this->id = $id ?? Uuid::v7();
+        $this->id = $id ?? InvitationId::generate();
         $this->familyId = $familyId;
         $this->createdByUserId = $createdByUserId;
         $this->tokenHash = trim($tokenHash);
@@ -55,12 +57,12 @@ class Invitation extends AggregateRoot
     }
 
     public static function create(
-        Uuid $familyId,
-        Uuid $createdByUserId,
+        FamilyId $familyId,
+        UserId $createdByUserId,
         string $tokenHash,
         ?DateTimeImmutable $expiresAt = null,
         ?int $maxUses = null,
-        ?Uuid $id = null,
+        ?InvitationId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
         $invitation = new self($familyId, $createdByUserId, $tokenHash, $expiresAt, $maxUses, $id, $now);
@@ -76,12 +78,12 @@ class Invitation extends AggregateRoot
         return $invitation;
     }
 
-    public function getId(): Uuid
+    public function getId(): InvitationId
     {
         return $this->id;
     }
 
-    public function getFamilyId(): Uuid
+    public function getFamilyId(): FamilyId
     {
         return $this->familyId;
     }
@@ -91,7 +93,7 @@ class Invitation extends AggregateRoot
         return $this->tokenHash;
     }
 
-    public function getCreatedByUserId(): Uuid
+    public function getCreatedByUserId(): UserId
     {
         return $this->createdByUserId;
     }
@@ -149,14 +151,14 @@ class Invitation extends AggregateRoot
         return true;
     }
 
-    public function revoke(?Uuid $revokedByUserId = null, ?DateTimeImmutable $now = null): void
+    public function revoke(?UserId $revokedByUserId = null, ?DateTimeImmutable $now = null): void
     {
         if ($this->revokedAt === null) {
             $this->revokedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
             $this->recordEvent(new InvitationRevoked(
-                invitationId: $this->id,
-                familyId: $this->familyId,
-                revokedByUserId: $revokedByUserId ?? $this->createdByUserId,
+                invitationId: $this->getId(),
+                familyId: $this->getFamilyId(),
+                revokedByUserId: $revokedByUserId ?? $this->getCreatedByUserId(),
                 occurredAt: $this->revokedAt
             ));
         }

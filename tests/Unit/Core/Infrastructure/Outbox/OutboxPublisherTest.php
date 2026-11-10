@@ -4,6 +4,7 @@ namespace App\Tests\Unit\Core\Infrastructure\Outbox;
 
 use App\Core\Infrastructure\Outbox\OutboxEnvelope;
 use App\Core\Infrastructure\Outbox\OutboxPublisher;
+use App\Core\Infrastructure\Outbox\OutboxMessageStatus;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\OutboxMessage;
 use App\Core\Infrastructure\Persistence\Doctrine\Repository\OutboxRepository;
 use PHPUnit\Framework\TestCase;
@@ -22,7 +23,7 @@ class OutboxPublisherTest extends TestCase
         $repository->expects($this->once())
             ->method('save')
             ->with($this->callback(function (OutboxMessage $msg) {
-                return $msg->getStatus() === OutboxMessage::STATUS_PUBLISHED
+                return $msg->getStatus() === OutboxMessageStatus::PUBLISHED
                     && $msg->getPublishedAt() !== null;
             }));
 
@@ -35,13 +36,13 @@ class OutboxPublisherTest extends TestCase
         $publisher = new OutboxPublisher($repository, $bus, new NullLogger());
         $publisher->publish($message);
 
-        $this->assertSame(OutboxMessage::STATUS_PUBLISHED, $message->getStatus());
+        $this->assertSame(OutboxMessageStatus::PUBLISHED, $message->getStatus());
         $this->assertNotNull($message->getPublishedAt());
     }
 
     public function testManualRetryPublishesFailedMessageOnce(): void
     {
-        $message = new OutboxMessage('family.created', [], OutboxMessage::STATUS_FAILED);
+        $message = new OutboxMessage('family.created', [], OutboxMessageStatus::FAILED);
         $repository = $this->createMock(OutboxRepository::class);
         $repository->expects(self::once())->method('save')->with($message);
 
@@ -54,12 +55,12 @@ class OutboxPublisherTest extends TestCase
         $published = (new OutboxPublisher($repository, $bus, new NullLogger()))->retryFailed($message);
 
         self::assertTrue($published);
-        self::assertSame(OutboxMessage::STATUS_PUBLISHED, $message->getStatus());
+        self::assertSame(OutboxMessageStatus::PUBLISHED, $message->getStatus());
     }
 
     public function testManualRetryKeepsFailedMessageFailedAfterOneFailedAttempt(): void
     {
-        $message = new OutboxMessage('family.created', [], OutboxMessage::STATUS_FAILED);
+        $message = new OutboxMessage('family.created', [], OutboxMessageStatus::FAILED);
         $repository = $this->createMock(OutboxRepository::class);
         $repository->expects(self::once())->method('save')->with($message);
 
@@ -71,7 +72,7 @@ class OutboxPublisherTest extends TestCase
         $published = (new OutboxPublisher($repository, $bus, new NullLogger()))->retryFailed($message);
 
         self::assertFalse($published);
-        self::assertSame(OutboxMessage::STATUS_FAILED, $message->getStatus());
+        self::assertSame(OutboxMessageStatus::FAILED, $message->getStatus());
         self::assertSame(1, $message->getAttemptCount());
         self::assertSame('Broker unavailable', $message->getLastError());
     }
@@ -108,8 +109,8 @@ class OutboxPublisherTest extends TestCase
         $publishedCount = $publisher->publishBatch(50);
 
         $this->assertSame(1, $publishedCount);
-        $this->assertSame(OutboxMessage::STATUS_PUBLISHED, $msg1->getStatus());
-        $this->assertSame(OutboxMessage::STATUS_FAILED, $msg2->getStatus());
+        $this->assertSame(OutboxMessageStatus::PUBLISHED, $msg1->getStatus());
+        $this->assertSame(OutboxMessageStatus::FAILED, $msg2->getStatus());
         $this->assertSame(10, $msg2->getAttemptCount());
         $this->assertSame('Transport error', $msg2->getLastError());
         $this->assertNotNull($msg2->getNextAttemptAt());
@@ -140,7 +141,7 @@ class OutboxPublisherTest extends TestCase
             self::assertLessThanOrEqual($expectedDelay + 1, $scheduledDelay);
         }
 
-        self::assertSame(OutboxMessage::STATUS_PENDING, $message->getStatus());
+        self::assertSame(OutboxMessageStatus::PENDING, $message->getStatus());
         self::assertSame(9, $message->getAttemptCount());
         self::assertSame('Broker unavailable', $message->getLastError());
         self::assertSame(3577, array_sum($expectedDelays));

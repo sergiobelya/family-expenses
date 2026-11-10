@@ -52,7 +52,10 @@ class TelegramUserContextResolver
         if ($activeFamilyId !== null) {
             $family = $this->familyRepository->findById($activeFamilyId);
             if ($family !== null) {
-                $member = $this->familyMemberRepository->findByFamilyAndUser($family->getId(), $user->getId());
+                $member = $this->familyMemberRepository->findByFamilyAndUser(
+                    $family->getId(),
+                    $user->getId()
+                );
                 if ($member !== null && $member->isActive()) {
                     $activeFamily = $family;
                 } else {

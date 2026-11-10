@@ -6,8 +6,17 @@ use RuntimeException;
 
 final class CatalogEntryReferencedException extends RuntimeException
 {
-    public static function forEntry(string $type, string $id): self
-    {
-        return new self(sprintf('Cannot delete %s "%s" because it is referenced by other records.', $type, $id));
+    public function __construct(
+        public readonly string $entityType,
+        public readonly string $entityId,
+        ?\Throwable $previous = null
+    ) {
+        parent::__construct('Catalog entry is referenced by other records.', 0, $previous);
     }
+
+    public static function forEntry(string $type, string $id, ?\Throwable $previous = null): self
+    {
+        return new self($type, $id, $previous);
+    }
+
 }

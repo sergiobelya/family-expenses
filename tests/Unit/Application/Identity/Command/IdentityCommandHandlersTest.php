@@ -8,10 +8,10 @@ use App\Identity\Application\Command\EnsureUserExistsCommand;
 use App\Identity\Application\Command\EnsureUserExistsHandler;
 use App\Identity\Application\Command\SwitchActiveFamilyCommand;
 use App\Identity\Application\Command\SwitchActiveFamilyHandler;
+use App\Core\Domain\ValueObject\FamilyId;
 use App\Identity\Domain\Entity\User;
 use App\Identity\Domain\Repository\UserRepositoryInterface;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Uid\Uuid;
 
 class IdentityCommandHandlersTest extends TestCase
 {
@@ -60,7 +60,7 @@ class IdentityCommandHandlersTest extends TestCase
     public function testSwitchActiveFamily(): void
     {
         $user = new User(123456, 'en');
-        $newFamilyId = Uuid::v7();
+        $newFamilyId = FamilyId::generate();
 
         $userRepo = $this->createMock(UserRepositoryInterface::class);
         $userRepo->expects($this->once())->method('findById')->with($user->getId())->willReturn($user);
@@ -69,6 +69,6 @@ class IdentityCommandHandlersTest extends TestCase
         $handler = new SwitchActiveFamilyHandler($userRepo);
         $handler(new SwitchActiveFamilyCommand($user->getId(), $newFamilyId));
 
-        $this->assertEquals($newFamilyId, $user->getActiveFamilyId());
+        $this->assertTrue($newFamilyId->equals($user->getActiveFamilyId()));
     }
 }

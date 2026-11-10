@@ -2,12 +2,12 @@
 
 namespace App\Family\Application\Command;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class CreateFamilyCommand
 {
     public function __construct(
-        public Uuid $userId,
+        public UserId $userId,
         public string $name,
         public string $timezone,
         public string $defaultExpenseCurrency,

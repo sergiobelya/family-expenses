@@ -4,6 +4,8 @@ namespace App\Tests\Unit\Application\Family\Command;
 
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use App\Family\Application\Command\CreateInvitationCommand;
 use App\Family\Application\Command\CreateInvitationHandler;
 use App\Family\Application\Command\RevokeInvitationCommand;
@@ -11,23 +13,20 @@ use App\Family\Application\Command\RevokeInvitationHandler;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
 use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Family\Domain\Entity\Family;
-use App\Family\Domain\Entity\FamilyMember;
 use App\Family\Domain\Entity\Invitation;
-use App\Family\Domain\Exception\InvitationNotFoundException;
 use App\Family\Domain\Exception\NotFamilyMemberException;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Infrastructure\Security\InvitationTokenGenerator;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Uid\Uuid;
 
 class MoreFamilyCommandHandlersTest extends TestCase
 {
     public function testCreateInvitationSuccess(): void
     {
-        $familyId = Uuid::v7();
-        $userId = Uuid::v7();
+        $familyId = FamilyId::generate();
+        $userId = UserId::generate();
 
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $memberRepo->expects($this->once())
@@ -50,8 +49,8 @@ class MoreFamilyCommandHandlersTest extends TestCase
 
     public function testCreateInvitationFailsIfNotMember(): void
     {
-        $familyId = Uuid::v7();
-        $userId = Uuid::v7();
+        $familyId = FamilyId::generate();
+        $userId = UserId::generate();
 
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $memberRepo->method('isMember')->willReturn(false);
@@ -67,9 +66,8 @@ class MoreFamilyCommandHandlersTest extends TestCase
 
     public function testRevokeInvitationSuccess(): void
     {
-        $familyId = Uuid::v7();
-        $userId = Uuid::v7();
-        $invitation = Invitation::create($familyId, $userId, 'hash123', null, 1);
+        $userId = UserId::generate();
+        $invitation = Invitation::create(FamilyId::generate(), $userId, 'hash123', null, 1);
 
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $memberRepo->method('isMember')->willReturn(true);
@@ -87,7 +85,7 @@ class MoreFamilyCommandHandlersTest extends TestCase
     public function testUpdateFamilySettingsSuccess(): void
     {
         $family = Family::create('Old Name', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $userId = Uuid::v7();
+        $userId = UserId::generate();
 
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $memberRepo->method('isMember')->with($family->getId(), $userId)->willReturn(true);
@@ -101,11 +99,11 @@ class MoreFamilyCommandHandlersTest extends TestCase
             familyId: $family->getId(),
             updatedByUserId: $userId,
             name: 'New Name',
-            country: 'PL',
             timezone: 'Europe/Warsaw',
             defaultExpenseCurrency: 'PLN',
             reportingCurrency: 'EUR',
-            defaultExchangeRateProvider: 'nbp'
+            defaultExchangeRateProvider: 'nbp',
+            country: 'PL'
         ));
 
         $this->assertSame('New Name', $family->getName());

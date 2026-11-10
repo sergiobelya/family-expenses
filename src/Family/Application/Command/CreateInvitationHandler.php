@@ -26,7 +26,9 @@ class CreateInvitationHandler
      */
     public function __invoke(CreateInvitationCommand $command): array
     {
-        if (!$this->familyMemberRepository->isMember($command->familyId, $command->createdByUserId)) {
+        $familyId = $command->familyId;
+        $createdByUserId = $command->createdByUserId;
+        if (!$this->familyMemberRepository->isMember($familyId, $createdByUserId)) {
             throw NotFamilyMemberException::forFamily((string) $command->familyId, (string) $command->createdByUserId);
         }
 
@@ -38,8 +40,8 @@ class CreateInvitationHandler
         $expiresAt = $now->modify(sprintf('+%d hours', $hours));
 
         $invitation = Invitation::create(
-            familyId: $command->familyId,
-            createdByUserId: $command->createdByUserId,
+            familyId: $familyId,
+            createdByUserId: $createdByUserId,
             tokenHash: $tokenHash,
             expiresAt: $expiresAt,
             maxUses: $command->maxUses,

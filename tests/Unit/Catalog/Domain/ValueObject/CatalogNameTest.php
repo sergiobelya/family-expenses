@@ -3,6 +3,8 @@
 namespace App\Tests\Unit\Catalog\Domain\ValueObject;
 
 use App\Catalog\Domain\ValueObject\CatalogName;
+use App\Catalog\Domain\ValueObject\CategoryName;
+use App\Catalog\Domain\ValueObject\StoreName;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -68,6 +70,12 @@ final class CatalogNameTest extends TestCase
     {
         self::assertSame('Żabka.', CatalogName::fromString('  Żabka.  ')->value);
         self::assertSame('Żabka', CatalogName::fromString("\u{00A0}Żabka\u{00A0}")->value);
+    }
+
+    public function testStoreAndCategoryNamesHaveDistinctTypes(): void
+    {
+        self::assertInstanceOf(StoreName::class, StoreName::fromString('Market'));
+        self::assertInstanceOf(CategoryName::class, CategoryName::fromString('Food'));
     }
 
     public function testRejectsNamesWithoutLettersOrDigits(): void

@@ -3,18 +3,20 @@
 namespace App\Family\Domain\Event;
 
 use App\Core\Domain\Event\AuditableEventInterface;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\InvitationId;
+use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
-use Symfony\Component\Uid\Uuid;
 
 final readonly class InvitationRevoked implements AuditableEventInterface
 {
     private DateTimeImmutable $occurredAt;
 
     public function __construct(
-        public Uuid $invitationId,
-        public Uuid $familyId,
-        public Uuid $revokedByUserId,
+        public InvitationId $invitationId,
+        public FamilyId $familyId,
+        public UserId $revokedByUserId,
         ?DateTimeImmutable $occurredAt = null
     ) {
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -25,12 +27,12 @@ final readonly class InvitationRevoked implements AuditableEventInterface
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?Uuid
+    public function getFamilyId(): ?FamilyId
     {
         return $this->familyId;
     }
 
-    public function getActorUserId(): ?Uuid
+    public function getActorUserId(): ?UserId
     {
         return $this->revokedByUserId;
     }

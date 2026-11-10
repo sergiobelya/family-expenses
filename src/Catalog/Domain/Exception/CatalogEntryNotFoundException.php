@@ -6,8 +6,17 @@ use RuntimeException;
 
 final class CatalogEntryNotFoundException extends RuntimeException
 {
-    public static function forEntry(string $type, string $id): self
-    {
-        return new self(sprintf('%s "%s" was not found in this family.', ucfirst($type), $id));
+    public function __construct(
+        public readonly string $entityType,
+        public readonly string $entityId,
+        ?\Throwable $previous = null
+    ) {
+        parent::__construct('Catalog entry was not found in this family.', 0, $previous);
     }
+
+    public static function forEntry(string $type, string $id, ?\Throwable $previous = null): self
+    {
+        return new self($type, $id, $previous);
+    }
+
 }

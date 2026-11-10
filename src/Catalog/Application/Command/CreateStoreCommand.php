@@ -2,13 +2,14 @@
 
 namespace App\Catalog\Application\Command;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class CreateStoreCommand
 {
     public function __construct(
-        public Uuid $familyId,
-        public Uuid $createdByUserId,
+        public FamilyId $familyId,
+        public UserId $createdByUserId,
         public string $name
     ) {
     }

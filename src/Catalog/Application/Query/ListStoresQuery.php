@@ -2,13 +2,14 @@
 
 namespace App\Catalog\Application\Query;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class ListStoresQuery
 {
     public function __construct(
-        public Uuid $familyId,
-        public Uuid $requestedByUserId
+        public FamilyId $familyId,
+        public UserId $requestedByUserId
     ) {
     }
 }

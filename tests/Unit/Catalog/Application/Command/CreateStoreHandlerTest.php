@@ -2,6 +2,8 @@
 
 namespace App\Tests\Unit\Catalog\Application\Command;
 
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use App\Catalog\Application\CatalogAccess;
 use App\Catalog\Application\Command\CreateStoreCommand;
 use App\Catalog\Application\Command\CreateStoreHandler;
@@ -19,20 +21,20 @@ final class CreateStoreHandlerTest extends TestCase
         $familyId = Uuid::v7();
         $userId = Uuid::v7();
         $catalog = $this->createMock(CatalogRepositoryInterface::class);
-        $catalog->expects(self::once())->method('lockFamily')->with($familyId);
-        $catalog->method('findStoreByDedupeKey')->with($familyId, 'biedronka')->willReturn(null);
-        $catalog->method('findStoreAliasByDedupeKey')->with($familyId, 'biedronka')->willReturn(null);
+        $catalog->expects(self::once())->method('lockFamily')->with(new FamilyId($familyId));
+        $catalog->method('findStoreByDedupeKey')->with(new FamilyId($familyId), 'biedronka')->willReturn(null);
+        $catalog->method('findStoreAliasByDedupeKey')->with(new FamilyId($familyId), 'biedronka')->willReturn(null);
         $catalog->expects(self::once())->method('saveStore')->with(self::callback(
-            static fn (Store $store): bool => $store->getFamilyId()->equals($familyId)
+            static fn (Store $store): bool => $store->getFamilyId()->equals(new FamilyId($familyId))
                 && $store->getName() === 'Biedronka'
                 && $store->getDedupeKey() === 'biedronka'
         ));
 
         $members = $this->createMock(FamilyMemberRepositoryInterface::class);
-        $members->expects(self::exactly(2))->method('isMember')->with($familyId, $userId)->willReturn(true);
+        $members->expects(self::exactly(2))->method('isMember')->with(new FamilyId($familyId), new UserId($userId))->willReturn(true);
         $handler = new CreateStoreHandler($catalog, new CatalogAccess($members, $catalog));
 
-        $store = $handler(new CreateStoreCommand($familyId, $userId, ' Biedronka '));
+        $store = $handler(new CreateStoreCommand(new FamilyId($familyId), new UserId($userId), ' Biedronka '));
 
         self::assertSame('Biedronka', $store->getName());
     }
@@ -41,9 +43,9 @@ final class CreateStoreHandlerTest extends TestCase
     {
         $familyId = Uuid::v7();
         $userId = Uuid::v7();
-        $existingStore = Store::create($familyId, 'Market');
+        $existingStore = Store::create(new FamilyId($familyId), 'Market');
         $alias = \App\Catalog\Domain\Entity\StoreAlias::create(
-            $familyId,
+            new FamilyId($familyId),
             $existingStore->getId(),
             'Biedronka'
         );
@@ -55,6 +57,6 @@ final class CreateStoreHandlerTest extends TestCase
         $handler = new CreateStoreHandler($catalog, new CatalogAccess($members, $catalog));
 
         $this->expectException(CatalogNameConflictException::class);
-        $handler(new CreateStoreCommand($familyId, $userId, 'Biedronka'));
+        $handler(new CreateStoreCommand(new FamilyId($familyId), new UserId($userId), 'Biedronka'));
     }
 }

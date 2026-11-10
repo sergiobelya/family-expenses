@@ -2,11 +2,13 @@
 
 namespace App\Family\Infrastructure\Persistence\Doctrine\Repository;
 
+use App\Family\Domain\Enum\FamilyMemberStatus;
 use App\Family\Domain\Entity\FamilyMember;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 class FamilyMemberRepository implements FamilyMemberRepositoryInterface
 {
@@ -23,33 +25,33 @@ class FamilyMemberRepository implements FamilyMemberRepositoryInterface
         $this->entityManager->persist($member);
     }
 
-    public function isMember(Uuid $familyId, Uuid $userId): bool
+    public function isMember(FamilyId $familyId, UserId $userId): bool
     {
         return $this->findByFamilyAndUser($familyId, $userId) !== null;
     }
 
-    public function findByFamilyAndUser(Uuid $familyId, Uuid $userId): ?FamilyMember
+    public function findByFamilyAndUser(FamilyId $familyId, UserId $userId): ?FamilyMember
     {
         return $this->repository->findOneBy([
             'familyId' => $familyId,
             'userId' => $userId,
-            'status' => FamilyMember::STATUS_ACTIVE,
+            'status' => FamilyMemberStatus::ACTIVE,
         ]);
     }
 
     /**
      * @return FamilyMember[]
      */
-    public function findByFamilyId(Uuid $familyId): array
+    public function findByFamilyId(FamilyId $familyId): array
     {
-        return $this->repository->findBy(['familyId' => $familyId, 'status' => FamilyMember::STATUS_ACTIVE]);
+        return $this->repository->findBy(['familyId' => $familyId, 'status' => FamilyMemberStatus::ACTIVE]);
     }
 
     /**
      * @return FamilyMember[]
      */
-    public function findByUserId(Uuid $userId): array
+    public function findByUserId(UserId $userId): array
     {
-        return $this->repository->findBy(['userId' => $userId, 'status' => FamilyMember::STATUS_ACTIVE]);
+        return $this->repository->findBy(['userId' => $userId, 'status' => FamilyMemberStatus::ACTIVE]);
     }
 }

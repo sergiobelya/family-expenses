@@ -6,6 +6,8 @@ use App\Core\Domain\Aggregate\AggregateRoot;
 use App\Core\Domain\Event\AsyncDomainEventInterface;
 use App\Core\Domain\Event\AuditableEventInterface;
 use App\Core\Domain\Event\DomainEventInterface;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\AuditLog;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\OutboxMessage;
 use App\Core\Infrastructure\Persistence\Doctrine\Listener\DomainEventsFlushListener;
@@ -36,8 +38,8 @@ class DomainEventsFlushListenerTest extends TestCase
             public function getEventName(): string { return 'family.created'; }
             public function getOccurredAt(): DateTimeImmutable { return new DateTimeImmutable(); }
             public function toPayload(): array { return ['name' => 'Smiths']; }
-            public function getFamilyId(): ?Uuid { return $this->familyId; }
-            public function getActorUserId(): ?Uuid { return $this->actorId; }
+            public function getFamilyId(): ?FamilyId { return new FamilyId($this->familyId); }
+            public function getActorUserId(): ?UserId { return new UserId($this->actorId); }
             public function getEntityType(): string { return 'family'; }
             public function getEntityId(): string { return (string) $this->familyId; }
             public function getAction(): string { return 'create_family'; }
@@ -90,8 +92,8 @@ class DomainEventsFlushListenerTest extends TestCase
         $event = new class($familyId) implements AuditableEventInterface {
             public function __construct(private Uuid $familyId) {}
             public function getOccurredAt(): DateTimeImmutable { return new DateTimeImmutable(); }
-            public function getFamilyId(): ?Uuid { return $this->familyId; }
-            public function getActorUserId(): ?Uuid { return null; }
+            public function getFamilyId(): ?FamilyId { return new FamilyId($this->familyId); }
+            public function getActorUserId(): ?UserId { return null; }
             public function getEntityType(): string { return 'family'; }
             public function getEntityId(): string { return (string) $this->familyId; }
             public function getAction(): string { return 'family.settings_updated'; }

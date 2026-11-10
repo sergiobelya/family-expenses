@@ -6,8 +6,8 @@ use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Catalog\Domain\ValueObject\CatalogName;
+use App\Core\Domain\ValueObject\FamilyId;
 use InvalidArgumentException;
-use Symfony\Component\Uid\Uuid;
 
 final class CatalogSearch
 {
@@ -18,7 +18,7 @@ final class CatalogSearch
     /**
      * @return Store[]
      */
-    public function stores(Uuid $familyId, string $query): array
+    public function stores(FamilyId $familyId, string $query): array
     {
         try {
             $queryKey = CatalogName::fromString($query)->dedupeKey;
@@ -58,7 +58,7 @@ final class CatalogSearch
     /**
      * @return Category[]
      */
-    public function categories(Uuid $familyId, string $query): array
+    public function categories(FamilyId $familyId, string $query): array
     {
         try {
             $queryKey = CatalogName::fromString($query)->dedupeKey;

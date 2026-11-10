@@ -2,66 +2,75 @@
 
 namespace App\Catalog\Domain\Entity;
 
-use App\Catalog\Domain\Event\CatalogChanged;
-use App\Catalog\Domain\ValueObject\CatalogName;
+use App\Catalog\Domain\Event\StoreAliasChanged;
+use App\Catalog\Domain\ValueObject\StoreName;
 use App\Core\Domain\Aggregate\AggregateRoot;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\StoreAliasId;
+use App\Core\Domain\ValueObject\StoreId;
+use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
-use Symfony\Component\Uid\Uuid;
 
 class StoreAlias extends AggregateRoot
 {
-    private Uuid $id;
-    private string $alias;
+    private StoreAliasId $id;
+    private StoreName $alias;
     private string $aliasDedupeKey;
     private DateTimeImmutable $createdAt;
 
     private function __construct(
-        private Uuid $familyId,
-        private Uuid $storeId,
-        CatalogName $name,
-        ?Uuid $id,
+        private FamilyId $familyId,
+        private StoreId $storeId,
+        StoreName $name,
+        ?StoreAliasId $id,
         DateTimeImmutable $now
     ) {
-        $this->id = $id ?? Uuid::v7();
-        $this->alias = $name->value;
+        $this->id = $id ?? StoreAliasId::generate();
+        $this->alias = $name;
         $this->aliasDedupeKey = $name->dedupeKey;
         $this->createdAt = $now;
     }
 
     public static function create(
-        Uuid $familyId,
-        Uuid $storeId,
+        FamilyId $familyId,
+        StoreId $storeId,
         string $alias,
-        ?Uuid $createdByUserId = null,
-        ?Uuid $id = null,
+        ?UserId $createdByUserId = null,
+        ?StoreAliasId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $storeAlias = new self($familyId, $storeId, CatalogName::fromString($alias), $id, $now);
+        $storeAlias = new self(
+            $familyId,
+            $storeId,
+            StoreName::fromString($alias),
+            $id,
+            $now
+        );
         $storeAlias->recordChange('store_alias.created', null, $storeAlias->snapshot(), $createdByUserId, $now);
 
         return $storeAlias;
     }
 
-    public function getId(): Uuid
+    public function getId(): StoreAliasId
     {
         return $this->id;
     }
 
-    public function getFamilyId(): Uuid
+    public function getFamilyId(): FamilyId
     {
         return $this->familyId;
     }
 
-    public function getStoreId(): Uuid
+    public function getStoreId(): StoreId
     {
         return $this->storeId;
     }
 
     public function getAlias(): string
     {
-        return $this->alias;
+        return $this->alias->value;
     }
 
     public function getAliasDedupeKey(): string
@@ -74,16 +83,16 @@ class StoreAlias extends AggregateRoot
         return $this->createdAt;
     }
 
-    public function rename(string $alias, ?Uuid $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function rename(string $alias, ?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
     {
-        $catalogName = CatalogName::fromString($alias);
-        if ($this->alias === $catalogName->value && $this->aliasDedupeKey === $catalogName->dedupeKey) {
+        $storeName = StoreName::fromString($alias);
+        if ($this->alias->value === $storeName->value && $this->aliasDedupeKey === $storeName->dedupeKey) {
             return;
         }
 
         $before = $this->snapshot();
-        $this->alias = $catalogName->value;
-        $this->aliasDedupeKey = $catalogName->dedupeKey;
+        $this->alias = $storeName;
+        $this->aliasDedupeKey = $storeName->dedupeKey;
         $this->recordChange(
             'store_alias.renamed',
             $before,
@@ -93,7 +102,7 @@ class StoreAlias extends AggregateRoot
         );
     }
 
-    public function delete(?Uuid $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function delete(?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
     {
         $this->recordChange(
             'store_alias.deleted',
@@ -112,7 +121,7 @@ class StoreAlias extends AggregateRoot
         return [
             'family_id' => (string) $this->familyId,
             'store_id' => (string) $this->storeId,
-            'alias' => $this->alias,
+            'alias' => $this->alias->value,
             'alias_dedupe_key' => $this->aliasDedupeKey,
         ];
     }
@@ -125,14 +134,13 @@ class StoreAlias extends AggregateRoot
         string $action,
         ?array $before,
         ?array $after,
-        ?Uuid $actorUserId,
+        ?UserId $actorUserId,
         DateTimeImmutable $occurredAt
     ): void {
-        $this->recordEvent(new CatalogChanged(
+        $this->recordEvent(new StoreAliasChanged(
             action: $action,
-            entityType: 'store_alias',
-            entityId: (string) $this->id,
-            familyId: $this->familyId,
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
             actorUserId: $actorUserId,
             beforeData: $before,
             afterData: $after,

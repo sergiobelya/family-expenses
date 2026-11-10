@@ -3,19 +3,22 @@
 namespace App\Family\Domain\Event;
 
 use App\Core\Domain\Event\AuditableEventInterface;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\FamilyMemberId;
+use App\Core\Domain\ValueObject\InvitationId;
+use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
-use Symfony\Component\Uid\Uuid;
 
 final readonly class MemberJoined implements AuditableEventInterface
 {
     private DateTimeImmutable $occurredAt;
 
     public function __construct(
-        public Uuid $memberId,
-        public Uuid $familyId,
-        public Uuid $userId,
-        public ?Uuid $invitationId = null,
+        public FamilyMemberId $memberId,
+        public FamilyId $familyId,
+        public UserId $userId,
+        public ?InvitationId $invitationId = null,
         ?DateTimeImmutable $occurredAt = null
     ) {
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -26,12 +29,12 @@ final readonly class MemberJoined implements AuditableEventInterface
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?Uuid
+    public function getFamilyId(): ?FamilyId
     {
         return $this->familyId;
     }
 
-    public function getActorUserId(): ?Uuid
+    public function getActorUserId(): ?UserId
     {
         return $this->userId;
     }

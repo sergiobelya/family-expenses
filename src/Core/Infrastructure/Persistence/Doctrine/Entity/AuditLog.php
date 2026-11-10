@@ -2,15 +2,18 @@
 
 namespace App\Core\Infrastructure\Persistence\Doctrine\Entity;
 
+use App\Core\Domain\ValueObject\AuditLogId;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
 use Symfony\Component\Uid\Uuid;
 
 class AuditLog
 {
-    private Uuid $id;
-    private ?Uuid $familyId;
-    private ?Uuid $actorUserId;
+    private AuditLogId $id;
+    private ?FamilyId $familyId;
+    private ?UserId $actorUserId;
     private string $entityType;
     private string $entityId;
     private string $action;
@@ -29,30 +32,30 @@ class AuditLog
         ?Uuid $id = null,
         ?DateTimeImmutable $now = null
     ) {
-        $this->id = $id ?? Uuid::v7();
+        $this->id = $id === null ? AuditLogId::generate() : AuditLogId::fromString((string) $id);
         $this->entityType = $entityType;
         $this->entityId = $entityId;
         $this->action = $action;
-        $this->familyId = $familyId;
-        $this->actorUserId = $actorUserId;
+        $this->familyId = $familyId === null ? null : FamilyId::fromString((string) $familyId);
+        $this->actorUserId = $actorUserId === null ? null : UserId::fromString((string) $actorUserId);
         $this->beforeData = $beforeData;
         $this->afterData = $afterData;
         $this->createdAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    public function getId(): Uuid
+    public function getId(): AuditLogId
     {
         return $this->id;
     }
 
     public function getFamilyId(): ?Uuid
     {
-        return $this->familyId;
+        return $this->familyId?->toUuid();
     }
 
     public function getActorUserId(): ?Uuid
     {
-        return $this->actorUserId;
+        return $this->actorUserId?->toUuid();
     }
 
     public function getEntityType(): string

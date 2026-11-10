@@ -4,6 +4,8 @@ namespace App\Tests\Unit\Application\Family\Query;
 
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use App\Family\Application\Query\GetFamilyInvitationsHandler;
 use App\Family\Application\Query\GetFamilyInvitationsQuery;
 use App\Family\Application\Query\GetFamilyMembersHandler;
@@ -19,14 +21,13 @@ use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Uid\Uuid;
 
 class FamilyQueryHandlersTest extends TestCase
 {
     public function testGetFamilyMembers(): void
     {
-        $familyId = Uuid::v7();
-        $userId = Uuid::v7();
+        $familyId = FamilyId::generate();
+        $userId = UserId::generate();
         $members = [new FamilyMember($familyId, $userId)];
 
         $repo = $this->createMock(FamilyMemberRepositoryInterface::class);
@@ -41,8 +42,8 @@ class FamilyQueryHandlersTest extends TestCase
 
     public function testGetFamilyInvitations(): void
     {
-        $familyId = Uuid::v7();
-        $userId = Uuid::v7();
+        $familyId = FamilyId::generate();
+        $userId = UserId::generate();
         $invitations = [Invitation::create($familyId, $userId, 'hash', null, 1)];
 
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
@@ -60,7 +61,7 @@ class FamilyQueryHandlersTest extends TestCase
     public function testGetFamilySettings(): void
     {
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $userId = Uuid::v7();
+        $userId = UserId::generate();
 
         $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
         $familyRepo->method('findById')->with($family->getId())->willReturn($family);
@@ -76,7 +77,7 @@ class FamilyQueryHandlersTest extends TestCase
 
     public function testGetUserFamilies(): void
     {
-        $userId = Uuid::v7();
+        $userId = UserId::generate();
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
         $member = new FamilyMember($family->getId(), $userId);
 

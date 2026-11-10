@@ -3,13 +3,14 @@
 namespace App\Family\Domain\Repository;
 
 use App\Family\Domain\Entity\InvitationUse;
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\InvitationId;
+use App\Core\Domain\ValueObject\UserId;
 
 interface InvitationUseRepositoryInterface
 {
     public function save(InvitationUse $use): void;
 
-    public function countByInvitationId(Uuid $invitationId): int;
+    public function countByInvitationId(InvitationId $invitationId): int;
 
-    public function hasUserUsedInvitation(Uuid $invitationId, Uuid $userId): bool;
+    public function hasUserUsedInvitation(InvitationId $invitationId, UserId $userId): bool;
 }

@@ -4,6 +4,7 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow;
 
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
+use App\Core\Domain\ValueObject\UserId;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\CreateFamilyHandler;
@@ -15,7 +16,6 @@ use App\Family\Application\Query\GetFamilyInvitationsHandler;
 use App\Family\Application\Query\GetFamilyMembersHandler;
 use App\Family\Application\Query\GetUserFamiliesHandler;
 use App\Family\Domain\Entity\Family;
-use App\Family\Domain\Entity\FamilyMember;
 use App\Family\Domain\Entity\Invitation;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
@@ -206,7 +206,7 @@ class TelegramFlowHandlersTest extends TestCase
 
         $createInvHandler = $this->createMock(CreateInvitationHandler::class);
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $invitation = Invitation::create($family->getId(), $family->getId(), 'hash', null, 1);
+        $invitation = Invitation::create($family->getId(), UserId::generate(), 'hash', null, 1);
 
         $createInvHandler->method('__invoke')->willReturn([
             'plain_token' => 'plain_123',
@@ -257,7 +257,13 @@ class TelegramFlowHandlersTest extends TestCase
         $mainMenuKb = new MainMenuKeyboard($translator);
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $invitation = Invitation::create($family->getId(), $family->getId(), $tokenGenerator->hashToken('valid_tok'), null, 1);
+        $invitation = Invitation::create(
+            $family->getId(),
+            UserId::generate(),
+            $tokenGenerator->hashToken('valid_tok'),
+            null,
+            1
+        );
 
         $joinHandler->method('__invoke')->willReturn([
             'family' => $family,

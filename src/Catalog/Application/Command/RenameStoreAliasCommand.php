@@ -2,15 +2,18 @@
 
 namespace App\Catalog\Application\Command;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\StoreAliasId;
+use App\Core\Domain\ValueObject\StoreId;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class RenameStoreAliasCommand
 {
     public function __construct(
-        public Uuid $familyId,
-        public Uuid $storeId,
-        public Uuid $aliasId,
-        public Uuid $updatedByUserId,
+        public FamilyId $familyId,
+        public StoreId $storeId,
+        public StoreAliasId $aliasId,
+        public UserId $updatedByUserId,
         public string $alias
     ) {
     }

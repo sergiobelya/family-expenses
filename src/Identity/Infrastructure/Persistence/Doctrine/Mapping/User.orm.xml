@@ -8,10 +8,10 @@
             <unique-constraint name="uniq_users_telegram_user_id" columns="telegram_user_id"/>
         </unique-constraints>
 
-        <id name="id" type="uuid"/>
+        <id name="id" type="user_id"/>
         <field name="telegramUserId" column="telegram_user_id" type="bigint" unique="true"/>
-        <field name="language" column="language" type="string" length="10"/>
-        <field name="activeFamilyId" column="active_family_id" type="uuid" nullable="true"/>
+        <field name="language" column="language" type="string" length="10" enum-type="App\Identity\Domain\Enum\UserLanguage"/>
+        <field name="activeFamilyId" column="active_family_id" type="family_id" nullable="true"/>
         <field name="createdAt" column="created_at" type="datetime_immutable"/>
         <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
     </entity>

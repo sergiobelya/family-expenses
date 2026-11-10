@@ -19,10 +19,12 @@ class GetFamilyMembersHandler
      */
     public function __invoke(GetFamilyMembersQuery $query): array
     {
-        if (!$this->familyMemberRepository->isMember($query->familyId, $query->requestedByUserId)) {
+        $familyId = $query->familyId;
+        $userId = $query->requestedByUserId;
+        if (!$this->familyMemberRepository->isMember($familyId, $userId)) {
             throw NotFamilyMemberException::forFamily((string) $query->familyId, (string) $query->requestedByUserId);
         }
 
-        return $this->familyMemberRepository->findByFamilyId($query->familyId);
+        return $this->familyMemberRepository->findByFamilyId($familyId);
     }
 }

@@ -10,9 +10,9 @@
             <index name="idx_audit_logs_entity" columns="entity_type,entity_id"/>
         </indexes>
 
-        <id name="id" type="uuid"/>
-        <field name="familyId" column="family_id" type="uuid" nullable="true"/>
-        <field name="actorUserId" column="actor_user_id" type="uuid" nullable="true"/>
+        <id name="id" type="audit_log_id"/>
+        <field name="familyId" column="family_id" type="family_id" nullable="true"/>
+        <field name="actorUserId" column="actor_user_id" type="user_id" nullable="true"/>
         <field name="entityType" column="entity_type" type="string" length="100"/>
         <field name="entityId" column="entity_id" type="string" length="255"/>
         <field name="action" column="action" type="string" length="50"/>

@@ -4,9 +4,9 @@ namespace App\Family\Infrastructure\Persistence\Doctrine\Repository;
 
 use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
+use App\Core\Domain\ValueObject\FamilyId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 class FamilyRepository implements FamilyRepositoryInterface
 {
@@ -23,13 +23,13 @@ class FamilyRepository implements FamilyRepositoryInterface
         $this->entityManager->persist($family);
     }
 
-    public function findById(Uuid $id): ?Family
+    public function findById(FamilyId $id): ?Family
     {
         return $this->repository->find($id);
     }
 
     /**
-     * @param Uuid[] $ids
+     * @param FamilyId[] $ids
      * @return Family[]
      */
     public function findByIds(array $ids): array

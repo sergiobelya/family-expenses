@@ -3,8 +3,8 @@
 namespace App\Identity\Application\Command;
 
 use App\Identity\Domain\Entity\User;
+use App\Identity\Domain\Exception\UserNotFoundException;
 use App\Identity\Domain\Repository\UserRepositoryInterface;
-use InvalidArgumentException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -18,7 +18,7 @@ class SwitchActiveFamilyHandler
     {
         $user = $this->userRepository->findById($command->userId);
         if ($user === null) {
-            throw new InvalidArgumentException(sprintf('User with id "%s" was not found.', $command->userId));
+            throw UserNotFoundException::withId((string) $command->userId);
         }
 
         $user->setActiveFamilyId($command->activeFamilyId);

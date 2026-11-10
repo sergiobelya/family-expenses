@@ -2,14 +2,16 @@
 
 namespace App\Catalog\Application\Command;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\CategoryId;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class RenameCategoryCommand
 {
     public function __construct(
-        public Uuid $familyId,
-        public Uuid $categoryId,
-        public Uuid $updatedByUserId,
+        public FamilyId $familyId,
+        public CategoryId $categoryId,
+        public UserId $updatedByUserId,
         public string $name
     ) {
     }

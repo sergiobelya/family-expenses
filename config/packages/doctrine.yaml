@@ -3,6 +3,22 @@ doctrine:
         url: '%env(resolve:DATABASE_URL)%'
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true
+        types:
+            user_id: App\Core\Infrastructure\Persistence\Doctrine\Type\UserIdType
+            family_id: App\Core\Infrastructure\Persistence\Doctrine\Type\FamilyIdType
+            family_member_id: App\Core\Infrastructure\Persistence\Doctrine\Type\FamilyMemberIdType
+            invitation_id: App\Core\Infrastructure\Persistence\Doctrine\Type\InvitationIdType
+            invitation_use_id: App\Core\Infrastructure\Persistence\Doctrine\Type\InvitationUseIdType
+            store_id: App\Core\Infrastructure\Persistence\Doctrine\Type\StoreIdType
+            store_alias_id: App\Core\Infrastructure\Persistence\Doctrine\Type\StoreAliasIdType
+            category_id: App\Core\Infrastructure\Persistence\Doctrine\Type\CategoryIdType
+            audit_log_id: App\Core\Infrastructure\Persistence\Doctrine\Type\AuditLogIdType
+            outbox_message_id: App\Core\Infrastructure\Persistence\Doctrine\Type\OutboxMessageIdType
+            telegram_update_inbox_id: App\Core\Infrastructure\Persistence\Doctrine\Type\TelegramUpdateInboxIdType
+            country_code: App\Core\Infrastructure\Persistence\Doctrine\Type\CountryCodeType
+            family_name: App\Family\Infrastructure\Persistence\Doctrine\Type\FamilyNameType
+            store_name: App\Catalog\Infrastructure\Persistence\Doctrine\Type\StoreNameType
+            category_name: App\Catalog\Infrastructure\Persistence\Doctrine\Type\CategoryNameType
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true

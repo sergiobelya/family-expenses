@@ -7,9 +7,9 @@ use App\Family\Domain\Entity\FamilyMember;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Identity\Domain\Repository\UserRepositoryInterface;
+use App\Identity\Domain\Exception\UserNotFoundException;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
-use InvalidArgumentException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -26,7 +26,7 @@ class CreateFamilyHandler
     {
         $user = $this->userRepository->findById($command->userId);
         if ($user === null) {
-            throw new InvalidArgumentException(sprintf('User with id "%s" was not found.', $command->userId));
+            throw UserNotFoundException::withId((string) $command->userId);
         }
 
         $family = Family::create(

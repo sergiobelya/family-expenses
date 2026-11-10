@@ -46,7 +46,10 @@ class FamilyMembersFlowHandler implements FlowHandlerInterface
             return;
         }
 
-        $members = ($this->getFamilyMembersHandler)(new GetFamilyMembersQuery($activeFamily->getId(), $context->user->getId()));
+        $members = ($this->getFamilyMembersHandler)(new GetFamilyMembersQuery(
+            $activeFamily->getId(),
+            $context->user->getId()
+        ));
 
         $lines = [
             $this->translator->trans('family.members.title', [

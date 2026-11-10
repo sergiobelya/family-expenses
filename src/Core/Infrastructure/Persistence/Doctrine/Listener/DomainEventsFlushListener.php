@@ -8,6 +8,7 @@ use App\Core\Domain\Event\AuditableEventInterface;
 use App\Core\Domain\Event\DomainEventInterface;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\AuditLog;
 use App\Core\Infrastructure\Persistence\Doctrine\Entity\OutboxMessage;
+use App\Core\Infrastructure\Outbox\OutboxMessageStatus;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
@@ -50,8 +51,8 @@ class DomainEventsFlushListener
                         entityType: $event->getEntityType(),
                         entityId: $event->getEntityId(),
                         action: $event->getAction(),
-                        familyId: $event->getFamilyId(),
-                        actorUserId: $event->getActorUserId(),
+                        familyId: $event->getFamilyId()?->toUuid(),
+                        actorUserId: $event->getActorUserId()?->toUuid(),
                         beforeData: $event->getBeforeData(),
                         afterData: $event->getAfterData(),
                         now: $event->getOccurredAt()
@@ -64,7 +65,7 @@ class DomainEventsFlushListener
                     $outboxMessage = new OutboxMessage(
                         eventType: $event->getEventName(),
                         payload: $event->toPayload(),
-                        status: OutboxMessage::STATUS_PENDING,
+                        status: OutboxMessageStatus::PENDING,
                         now: $event->getOccurredAt()
                     );
                     $em->persist($outboxMessage);

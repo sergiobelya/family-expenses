@@ -4,9 +4,10 @@ namespace App\Family\Infrastructure\Persistence\Doctrine\Repository;
 
 use App\Family\Domain\Entity\Invitation;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\InvitationId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 class InvitationRepository implements InvitationRepositoryInterface
 {
@@ -23,7 +24,7 @@ class InvitationRepository implements InvitationRepositoryInterface
         $this->entityManager->persist($invitation);
     }
 
-    public function findById(Uuid $id): ?Invitation
+    public function findById(InvitationId $id): ?Invitation
     {
         return $this->repository->find($id);
     }
@@ -36,7 +37,7 @@ class InvitationRepository implements InvitationRepositoryInterface
     /**
      * @return Invitation[]
      */
-    public function findByFamilyId(Uuid $familyId): array
+    public function findByFamilyId(FamilyId $familyId): array
     {
         return $this->repository->findBy(['familyId' => $familyId], ['createdAt' => 'DESC']);
     }

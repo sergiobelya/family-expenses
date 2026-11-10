@@ -22,12 +22,14 @@ class UpdateFamilySettingsHandler
 
     public function __invoke(UpdateFamilySettingsCommand $command): Family
     {
-        $family = $this->familyRepository->findById($command->familyId);
+        $familyId = $command->familyId;
+        $userId = $command->updatedByUserId;
+        $family = $this->familyRepository->findById($familyId);
         if ($family === null) {
             throw FamilyNotFoundException::withId((string) $command->familyId);
         }
 
-        if (!$this->familyMemberRepository->isMember($command->familyId, $command->updatedByUserId)) {
+        if (!$this->familyMemberRepository->isMember($familyId, $userId)) {
             throw NotFamilyMemberException::forFamily((string) $command->familyId, (string) $command->updatedByUserId);
         }
 
@@ -38,7 +40,7 @@ class UpdateFamilySettingsHandler
             reportingCurrency: $command->reportingCurrency !== null ? CurrencyCode::fromString($command->reportingCurrency) : $family->getReportingCurrency(),
             defaultExchangeRateProvider: $command->defaultExchangeRateProvider ?? $family->getDefaultExchangeRateProvider(),
             countryCode: $command->countryCode ?? $family->getCountry(),
-            actorUserId: $command->updatedByUserId
+            actorUserId: $userId
         );
 
         $this->familyRepository->save($family);

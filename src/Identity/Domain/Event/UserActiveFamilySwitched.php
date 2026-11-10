@@ -3,18 +3,19 @@
 namespace App\Identity\Domain\Event;
 
 use App\Core\Domain\Event\AuditableEventInterface;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
-use Symfony\Component\Uid\Uuid;
 
 final readonly class UserActiveFamilySwitched implements AuditableEventInterface
 {
     private DateTimeImmutable $occurredAt;
 
     public function __construct(
-        public Uuid $userId,
-        public ?Uuid $oldFamilyId,
-        public ?Uuid $newFamilyId,
+        public UserId $userId,
+        public ?FamilyId $oldFamilyId,
+        public ?FamilyId $newFamilyId,
         ?DateTimeImmutable $occurredAt = null
     ) {
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -25,12 +26,12 @@ final readonly class UserActiveFamilySwitched implements AuditableEventInterface
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?Uuid
+    public function getFamilyId(): ?FamilyId
     {
         return $this->newFamilyId ?? $this->oldFamilyId;
     }
 
-    public function getActorUserId(): ?Uuid
+    public function getActorUserId(): ?UserId
     {
         return $this->userId;
     }

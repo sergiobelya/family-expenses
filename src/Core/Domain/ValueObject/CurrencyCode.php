@@ -17,7 +17,7 @@ final readonly class CurrencyCode
     {
         $normalized = strtoupper(trim($value));
         if ($normalized === '' || strlen($normalized) !== 3) {
-            throw new InvalidArgumentException(sprintf('Invalid currency code: "%s". Must be 3 characters.', $value));
+            throw new InvalidArgumentException('Currency code must contain exactly 3 characters.');
         }
 
         $this->value = $normalized;

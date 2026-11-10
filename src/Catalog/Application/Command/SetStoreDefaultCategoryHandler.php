@@ -20,16 +20,19 @@ final class SetStoreDefaultCategoryHandler
     public function __invoke(SetStoreDefaultCategoryCommand $command): Store
     {
         $this->access->lockFamilyForMemberMutation($command->familyId, $command->updatedByUserId);
-        $store = $this->catalog->findStore($command->familyId, $command->storeId);
+        $familyId = $command->familyId;
+        $storeId = $command->storeId;
+        $categoryId = $command->categoryId;
+        $userId = $command->updatedByUserId;
+        $store = $this->catalog->findStore($familyId, $storeId);
         if ($store === null) {
             throw CatalogEntryNotFoundException::forEntry('store', (string) $command->storeId);
         }
-        if ($command->categoryId !== null
-            && $this->catalog->findCategory($command->familyId, $command->categoryId) === null) {
+        if ($categoryId !== null && $this->catalog->findCategory($familyId, $categoryId) === null) {
             throw CatalogEntryNotFoundException::forEntry('category', (string) $command->categoryId);
         }
 
-        $store->setDefaultCategory($command->categoryId, $command->updatedByUserId);
+        $store->setDefaultCategory($categoryId, $userId);
         $this->catalog->saveStore($store);
 
         return $store;

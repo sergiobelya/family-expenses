@@ -8,7 +8,6 @@ use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Entity\FamilyMember;
 use App\Family\Domain\Entity\Invitation;
 use App\Family\Domain\Entity\InvitationUse;
-use App\Family\Domain\Exception\InvitationExpiredException;
 use App\Family\Domain\Exception\InvitationLimitExceededException;
 use App\Family\Domain\Exception\InvitationRevokedException;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
@@ -20,8 +19,7 @@ use App\Identity\Domain\Entity\User;
 use App\Identity\Domain\Repository\UserRepositoryInterface;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
-use DateTimeImmutable;
-use DateTimeZone;
+use App\Core\Domain\ValueObject\UserId;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -48,7 +46,7 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
-        $invitation = new Invitation($family->getId(), Uuid::v7(), $tokenHash, maxUses: 2);
+        $invitation = new Invitation($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 2);
 
         $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->with($tokenHash)->willReturn($invitation);
@@ -78,7 +76,7 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
-        $invitation = new Invitation($family->getId(), Uuid::v7(), $tokenHash, maxUses: 1);
+        $invitation = new Invitation($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 1);
 
         $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->with($tokenHash)->willReturn($invitation);
@@ -107,7 +105,7 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
-        $invitation = new Invitation($family->getId(), Uuid::v7(), $tokenHash);
+        $invitation = new Invitation($family->getId(), new UserId(Uuid::v7()), $tokenHash);
         $invitation->revoke();
 
         $userRepo->method('findById')->willReturn($user);
@@ -130,7 +128,7 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
-        $invitation = new Invitation($family->getId(), Uuid::v7(), $tokenHash, maxUses: 1);
+        $invitation = new Invitation($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 1);
 
         $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->willReturn($invitation);

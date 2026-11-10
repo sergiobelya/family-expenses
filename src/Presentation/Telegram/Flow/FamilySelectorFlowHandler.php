@@ -6,12 +6,12 @@ use App\Family\Application\Query\GetUserFamiliesHandler;
 use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Identity\Application\Command\SwitchActiveFamilyCommand;
 use App\Identity\Application\Command\SwitchActiveFamilyHandler;
+use App\Core\Domain\ValueObject\FamilyId;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
-use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class FamilySelectorFlowHandler implements FlowHandlerInterface
@@ -44,8 +44,7 @@ class FamilySelectorFlowHandler implements FlowHandlerInterface
         }
 
         if (str_starts_with($update->callbackData ?? '', 'family:select:')) {
-            $familyIdStr = substr($update->callbackData, strlen('family:select:'));
-            $familyId = Uuid::fromString($familyIdStr);
+            $familyId = FamilyId::fromString(substr($update->callbackData, strlen('family:select:')));
 
             ($this->switchActiveFamilyHandler)(new SwitchActiveFamilyCommand(
                 userId: $context->user->getId(),

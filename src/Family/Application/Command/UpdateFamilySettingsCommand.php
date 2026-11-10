@@ -2,12 +2,13 @@
 
 namespace App\Family\Application\Command;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class UpdateFamilySettingsCommand
 {
-    public Uuid $familyId;
-    public Uuid $updatedByUserId;
+    public FamilyId $familyId;
+    public UserId $updatedByUserId;
     public ?string $name;
     public ?string $timezone;
     public ?string $defaultExpenseCurrency;
@@ -16,8 +17,8 @@ final readonly class UpdateFamilySettingsCommand
     public ?string $countryCode;
 
     public function __construct(
-        Uuid $familyId,
-        ?Uuid $updatedByUserId = null,
+        FamilyId $familyId,
+        ?UserId $updatedByUserId = null,
         ?string $name = null,
         ?string $timezone = null,
         ?string $defaultExpenseCurrency = null,
@@ -25,7 +26,7 @@ final readonly class UpdateFamilySettingsCommand
         ?string $defaultExchangeRateProvider = null,
         ?string $countryCode = null,
         ?string $country = null,
-        ?Uuid $userId = null
+        ?UserId $userId = null
     ) {
         $this->familyId = $familyId;
         $this->updatedByUserId = $updatedByUserId ?? $userId ?? throw new \InvalidArgumentException('Actor user ID is required.');

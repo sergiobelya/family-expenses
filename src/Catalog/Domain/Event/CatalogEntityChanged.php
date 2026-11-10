@@ -3,11 +3,13 @@
 namespace App\Catalog\Domain\Event;
 
 use App\Core\Domain\Event\AuditableEventInterface;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
+use App\Core\Domain\ValueObject\UuidValueObject;
 use DateTimeImmutable;
 use DateTimeZone;
-use Symfony\Component\Uid\Uuid;
 
-final readonly class CatalogChanged implements AuditableEventInterface
+abstract readonly class CatalogEntityChanged implements AuditableEventInterface
 {
     private DateTimeImmutable $occurredAt;
 
@@ -17,10 +19,9 @@ final readonly class CatalogChanged implements AuditableEventInterface
      */
     public function __construct(
         private string $action,
-        private string $entityType,
-        private string $entityId,
-        private Uuid $familyId,
-        private ?Uuid $actorUserId,
+        private UuidValueObject $entityId,
+        private FamilyId $familyId,
+        private ?UserId $actorUserId,
         private ?array $beforeData,
         private ?array $afterData,
         ?DateTimeImmutable $occurredAt = null
@@ -28,29 +29,31 @@ final readonly class CatalogChanged implements AuditableEventInterface
         $this->occurredAt = $occurredAt ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
+    abstract protected function entityType(): string;
+
     public function getOccurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?Uuid
+    public function getFamilyId(): ?FamilyId
     {
         return $this->familyId;
     }
 
-    public function getActorUserId(): ?Uuid
+    public function getActorUserId(): ?UserId
     {
         return $this->actorUserId;
     }
 
     public function getEntityType(): string
     {
-        return $this->entityType;
+        return $this->entityType();
     }
 
     public function getEntityId(): string
     {
-        return $this->entityId;
+        return (string) $this->entityId;
     }
 
     public function getAction(): string

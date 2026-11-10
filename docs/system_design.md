@@ -66,6 +66,8 @@ Use the logical entities in [NFR §2](nfr_requirements.md#2-suggested-data-model
 - `AuditLog` records the changes required by NFR §§1–2 transactionally; it does not depend on an asynchronous consumer.
 - Infrastructure uses `TelegramUpdateInbox`, `OutboxMessage`, and `CommandExecution` records for reliable update and queued-command processing. Expense Management uses a durable `ExpenseSaveAttempt` for save idempotency and recovery.
 
+Use a distinct immutable identifier value object for each entity ID in domain APIs. Convert UUID strings at the transport/application boundary and map identifier objects to PostgreSQL UUID columns through explicit Doctrine types. Keep persistence conversion out of entities.
+
 Active-family selection is a navigation preference, not authorization. Resolve it against current membership on every family-scoped operation. Store only the update data needed for processing and replay; apply a retention policy to processed inbox records.
 
 ### Expense persistence and consistency
@@ -85,6 +87,10 @@ Before saving, move the draft to `Saving` and persist its idempotency key and im
 ### Catalog and search
 
 Keep family-scoped uniqueness in PostgreSQL using the canonical `dedupe_key` and unique constraints described in Business Requirements §6.3. Search matching may be broader than hard-key uniqueness, but fuzzy/transliterated results are suggestions only. Re-fetch selected candidates from the database, scoped to the current family. Keep the search engine behind a port; evaluate PostgreSQL `pg_trgm` against the required transliteration and edit-distance behavior before choosing an index or external service. Database constraints remain authoritative when search is unavailable.
+
+Serialize family-scoped Catalog mutations by locking the owning family row inside the command transaction. PostgreSQL releases this lock when that transaction commits or rolls back; do not rely on the lock after the command handler returns. The current model persists `StoreAlias` as a separate entity. Prefer treating it as a child entity of `Store` in the domain model, while preserving family-wide alias/name uniqueness as a transaction/database invariant across stores; reconcile this ownership change with persistence and event handling before implementing it.
+
+Use specific domain-event types for auditable entity changes rather than relying on a generic event plus an action string to identify the event. Audit snapshots remain written transactionally and are independent of asynchronous outbox delivery.
 
 ### Temporary state
 

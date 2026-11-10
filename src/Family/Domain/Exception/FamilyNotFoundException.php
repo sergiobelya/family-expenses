@@ -6,8 +6,16 @@ use RuntimeException;
 
 class FamilyNotFoundException extends RuntimeException
 {
-    public static function withId(string $id): self
-    {
-        return new self(sprintf('Family with id "%s" was not found.', $id));
+    public function __construct(
+        public readonly string $familyId,
+        ?\Throwable $previous = null
+    ) {
+        parent::__construct('Family was not found.', 0, $previous);
     }
+
+    public static function withId(string $id, ?\Throwable $previous = null): self
+    {
+        return new self($id, $previous);
+    }
+
 }

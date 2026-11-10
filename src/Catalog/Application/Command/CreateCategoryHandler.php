@@ -5,29 +5,30 @@ namespace App\Catalog\Application\Command;
 use App\Catalog\Application\CatalogAccess;
 use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Exception\CatalogNameConflictException;
-use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
-use App\Catalog\Domain\ValueObject\CatalogName;
+use App\Catalog\Domain\Repository\CategoryCatalogRepositoryInterface;
+use App\Catalog\Domain\ValueObject\CategoryName;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
 final class CreateCategoryHandler
 {
     public function __construct(
-        private CatalogRepositoryInterface $catalog,
+        private CategoryCatalogRepositoryInterface $catalog,
         private CatalogAccess $access
     ) {
     }
 
     public function __invoke(CreateCategoryCommand $command): Category
     {
-        $name = CatalogName::fromString($command->name);
+        $name = CategoryName::fromString($command->name);
         $this->access->lockFamilyForMemberMutation($command->familyId, $command->createdByUserId);
-        $conflict = $this->catalog->findCategoryByDedupeKey($command->familyId, $name->dedupeKey);
+        $familyId = $command->familyId;
+        $conflict = $this->catalog->findCategoryByDedupeKey($familyId, $name->dedupeKey);
         if ($conflict !== null) {
             throw new CatalogNameConflictException('category', $conflict->getName());
         }
 
-        $category = Category::create($command->familyId, $name->value, $command->createdByUserId);
+        $category = Category::create($familyId, $name->value, $command->createdByUserId);
         $this->catalog->saveCategory($category);
 
         return $category;

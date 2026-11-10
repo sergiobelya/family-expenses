@@ -2,15 +2,18 @@
 
 namespace App\Catalog\Application\Command;
 
-use Symfony\Component\Uid\Uuid;
+use App\Core\Domain\ValueObject\CategoryId;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\StoreId;
+use App\Core\Domain\ValueObject\UserId;
 
 final readonly class SetStoreDefaultCategoryCommand
 {
     public function __construct(
-        public Uuid $familyId,
-        public Uuid $storeId,
-        public ?Uuid $categoryId,
-        public Uuid $updatedByUserId
+        public FamilyId $familyId,
+        public StoreId $storeId,
+        public ?CategoryId $categoryId,
+        public UserId $updatedByUserId
     ) {
     }
 }

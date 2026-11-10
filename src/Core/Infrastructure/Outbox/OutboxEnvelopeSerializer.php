@@ -13,11 +13,9 @@ final class OutboxEnvelopeSerializer implements SerializerInterface
     {
         $message = $envelope->getMessage();
         if (!$message instanceof OutboxEnvelope) {
-            throw new \InvalidArgumentException(sprintf(
-                'Expected message of type %s, got %s.',
-                OutboxEnvelope::class,
-                get_debug_type($message)
-            ));
+            throw new \InvalidArgumentException(
+                'Expected an OutboxEnvelope message; received ' . get_debug_type($message) . '.'
+            );
         }
 
         return [

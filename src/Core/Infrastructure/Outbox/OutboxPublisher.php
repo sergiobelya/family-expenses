@@ -34,7 +34,7 @@ class OutboxPublisher implements OutboxPublisherInterface
 
     public function retryFailed(OutboxMessage $message): bool
     {
-        if ($message->getStatus() !== OutboxMessage::STATUS_FAILED) {
+        if ($message->getStatus() !== OutboxMessageStatus::FAILED) {
             throw new \LogicException('Only failed outbox messages can be retried manually.');
         }
 
@@ -62,7 +62,7 @@ class OutboxPublisher implements OutboxPublisherInterface
     private function dispatch(OutboxMessage $message): void
     {
         $envelope = OutboxEnvelope::fromOutbox(
-            messageId: $message->getId(),
+            messageId: $message->getId()->toUuid(),
             eventType: $message->getEventType(),
             payload: $message->getPayload(),
             occurredAt: $message->getCreatedAt()

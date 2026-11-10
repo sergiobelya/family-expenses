@@ -11,10 +11,10 @@
             <unique-constraint name="uniq_invitations_token_hash" columns="token_hash"/>
         </unique-constraints>
 
-        <id name="id" type="uuid"/>
-        <field name="familyId" column="family_id" type="uuid"/>
+        <id name="id" type="invitation_id"/>
+        <field name="familyId" column="family_id" type="family_id"/>
         <field name="tokenHash" column="token_hash" type="string" length="64" unique="true"/>
-        <field name="createdByUserId" column="created_by_user_id" type="uuid"/>
+        <field name="createdByUserId" column="created_by_user_id" type="user_id"/>
         <field name="expiresAt" column="expires_at" type="datetime_immutable"/>
         <field name="revokedAt" column="revoked_at" type="datetime_immutable" nullable="true"/>
         <field name="maxUses" column="max_uses" type="integer" nullable="true"/>

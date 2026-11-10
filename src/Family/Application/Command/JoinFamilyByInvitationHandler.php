@@ -4,6 +4,7 @@ namespace App\Family\Application\Command;
 
 use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Entity\FamilyMember;
+use App\Family\Domain\Enum\FamilyMemberStatus;
 use App\Family\Domain\Entity\InvitationUse;
 use App\Family\Domain\Exception\FamilyNotFoundException;
 use App\Family\Domain\Exception\InvitationExpiredException;
@@ -16,9 +17,9 @@ use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Family\Infrastructure\Security\InvitationTokenGenerator;
 use App\Identity\Domain\Repository\UserRepositoryInterface;
+use App\Identity\Domain\Exception\UserNotFoundException;
 use DateTimeImmutable;
 use DateTimeZone;
-use InvalidArgumentException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -41,7 +42,7 @@ class JoinFamilyByInvitationHandler
     {
         $user = $this->userRepository->findById($command->userId);
         if ($user === null) {
-            throw new InvalidArgumentException(sprintf('User with id "%s" was not found.', $command->userId));
+            throw UserNotFoundException::withId((string) $command->userId);
         }
 
         $tokenHash = $this->tokenGenerator->hashToken($command->token);
@@ -91,7 +92,7 @@ class JoinFamilyByInvitationHandler
             familyId: $family->getId(),
             userId: $user->getId(),
             invitationId: $invitation->getId(),
-            status: FamilyMember::STATUS_ACTIVE,
+            status: FamilyMemberStatus::ACTIVE,
             now: $now
         );
         $this->familyMemberRepository->save($member);
