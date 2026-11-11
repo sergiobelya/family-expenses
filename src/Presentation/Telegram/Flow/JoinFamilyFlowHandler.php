@@ -97,7 +97,10 @@ class JoinFamilyFlowHandler implements FlowHandlerInterface
             }
 
             if ($invitation->getMaxUses() !== null) {
-                $usesCount = $this->invitationUseRepository->countByInvitationId($invitation->getId());
+                $usesCount = $this->invitationUseRepository->countByInvitationId(
+                    $invitation->getFamilyId(),
+                    $invitation->getId()
+                );
                 if ($usesCount >= $invitation->getMaxUses()) {
                     $this->telegramClient->sendMessage(
                         chatId: $context->chatId,

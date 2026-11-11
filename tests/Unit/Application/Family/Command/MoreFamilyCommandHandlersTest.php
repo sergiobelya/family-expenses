@@ -66,18 +66,19 @@ class MoreFamilyCommandHandlersTest extends TestCase
 
     public function testRevokeInvitationSuccess(): void
     {
+        $familyId = FamilyId::generate();
         $userId = UserId::generate();
-        $invitation = Invitation::create(FamilyId::generate(), $userId, 'hash123', null, 1);
+        $invitation = Invitation::create($familyId, $userId, 'hash123', null, 1);
 
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $memberRepo->method('isMember')->willReturn(true);
 
         $invitationRepo = $this->createMock(InvitationRepositoryInterface::class);
-        $invitationRepo->method('findById')->with($invitation->getId())->willReturn($invitation);
+        $invitationRepo->method('findById')->with($familyId, $invitation->getId())->willReturn($invitation);
         $invitationRepo->expects($this->once())->method('save')->with($invitation);
 
         $handler = new RevokeInvitationHandler($memberRepo, $invitationRepo);
-        $handler(new RevokeInvitationCommand($invitation->getId(), $userId));
+        $handler(new RevokeInvitationCommand($familyId, $invitation->getId(), $userId));
 
         $this->assertTrue($invitation->isRevoked());
     }

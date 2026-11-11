@@ -24,9 +24,9 @@ class InvitationRepository implements InvitationRepositoryInterface
         $this->entityManager->persist($invitation);
     }
 
-    public function findById(InvitationId $id): ?Invitation
+    public function findById(FamilyId $familyId, InvitationId $id): ?Invitation
     {
-        return $this->repository->find($id);
+        return $this->repository->findOneBy(['familyId' => $familyId, 'id' => $id]);
     }
 
     public function findByTokenHash(string $tokenHash): ?Invitation

@@ -100,6 +100,7 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
             $invitationId = InvitationId::fromString(substr($update->callbackData, strlen('family:invitation:revoke:')));
 
             ($this->revokeInvitationHandler)(new RevokeInvitationCommand(
+                familyId: $activeFamily->getId(),
                 invitationId: $invitationId,
                 revokedByUserId: $context->user->getId()
             ));
@@ -117,14 +118,14 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
         // 3. View Invitation Details
         if (str_starts_with($update->callbackData ?? '', 'family:invitation:view:')) {
             $invitationId = InvitationId::fromString(substr($update->callbackData, strlen('family:invitation:view:')));
-            $invitation = $this->invitationRepository->findById($invitationId);
+            $invitation = $this->invitationRepository->findById($activeFamily->getId(), $invitationId);
 
             if ($invitation === null || !$invitation->getFamilyId()->equals($activeFamily->getId())) {
                 $this->renderList($context, $activeFamily);
                 return;
             }
 
-            $usesCount = $this->invitationUseRepository->countByInvitationId($invitation->getId());
+            $usesCount = $this->invitationUseRepository->countByInvitationId($activeFamily->getId(), $invitation->getId());
             $status = $this->getStatusLabel($invitation, $usesCount);
 
             $details = $this->translator->trans('family.invite.details_title', [
@@ -182,7 +183,7 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
         ];
 
         foreach ($invitations as $inv) {
-            $usesCount = $this->invitationUseRepository->countByInvitationId($inv->getId());
+            $usesCount = $this->invitationUseRepository->countByInvitationId($activeFamily->getId(), $inv->getId());
             $status = $this->getStatusLabel($inv, $usesCount);
 
             $idShort = substr($inv->getId()->toRfc4122(), 0, 8);

@@ -10,8 +10,11 @@ interface InvitationRepositoryInterface
 {
     public function save(Invitation $invitation): void;
 
-    public function findById(InvitationId $id): ?Invitation;
+    public function findById(FamilyId $familyId, InvitationId $id): ?Invitation;
 
+    /**
+     * Global lookup by a unique token; used before the invitation's family is known.
+     */
     public function findByTokenHash(string $tokenHash): ?Invitation;
 
     /**

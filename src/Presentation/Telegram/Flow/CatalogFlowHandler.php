@@ -450,11 +450,11 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         int $page,
         ?string $notice = null
     ): void {
-        $familyId = $context->activeFamily->getId()->toUuid();
+        $familyId = $context->activeFamily->getId();
         $state = $this->stateRepository->get($context->telegramUserId);
         $entries = $type === 'store'
-            ? $this->catalog->findStores(new FamilyId($familyId))
-            : $this->catalog->findCategories(new FamilyId($familyId));
+            ? $this->catalog->findStores($familyId)
+            : $this->catalog->findCategories($familyId);
         $start = $page * self::PAGE_SIZE;
         $entries = array_slice($entries, $start, self::PAGE_SIZE);
         $titleKey = $type === 'store' ? 'catalog.stores_title' : 'catalog.categories_title';
@@ -468,7 +468,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         } else {
             $categories = [];
             if ($type === 'store') {
-                foreach ($this->catalog->findCategories(new FamilyId($familyId)) as $category) {
+                foreach ($this->catalog->findCategories($familyId) as $category) {
                     $categories[(string) $category->getId()] = $category->getName();
                 }
             }
@@ -501,8 +501,8 @@ final class CatalogFlowHandler implements FlowHandlerInterface
             $builder->button($this->trans('selector.previous'), sprintf('catalog:page:%s:%d', $type, $page - 1));
         }
         $total = $type === 'store'
-            ? count($this->catalog->findStores(new FamilyId($familyId)))
-            : count($this->catalog->findCategories(new FamilyId($familyId)));
+            ? count($this->catalog->findStores($familyId))
+            : count($this->catalog->findCategories($familyId));
         if ($start + self::PAGE_SIZE < $total) {
             $builder->button($this->trans('selector.next'), sprintf('catalog:page:%s:%d', $type, $page + 1));
         }
@@ -562,15 +562,15 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         Uuid $id,
         ?string $notice = null
     ): void {
-        $familyId = $context->activeFamily->getId()->toUuid();
+        $familyId = $context->activeFamily->getId();
         if ($type === 'store') {
-            $entry = $this->catalog->findStore(new FamilyId($familyId), new StoreId($id));
+            $entry = $this->catalog->findStore($familyId, new StoreId($id));
             if ($entry === null) {
                 $this->renderList($context, 'store', 0, 'catalog.unavailable');
                 return;
             }
             $categories = [];
-            foreach ($this->catalog->findCategories(new FamilyId($familyId)) as $category) {
+            foreach ($this->catalog->findCategories($familyId) as $category) {
                 $categories[(string) $category->getId()] = $category->getName();
             }
             $default = $entry->getDefaultCategoryId() === null
@@ -578,7 +578,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
                 : $this->escape($categories[(string) $entry->getDefaultCategoryId()] ?? $this->trans('catalog.unavailable'));
             $aliases = array_map(
                 fn ($alias): string => $this->escape($alias->getAlias()),
-                $this->catalog->findStoreAliases(new FamilyId($familyId), new StoreId($id))
+                $this->catalog->findStoreAliases($familyId, new StoreId($id))
             );
             $text = '<b>' . $this->escape($entry->getName()) . '</b>' . "\n"
                 . $this->trans('catalog.default_category') . ': ' . $default . "\n"
@@ -591,7 +591,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
                 ->button($this->trans('common.back'), 'catalog:list:store');
             $this->stateRepository->set($this->state($context, 'store_details', ['store_id' => (string) $id]));
         } else {
-            $entry = $this->catalog->findCategory(new FamilyId($familyId), new CategoryId($id));
+            $entry = $this->catalog->findCategory($familyId, new CategoryId($id));
             if ($entry === null) {
                 $this->renderList($context, 'category', 0, 'catalog.unavailable');
                 return;
@@ -826,19 +826,16 @@ final class CatalogFlowHandler implements FlowHandlerInterface
             return;
         }
 
-        $familyId = $context->activeFamily->getId()->toUuid();
+        $familyId = $context->activeFamily->getId();
         $id = isset($data['id']) ? $this->parseUuid((string) $data['id']) : null;
         if ($type === 'store') {
-            $conflict = $this->catalog->findStoreByDedupeKey(
-                new FamilyId($familyId),
-                $name->dedupeKey,
-                $id === null ? null : new StoreId($id)
-            );
+            $storeId = $id === null ? null : new StoreId($id);
+            $conflict = $this->catalog->findStoreByDedupeKey($familyId, $name->dedupeKey, $storeId);
             if ($conflict !== null) {
                 $this->renderHardConflict($context, $type, $data, $name->value, $conflict->getName(), $conflict->getId()->toUuid());
                 return;
             }
-            $alias = $this->catalog->findStoreAliasByDedupeKey(new FamilyId($familyId), $name->dedupeKey);
+            $alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $name->dedupeKey);
             if ($alias !== null) {
                 $this->renderHardConflict(
                     $context,
@@ -851,24 +848,21 @@ final class CatalogFlowHandler implements FlowHandlerInterface
                 return;
             }
             $matches = array_filter(
-                $this->search->stores(new FamilyId($familyId), $name->value),
+                $this->search->stores($familyId, $name->value),
                 fn (Store $store): bool => $store->getDedupeKey() !== $name->dedupeKey
-                    && ($id === null || !$store->getId()->equals($id))
+                    && ($storeId === null || !$store->getId()->equals($storeId))
             );
         } else {
-            $conflict = $this->catalog->findCategoryByDedupeKey(
-                new FamilyId($familyId),
-                $name->dedupeKey,
-                $id === null ? null : new CategoryId($id)
-            );
+            $categoryId = $id === null ? null : new CategoryId($id);
+            $conflict = $this->catalog->findCategoryByDedupeKey($familyId, $name->dedupeKey, $categoryId);
             if ($conflict !== null) {
                 $this->renderHardConflict($context, $type, $data, $name->value, $conflict->getName(), $conflict->getId()->toUuid());
                 return;
             }
             $matches = array_filter(
-                $this->search->categories(new FamilyId($familyId), $name->value),
+                $this->search->categories($familyId, $name->value),
                 fn (Category $category): bool => $category->getDedupeKey() !== $name->dedupeKey
-                    && ($id === null || !$category->getId()->equals($id))
+                    && ($categoryId === null || !$category->getId()->equals($categoryId))
             );
         }
 
@@ -941,21 +935,21 @@ final class CatalogFlowHandler implements FlowHandlerInterface
      */
     private function saveNameOperation(TelegramUserContext $context, array $data): void
     {
-        $familyId = $context->activeFamily->getId()->toUuid();
+        $familyId = $context->activeFamily->getId();
         $type = (string) ($data['type'] ?? 'store');
         $value = (string) ($data['value'] ?? '');
         $id = isset($data['id']) ? $this->parseUuid((string) $data['id']) : null;
         try {
             if ($type === 'store') {
                 if (($data['operation'] ?? 'create') === 'rename' && $id !== null) {
-                    $created = $this->runCommand(new RenameStoreCommand(new FamilyId($familyId), new StoreId($id), $context->user->getId(), $value));
+                    $created = $this->runCommand(new RenameStoreCommand($familyId, new StoreId($id), $context->user->getId(), $value));
                 } else {
-                    $created = $this->runCommand(new CreateStoreCommand(new FamilyId($familyId), $context->user->getId(), $value));
+                    $created = $this->runCommand(new CreateStoreCommand($familyId, $context->user->getId(), $value));
                 }
             } elseif (($data['operation'] ?? 'create') === 'rename' && $id !== null) {
-                $created = $this->runCommand(new RenameCategoryCommand(new FamilyId($familyId), new CategoryId($id), $context->user->getId(), $value));
+                $created = $this->runCommand(new RenameCategoryCommand($familyId, new CategoryId($id), $context->user->getId(), $value));
             } else {
-                $created = $this->runCommand(new CreateCategoryCommand(new FamilyId($familyId), $context->user->getId(), $value));
+                $created = $this->runCommand(new CreateCategoryCommand($familyId, $context->user->getId(), $value));
             }
         } catch (CatalogNameConflictException $exception) {
             $this->render(
@@ -1000,17 +994,17 @@ final class CatalogFlowHandler implements FlowHandlerInterface
             $this->render($context, 'catalog.invalid_name', $this->backKeyboard('catalog:aliases:' . ($data['store_id'] ?? '')));
             return;
         }
-        $familyId = $context->activeFamily->getId()->toUuid();
+        $familyId = $context->activeFamily->getId();
         $storeId = isset($data['store_id']) ? $this->parseUuid((string) $data['store_id']) : null;
-        if ($storeId === null || $this->catalog->findStore(new FamilyId($familyId), new StoreId($storeId)) === null) {
+        if ($storeId === null || $this->catalog->findStore($familyId, new StoreId($storeId)) === null) {
             $this->renderList($context, 'store', 0, 'catalog.unavailable');
             return;
         }
 
-        $canonical = $this->catalog->findStoreByDedupeKey(new FamilyId($familyId), $name->dedupeKey);
+        $canonical = $this->catalog->findStoreByDedupeKey($familyId, $name->dedupeKey);
         $aliasId = isset($data['alias_id']) ? $this->parseUuid((string) $data['alias_id']) : null;
         $existingAlias = $this->catalog->findStoreAliasByDedupeKey(
-            new FamilyId($familyId),
+            $familyId,
             $name->dedupeKey,
             $aliasId === null ? null : new StoreAliasId($aliasId)
         );
@@ -1034,7 +1028,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         try {
             if ($aliasId !== null) {
                 $this->runCommand(new RenameStoreAliasCommand(
-                    new FamilyId($familyId),
+                    $familyId,
                     new StoreId($storeId),
                     new StoreAliasId($aliasId),
                     $context->user->getId(),
@@ -1042,7 +1036,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
                 ));
             } else {
                 $this->runCommand(new AddStoreAliasCommand(
-                    new FamilyId($familyId),
+                    $familyId,
                     new StoreId($storeId),
                     $context->user->getId(),
                     $name->value
@@ -1064,12 +1058,12 @@ final class CatalogFlowHandler implements FlowHandlerInterface
 
     private function deleteEntry(TelegramUserContext $context, string $type, Uuid $id): void
     {
-        $familyId = $context->activeFamily->getId()->toUuid();
+        $familyId = $context->activeFamily->getId();
         try {
             if ($type === 'store') {
-                $this->runCommand(new DeleteStoreCommand(new FamilyId($familyId), new StoreId($id), $context->user->getId()));
+                $this->runCommand(new DeleteStoreCommand($familyId, new StoreId($id), $context->user->getId()));
             } else {
-                $this->runCommand(new DeleteCategoryCommand(new FamilyId($familyId), new CategoryId($id), $context->user->getId()));
+                $this->runCommand(new DeleteCategoryCommand($familyId, new CategoryId($id), $context->user->getId()));
             }
         } catch (CatalogEntryReferencedException) {
             $this->render(

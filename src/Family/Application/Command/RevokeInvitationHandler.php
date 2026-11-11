@@ -19,7 +19,7 @@ class RevokeInvitationHandler
 
     public function __invoke(RevokeInvitationCommand $command): void
     {
-        $invitation = $this->invitationRepository->findById($command->invitationId);
+        $invitation = $this->invitationRepository->findById($command->familyId, $command->invitationId);
         if ($invitation === null) {
             throw InvitationNotFoundException::create();
         }

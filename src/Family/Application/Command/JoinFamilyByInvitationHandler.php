@@ -76,7 +76,10 @@ class JoinFamilyByInvitationHandler
             throw InvitationExpiredException::create();
         }
 
-        $currentUses = $this->invitationUseRepository->countByInvitationId($invitation->getId());
+        $currentUses = $this->invitationUseRepository->countByInvitationId(
+            $invitation->getFamilyId(),
+            $invitation->getId()
+        );
         if (!$invitation->canBeUsed($currentUses, $now)) {
             throw InvitationLimitExceededException::create();
         }

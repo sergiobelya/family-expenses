@@ -4,19 +4,16 @@ namespace App\Family\Infrastructure\Persistence\Doctrine\Repository;
 
 use App\Family\Domain\Entity\InvitationUse;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
+use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\InvitationId;
 use App\Core\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
 
-class InvitationUseRepository implements InvitationUseRepositoryInterface
+readonly class InvitationUseRepository implements InvitationUseRepositoryInterface
 {
-    /** @var EntityRepository<InvitationUse> */
-    private EntityRepository $repository;
-
-    public function __construct(private EntityManagerInterface $entityManager)
-    {
-        $this->repository = $this->entityManager->getRepository(InvitationUse::class);
+    public function __construct(
+        private EntityManagerInterface $entityManager
+    ) {
     }
 
     public function save(InvitationUse $use): void
@@ -24,18 +21,38 @@ class InvitationUseRepository implements InvitationUseRepositoryInterface
         $this->entityManager->persist($use);
     }
 
-    public function countByInvitationId(InvitationId $invitationId): int
+    public function countByInvitationId(FamilyId $familyId, InvitationId $invitationId): int
     {
-        return $this->repository->count(['invitationId' => $invitationId]);
+        return (int) $this->entityManager->getConnection()->fetchOne(
+            'SELECT COUNT(invitation_use.id)
+            FROM invitation_uses AS invitation_use
+            INNER JOIN invitations AS invitation
+                ON invitation.id = invitation_use.invitation_id
+            WHERE invitation.family_id = :familyId
+                AND invitation.id = :invitationId',
+            [
+                'familyId' => (string) $familyId,
+                'invitationId' => (string) $invitationId,
+            ]
+        );
     }
 
-    public function hasUserUsedInvitation(InvitationId $invitationId, UserId $userId): bool
+    public function hasUserUsedInvitation(FamilyId $familyId, InvitationId $invitationId, UserId $userId): bool
     {
-        $use = $this->repository->findOneBy([
-            'invitationId' => $invitationId,
-            'joinedUserId' => $userId,
-        ]);
-
-        return $use !== null;
+        return $this->entityManager->getConnection()->fetchOne(
+            'SELECT 1
+            FROM invitation_uses AS invitation_use
+            INNER JOIN invitations AS invitation
+                ON invitation.id = invitation_use.invitation_id
+            WHERE invitation.family_id = :familyId
+                AND invitation.id = :invitationId
+                AND invitation_use.joined_user_id = :userId
+            LIMIT 1',
+            [
+                'familyId' => (string) $familyId,
+                'invitationId' => (string) $invitationId,
+                'userId' => (string) $userId,
+            ]
+        ) !== false;
     }
 }
