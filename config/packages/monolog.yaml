@@ -1,0 +1,9 @@
+monolog:
+    handlers:
+        main:
+            type: stream
+            path: php://stderr
+            level: debug
+            formatter: monolog.formatter.json
+            include_stacktraces: true
+            channels: ["!event"]

@@ -1,0 +1,283 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#1 \$array \(list\<App\\Catalog\\Domain\\Entity\\Category\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Catalog/Application/Query/CatalogSearch.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: src/Catalog/Domain/ValueObject/CatalogName.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 2
+			path: src/Core/Domain/ValueObject/UuidValueObject.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: src/Core/Infrastructure/Outbox/Console/PublishOutboxMessagesCommand.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Core/Infrastructure/Outbox/OutboxEnvelopeSerializer.php
+
+		-
+			message: '#^Offset ''body'' on array\{body\: string, headers\?\: array\<string, string\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/Core/Infrastructure/Outbox/OutboxEnvelopeSerializer.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between App\\Family\\Domain\\Enum\\FamilyMemberStatus and App\\Family\\Domain\\Enum\\FamilyMemberStatus\:\:ACTIVE will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: src/Family/Domain/Entity/FamilyMember.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\FamilyCreated\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/FamilyCreated.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\FamilyCreated\:\:getFamilyId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/FamilyCreated.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\FamilySettingsUpdated\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/FamilySettingsUpdated.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\FamilySettingsUpdated\:\:getBeforeData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/FamilySettingsUpdated.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\FamilySettingsUpdated\:\:getFamilyId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/FamilySettingsUpdated.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\InvitationCreated\:\:getActorUserId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/InvitationCreated.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\InvitationCreated\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/InvitationCreated.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\InvitationCreated\:\:getFamilyId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/InvitationCreated.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\InvitationRevoked\:\:getActorUserId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/InvitationRevoked.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\InvitationRevoked\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/InvitationRevoked.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\InvitationRevoked\:\:getBeforeData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/InvitationRevoked.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\InvitationRevoked\:\:getFamilyId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/InvitationRevoked.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\MemberJoined\:\:getActorUserId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/MemberJoined.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\MemberJoined\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/MemberJoined.php
+
+		-
+			message: '#^Method App\\Family\\Domain\\Event\\MemberJoined\:\:getFamilyId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Family/Domain/Event/MemberJoined.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between App\\Core\\Domain\\ValueObject\\FamilyId and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Identity/Domain/Entity/User.php
+
+		-
+			message: '#^Method App\\Identity\\Domain\\Event\\UserActiveFamilySwitched\:\:getActorUserId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Identity/Domain/Event/UserActiveFamilySwitched.php
+
+		-
+			message: '#^Method App\\Identity\\Domain\\Event\\UserActiveFamilySwitched\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Identity/Domain/Event/UserActiveFamilySwitched.php
+
+		-
+			message: '#^Method App\\Identity\\Domain\\Event\\UserActiveFamilySwitched\:\:getBeforeData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Identity/Domain/Event/UserActiveFamilySwitched.php
+
+		-
+			message: '#^Method App\\Identity\\Domain\\Event\\UserCreated\:\:getActorUserId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Identity/Domain/Event/UserCreated.php
+
+		-
+			message: '#^Method App\\Identity\\Domain\\Event\\UserCreated\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Identity/Domain/Event/UserCreated.php
+
+		-
+			message: '#^Method App\\Identity\\Domain\\Event\\UserLanguageChanged\:\:getActorUserId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Identity/Domain/Event/UserLanguageChanged.php
+
+		-
+			message: '#^Method App\\Identity\\Domain\\Event\\UserLanguageChanged\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Identity/Domain/Event/UserLanguageChanged.php
+
+		-
+			message: '#^Method App\\Identity\\Domain\\Event\\UserLanguageChanged\:\:getBeforeData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Identity/Domain/Event/UserLanguageChanged.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Presentation/Telegram/Console/PollTelegramUpdatesCommand.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between Symfony\\Component\\Uid\\Uuid and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: src/Presentation/Telegram/Flow/CatalogFlowHandler.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>step" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: src/Presentation/Telegram/Flow/CatalogFlowHandler.php
+
+		-
+			message: '#^Offset ''plain_token'' does not exist on array\{invitation\: App\\Family\\Domain\\Entity\\Invitation, raw_token\: string\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: src/Presentation/Telegram/Flow/FamilyInvitationsFlowHandler.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: src/Presentation/Telegram/Flow/SettingsFlowHandler.php
+
+		-
+			message: '#^Offset ''plain_token'' does not exist on array\{invitation\: App\\Family\\Domain\\Entity\\Invitation, raw_token\: string\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: tests/Unit/Application/Family/Command/MoreFamilyCommandHandlersTest.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with DateTimeImmutable will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: tests/Unit/Core/Infrastructure/Outbox/OutboxPublisherTest.php
+
+		-
+			message: '#^Call to an undefined method App\\Core\\Domain\\Event\\DomainEventInterface\:\:name\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: tests/Unit/Domain/Core/Aggregate/AggregateRootTest.php
+
+		-
+			message: '#^Method App\\Core\\Domain\\Event\\AuditableEventInterface@anonymous/tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest\.php\:32\:\:getActorUserId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest.php
+
+		-
+			message: '#^Method App\\Core\\Domain\\Event\\AuditableEventInterface@anonymous/tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest\.php\:32\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest.php
+
+		-
+			message: '#^Method App\\Core\\Domain\\Event\\AuditableEventInterface@anonymous/tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest\.php\:32\:\:getFamilyId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest.php
+
+		-
+			message: '#^Method App\\Core\\Domain\\Event\\AuditableEventInterface@anonymous/tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest\.php\:92\:\:getAfterData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest.php
+
+		-
+			message: '#^Method App\\Core\\Domain\\Event\\AuditableEventInterface@anonymous/tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest\.php\:92\:\:getBeforeData\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest.php
+
+		-
+			message: '#^Method App\\Core\\Domain\\Event\\AuditableEventInterface@anonymous/tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest\.php\:92\:\:getFamilyId\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest.php
+
+		-
+			message: '#^Property App\\Core\\Domain\\Event\\AuditableEventInterface@anonymous/tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest\.php\:32\:\:\$id is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: tests/Unit/Infrastructure/Core/DomainEventsFlushListenerTest.php
+
+		-
+			message: '#^Call to function method_exists\(\) with ''Symfony\\\\Component\\\\Dotenv\\\\Dotenv'' and ''bootEnv'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: tests/bootstrap.php
