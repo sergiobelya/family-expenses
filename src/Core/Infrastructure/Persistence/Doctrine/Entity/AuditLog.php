@@ -17,10 +17,16 @@ class AuditLog
     private string $entityType;
     private string $entityId;
     private string $action;
+    /** @var array<string, mixed>|null */
     private ?array $beforeData = null;
+    /** @var array<string, mixed>|null */
     private ?array $afterData = null;
     private DateTimeImmutable $createdAt;
 
+    /**
+     * @param array<string, mixed>|null $beforeData
+     * @param array<string, mixed>|null $afterData
+     */
     public function __construct(
         string $entityType,
         string $entityId,
@@ -73,11 +79,13 @@ class AuditLog
         return $this->action;
     }
 
+    /** @return array<string, mixed>|null */
     public function getBeforeData(): ?array
     {
         return $this->beforeData;
     }
 
+    /** @return array<string, mixed>|null */
     public function getAfterData(): ?array
     {
         return $this->afterData;

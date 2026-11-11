@@ -9,6 +9,9 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class OutboxEnvelope implements JsonSerializable
 {
+    /**
+     * @param array<string, mixed> $payload
+     */
     public function __construct(
         public string $messageId,
         public string $eventType,
@@ -17,6 +20,9 @@ final readonly class OutboxEnvelope implements JsonSerializable
         public string $version = '1.0'
     ) {}
 
+    /**
+     * @param array<string, mixed> $payload
+     */
     public static function fromOutbox(
         Uuid|string $messageId,
         string $eventType,

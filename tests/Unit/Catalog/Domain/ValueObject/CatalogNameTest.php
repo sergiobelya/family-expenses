@@ -17,6 +17,7 @@ final class CatalogNameTest extends TestCase
         self::assertSame($expected, CatalogName::fromString($input)->dedupeKey);
     }
 
+    /** @return iterable<array{string, string}> */
     public static function hardKeyVectors(): iterable
     {
         yield ['Biedronka', 'biedronka'];

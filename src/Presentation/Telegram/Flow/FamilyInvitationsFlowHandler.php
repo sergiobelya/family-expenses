@@ -9,6 +9,7 @@ use App\Family\Application\Command\RevokeInvitationHandler;
 use App\Family\Application\Query\GetFamilyInvitationsHandler;
 use App\Family\Application\Query\GetFamilyInvitationsQuery;
 use App\Family\Domain\Entity\Invitation;
+use App\Family\Domain\Entity\Family;
 use App\Core\Domain\ValueObject\InvitationId;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
@@ -155,7 +156,7 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
         }
     }
 
-    private function renderList(TelegramUserContext $context, $activeFamily): void
+    private function renderList(TelegramUserContext $context, Family $activeFamily): void
     {
         $invitations = ($this->getFamilyInvitationsHandler)(new GetFamilyInvitationsQuery(
             $activeFamily->getId(),

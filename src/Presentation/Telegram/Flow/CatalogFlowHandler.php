@@ -987,6 +987,9 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         $this->renderDetails($context, $type, $created->getId()->toUuid(), 'catalog.saved');
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function processAliasInput(TelegramUserContext $context, array $data, string $value): void
     {
         try {
@@ -1080,6 +1083,9 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         $this->renderList($context, $type, 0, $type === 'store' ? 'catalog.store_deleted' : 'catalog.category_deleted');
     }
 
+    /**
+     * @param array<string, mixed> $markup
+     */
     private function render(
         TelegramUserContext $context,
         string $textOrKey,
@@ -1142,6 +1148,9 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         return $handledStamp?->getResult();
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function state(TelegramUserContext $context, string $step, array $data): UserInteractionState
     {
         $old = $this->stateRepository->get($context->telegramUserId);
@@ -1152,6 +1161,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         return new UserInteractionState($context->telegramUserId, self::FLOW_NAME, $step, $data);
     }
 
+    /** @return array<string, mixed> */
     private function backKeyboard(string $callback): array
     {
         return (new InlineKeyboardBuilder())
@@ -1159,6 +1169,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
             ->toArray();
     }
 
+    /** @return array<string, mixed> */
     private function formKeyboard(string $callback): array
     {
         return (new InlineKeyboardBuilder())
@@ -1199,6 +1210,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         return mb_strlen($value) > 60 ? mb_substr($value, 0, 57) . '…' : $value;
     }
 
+    /** @param array<string|int, mixed> $parameters */
     private function trans(string $key, array $parameters = []): string
     {
         return $this->translator->trans($key, $parameters);

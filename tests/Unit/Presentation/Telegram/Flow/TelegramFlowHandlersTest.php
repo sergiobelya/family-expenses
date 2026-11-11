@@ -41,6 +41,7 @@ use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
 use App\Presentation\Telegram\Keyboard\TimezoneOptions;
 use App\Presentation\Telegram\Keyboard\TimezoneSelector;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -52,7 +53,8 @@ class TelegramFlowHandlersTest extends TestCase
         $translator->method('trans')->willReturnCallback(fn($key, $params = []) => $key);
 
         return new class($translator) implements TranslatorInterface, LocaleAwareInterface {
-            public function __construct(private $mock) {}
+            public function __construct(private TranslatorInterface&MockObject $mock) {}
+            /** @param array<string|int, mixed> $parameters */
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string {
                 return $this->mock->trans($id, $parameters, $domain, $locale);
             }

@@ -3,6 +3,7 @@
 namespace App\Catalog\Application\Query;
 
 use App\Catalog\Application\CatalogAccess;
+use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Repository\StoreCatalogRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -15,6 +16,7 @@ final class ListStoresHandler
     ) {
     }
 
+    /** @return list<Store> */
     public function __invoke(ListStoresQuery $query): array
     {
         $this->access->assertMember($query->familyId, $query->requestedByUserId);

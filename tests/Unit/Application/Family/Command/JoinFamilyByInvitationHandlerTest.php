@@ -21,10 +21,21 @@ use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
 use App\Core\Domain\ValueObject\UserId;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Uid\Uuid;
 
 class JoinFamilyByInvitationHandlerTest extends TestCase
 {
+    /**
+     * @return array{
+     *     MockObject&UserRepositoryInterface,
+     *     MockObject&FamilyRepositoryInterface,
+     *     MockObject&FamilyMemberRepositoryInterface,
+     *     MockObject&InvitationRepositoryInterface,
+     *     MockObject&InvitationUseRepositoryInterface,
+     *     InvitationTokenGenerator
+     * }
+     */
     private function createDependencies(): array
     {
         return [

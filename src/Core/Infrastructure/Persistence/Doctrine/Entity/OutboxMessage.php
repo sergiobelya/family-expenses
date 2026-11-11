@@ -12,6 +12,7 @@ class OutboxMessage
 {
     private OutboxMessageId $id;
     private string $eventType;
+    /** @var array<string, mixed> */
     private array $payload;
     private OutboxMessageStatus $status;
     private DateTimeImmutable $createdAt;
@@ -20,6 +21,9 @@ class OutboxMessage
     private DateTimeImmutable $nextAttemptAt;
     private ?string $lastError = null;
 
+    /**
+     * @param array<string, mixed> $payload
+     */
     public function __construct(
         string $eventType,
         array $payload,
@@ -45,6 +49,7 @@ class OutboxMessage
         return $this->eventType;
     }
 
+    /** @return array<string, mixed> */
     public function getPayload(): array
     {
         return $this->payload;

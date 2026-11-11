@@ -60,7 +60,7 @@
         }
     },
     "scripts": {
-        "analyse": "phpstan analyse --no-progress",
+        "analyse": "phpstan analyse --memory-limit 256M --no-progress",
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
             "assets:install %PUBLIC_DIR%": "symfony-cmd"

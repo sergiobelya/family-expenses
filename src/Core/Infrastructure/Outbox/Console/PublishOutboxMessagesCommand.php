@@ -37,6 +37,7 @@ class PublishOutboxMessagesCommand extends Command implements SignalableCommandI
             ->addOption('time-limit', 't', InputOption::VALUE_REQUIRED, 'Maximum execution time in seconds before exiting (0 = unlimited)', 0);
     }
 
+    /** @return list<int> */
     public function getSubscribedSignals(): array
     {
         return [SIGINT, SIGTERM];

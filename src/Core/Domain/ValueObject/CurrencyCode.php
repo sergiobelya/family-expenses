@@ -38,6 +38,7 @@ final readonly class CurrencyCode
         return $this->value;
     }
 
+    /** @return list<string> */
     public static function supportedCodes(): array
     {
         return self::SUPPORTED;
