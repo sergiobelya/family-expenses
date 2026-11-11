@@ -24,11 +24,11 @@ final class TimezoneSelectorTest extends TestCase
 
         $rows = $selection['keyboard']['inline_keyboard'];
 
-        self::assertSame('settings:family:timezone:search', $rows[0][0]['callback_data']);
+        self::assertSame('settings:family:timezone:search', $rows[0][0]['callback_data'] ?? null);
         self::assertSame('Europe/Warsaw', $rows[1][0]['text']);
         self::assertSame('UTC ✅', $rows[2][0]['text']);
-        self::assertSame('settings:family:timezone:set:Europe/Warsaw', $rows[1][0]['callback_data']);
-        self::assertSame('settings:family:timezone:set:America/New_York', $rows[5][0]['callback_data']);
+        self::assertSame('settings:family:timezone:set:Europe/Warsaw', $rows[1][0]['callback_data'] ?? null);
+        self::assertSame('settings:family:timezone:set:America/New_York', $rows[5][0]['callback_data'] ?? null);
         self::assertTrue($selection['has_results']);
     }
 
@@ -47,7 +47,7 @@ final class TimezoneSelectorTest extends TestCase
 
         self::assertTrue($selection['has_results']);
         self::assertSame('America/Adak', $rows[2][0]['text']);
-        self::assertSame('settings:family:timezone:page:1', $rows[count($rows) - 2][0]['callback_data']);
+        self::assertSame('settings:family:timezone:page:1', $rows[count($rows) - 2][0]['callback_data'] ?? null);
     }
 
     private function createSelector(): TimezoneSelector

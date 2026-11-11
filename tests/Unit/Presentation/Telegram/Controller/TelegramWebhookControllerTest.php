@@ -18,7 +18,7 @@ class TelegramWebhookControllerTest extends TestCase
 
         $request = new Request([], [], [], [], [], [
             'HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN' => 'wrong_secret',
-        ], json_encode(['update_id' => 1]));
+        ], json_encode(['update_id' => 1], JSON_THROW_ON_ERROR));
 
         $response = $controller($request);
 
@@ -40,7 +40,7 @@ class TelegramWebhookControllerTest extends TestCase
                 'from' => ['id' => 222],
                 'text' => '/start',
             ],
-        ]);
+        ], JSON_THROW_ON_ERROR);
 
         $request = new Request([], [], [], [], [], [
             'HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN' => 'my_secret',
@@ -58,11 +58,13 @@ class TelegramWebhookControllerTest extends TestCase
 
         $controller = new TelegramWebhookController($processor, new NullLogger(), null);
 
-        $request = new Request([], [], [], [], [], [], json_encode(['update_id' => 123]));
+        $request = new Request([], [], [], [], [], [], json_encode(['update_id' => 123], JSON_THROW_ON_ERROR));
         $response = $controller($request);
 
         $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
+        self::assertNotFalse($content);
+        $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
         $this->assertTrue($data['duplicate'] ?? false);
     }
 }

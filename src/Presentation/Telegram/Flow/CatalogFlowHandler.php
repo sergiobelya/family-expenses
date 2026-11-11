@@ -136,14 +136,15 @@ final class CatalogFlowHandler implements FlowHandlerInterface
                 $this->renderDefaultCategoryPicker(
                     $context,
                     $storeId,
-                    (int) $matches[2],
+                    (int) ($matches[2] ?? 0),
                     (string) ($state?->data['query'] ?? '')
                 );
                 return;
             }
 
-            $categoryId = $matches[3] === 'none' ? null : $this->parseUuid($matches[3]);
-            if ($matches[3] === 'none' || $categoryId !== null) {
+            $selectedCategory = $matches[3] ?? '';
+            $categoryId = $selectedCategory === 'none' ? null : $this->parseUuid($selectedCategory);
+            if ($selectedCategory === 'none' || $categoryId !== null) {
                 $this->setDefaultCategory($context, $familyId, $storeId, $categoryId);
             }
             return;

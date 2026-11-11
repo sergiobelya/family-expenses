@@ -58,7 +58,22 @@ class TelegramApiClient implements TelegramApiClientInterface
             ));
         }
 
-        return $response['result'];
+        $updates = $response['result'];
+        if (!array_is_list($updates)) {
+            throw new RuntimeException('Telegram getUpdates returned a non-list result.');
+        }
+
+        $normalizedUpdates = [];
+        foreach ($updates as $update) {
+            if (!is_array($update)) {
+                throw new RuntimeException('Telegram getUpdates returned an invalid update.');
+            }
+
+            /** @var array<string, mixed> $update */
+            $normalizedUpdates[] = $update;
+        }
+
+        return $normalizedUpdates;
     }
 
     public function editMessageText(

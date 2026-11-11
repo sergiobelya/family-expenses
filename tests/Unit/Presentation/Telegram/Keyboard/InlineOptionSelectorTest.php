@@ -55,7 +55,7 @@ class InlineOptionSelectorTest extends TestCase
         self::assertSame(1, $selector->normalizePage($options, '', 99));
         self::assertSame('Option 9', $keyboard['inline_keyboard'][1][0]['text']);
         self::assertSame('Option 10 ✅', $keyboard['inline_keyboard'][2][0]['text']);
-        self::assertSame('selector:test:page:0', $keyboard['inline_keyboard'][3][0]['callback_data']);
-        self::assertSame('selector:back', $keyboard['inline_keyboard'][4][0]['callback_data']);
+        self::assertSame('selector:test:page:0', $keyboard['inline_keyboard'][3][0]['callback_data'] ?? null);
+        self::assertSame('selector:back', $keyboard['inline_keyboard'][4][0]['callback_data'] ?? null);
     }
 }

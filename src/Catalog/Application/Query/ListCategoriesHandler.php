@@ -16,7 +16,7 @@ final class ListCategoriesHandler
     ) {
     }
 
-    /** @return list<Category> */
+    /** @return Category[] */
     public function __invoke(ListCategoriesQuery $query): array
     {
         $this->access->assertMember($query->familyId, $query->requestedByUserId);

@@ -16,7 +16,7 @@ final class ListStoresHandler
     ) {
     }
 
-    /** @return list<Store> */
+    /** @return Store[] */
     public function __invoke(ListStoresQuery $query): array
     {
         $this->access->assertMember($query->familyId, $query->requestedByUserId);

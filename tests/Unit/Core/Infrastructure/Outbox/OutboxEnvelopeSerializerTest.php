@@ -23,7 +23,7 @@ final class OutboxEnvelopeSerializerTest extends TestCase
         $encoded = $serializer->encode(new Envelope($message));
         $body = json_decode($encoded['body'], true, 512, JSON_THROW_ON_ERROR);
 
-        self::assertSame(OutboxEnvelope::class, $encoded['headers']['type']);
+        self::assertSame(['type' => OutboxEnvelope::class], $encoded['headers'] ?? null);
         self::assertSame('message-123', $body['message_id']);
         self::assertSame('family.settings_updated', $body['event_type']);
         self::assertSame('1.0', $body['version']);
