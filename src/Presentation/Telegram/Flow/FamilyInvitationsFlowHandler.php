@@ -70,7 +70,7 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
                 maxUses: 1
             ));
 
-            $plainToken = $result['plain_token'];
+            $plainToken = $result['raw_token'];
             /** @var Invitation $invitation */
             $invitation = $result['invitation'];
 

@@ -42,7 +42,7 @@ class MoreFamilyCommandHandlersTest extends TestCase
         $handler = new CreateInvitationHandler($memberRepo, $invitationRepo, $tokenGenerator);
         $result = $handler(new CreateInvitationCommand($familyId, $userId, maxUses: 3));
 
-        $this->assertNotEmpty($result['plain_token']);
+        $this->assertNotEmpty($result['raw_token']);
         $this->assertInstanceOf(Invitation::class, $result['invitation']);
         $this->assertSame(3, $result['invitation']->getMaxUses());
     }

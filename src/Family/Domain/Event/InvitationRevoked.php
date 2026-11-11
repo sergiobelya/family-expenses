@@ -27,12 +27,12 @@ final readonly class InvitationRevoked implements AuditableEventInterface
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?FamilyId
+    public function getFamilyId(): FamilyId
     {
         return $this->familyId;
     }
 
-    public function getActorUserId(): ?UserId
+    public function getActorUserId(): UserId
     {
         return $this->revokedByUserId;
     }
@@ -52,12 +52,12 @@ final readonly class InvitationRevoked implements AuditableEventInterface
         return 'invitation.revoked';
     }
 
-    public function getBeforeData(): ?array
+    public function getBeforeData(): array
     {
         return ['revoked_at' => null];
     }
 
-    public function getAfterData(): ?array
+    public function getAfterData(): array
     {
         return ['revoked_at' => $this->occurredAt->format(\DateTimeInterface::ATOM)];
     }

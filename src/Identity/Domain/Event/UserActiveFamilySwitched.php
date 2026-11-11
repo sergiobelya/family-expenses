@@ -31,7 +31,7 @@ final readonly class UserActiveFamilySwitched implements AuditableEventInterface
         return $this->newFamilyId ?? $this->oldFamilyId;
     }
 
-    public function getActorUserId(): ?UserId
+    public function getActorUserId(): UserId
     {
         return $this->userId;
     }
@@ -51,12 +51,12 @@ final readonly class UserActiveFamilySwitched implements AuditableEventInterface
         return 'user.active_family_switched';
     }
 
-    public function getBeforeData(): ?array
+    public function getBeforeData(): array
     {
         return ['active_family_id' => $this->oldFamilyId ? (string) $this->oldFamilyId : null];
     }
 
-    public function getAfterData(): ?array
+    public function getAfterData(): array
     {
         return ['active_family_id' => $this->newFamilyId ? (string) $this->newFamilyId : null];
     }

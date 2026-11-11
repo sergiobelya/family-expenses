@@ -7,7 +7,7 @@ use Normalizer;
 
 readonly class CatalogName
 {
-    protected function __construct(
+    final protected function __construct(
         public string $value,
         public string $dedupeKey
     ) {}

@@ -31,7 +31,7 @@ final readonly class FamilySettingsUpdated implements AuditableEventInterface
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?FamilyId
+    public function getFamilyId(): FamilyId
     {
         return $this->familyId;
     }
@@ -56,12 +56,12 @@ final readonly class FamilySettingsUpdated implements AuditableEventInterface
         return 'family.settings_updated';
     }
 
-    public function getBeforeData(): ?array
+    public function getBeforeData(): array
     {
         return $this->beforeData;
     }
 
-    public function getAfterData(): ?array
+    public function getAfterData(): array
     {
         return $this->afterData;
     }

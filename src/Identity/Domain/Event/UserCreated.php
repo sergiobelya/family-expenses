@@ -30,7 +30,7 @@ final readonly class UserCreated implements AuditableEventInterface
         return null;
     }
 
-    public function getActorUserId(): ?UserId
+    public function getActorUserId(): UserId
     {
         return $this->userId;
     }
@@ -55,7 +55,7 @@ final readonly class UserCreated implements AuditableEventInterface
         return null;
     }
 
-    public function getAfterData(): ?array
+    public function getAfterData(): array
     {
         return [
             'id' => (string) $this->userId,

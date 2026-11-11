@@ -25,26 +25,24 @@ class DomainEventsFlushListenerTest extends TestCase
     {
         $listener = new DomainEventsFlushListener();
 
-        $eventId = Uuid::v7();
         $familyId = Uuid::v7();
         $actorId = Uuid::v7();
 
-        $auditableEvent = new class($eventId, $familyId, $actorId) implements AuditableEventInterface, AsyncDomainEventInterface {
+        $auditableEvent = new class($familyId, $actorId) implements AuditableEventInterface, AsyncDomainEventInterface {
             public function __construct(
-                private Uuid $id,
                 private Uuid $familyId,
                 private Uuid $actorId
             ) {}
             public function getEventName(): string { return 'family.created'; }
             public function getOccurredAt(): DateTimeImmutable { return new DateTimeImmutable(); }
             public function toPayload(): array { return ['name' => 'Smiths']; }
-            public function getFamilyId(): ?FamilyId { return new FamilyId($this->familyId); }
-            public function getActorUserId(): ?UserId { return new UserId($this->actorId); }
+            public function getFamilyId(): FamilyId { return new FamilyId($this->familyId); }
+            public function getActorUserId(): UserId { return new UserId($this->actorId); }
             public function getEntityType(): string { return 'family'; }
             public function getEntityId(): string { return (string) $this->familyId; }
             public function getAction(): string { return 'create_family'; }
             public function getBeforeData(): ?array { return null; }
-            public function getAfterData(): ?array { return ['name' => 'Smiths']; }
+            public function getAfterData(): array { return ['name' => 'Smiths']; }
         };
 
         $entity = new class($auditableEvent) extends AggregateRoot {
@@ -92,13 +90,13 @@ class DomainEventsFlushListenerTest extends TestCase
         $event = new class($familyId) implements AuditableEventInterface {
             public function __construct(private Uuid $familyId) {}
             public function getOccurredAt(): DateTimeImmutable { return new DateTimeImmutable(); }
-            public function getFamilyId(): ?FamilyId { return new FamilyId($this->familyId); }
+            public function getFamilyId(): FamilyId { return new FamilyId($this->familyId); }
             public function getActorUserId(): ?UserId { return null; }
             public function getEntityType(): string { return 'family'; }
             public function getEntityId(): string { return (string) $this->familyId; }
             public function getAction(): string { return 'family.settings_updated'; }
-            public function getBeforeData(): ?array { return ['name' => 'Old']; }
-            public function getAfterData(): ?array { return ['name' => 'New']; }
+            public function getBeforeData(): array { return ['name' => 'Old']; }
+            public function getAfterData(): array { return ['name' => 'New']; }
         };
 
         $entity = new class($event) extends AggregateRoot {

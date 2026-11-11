@@ -377,7 +377,7 @@ class SettingsFlowHandler implements FlowHandlerInterface
                 '%{timezone}' => (string) $family->getTimezone(),
                 '%{default_currency}' => (string) $family->getDefaultExpenseCurrency(),
                 '%{reporting_currency}' => (string) $family->getReportingCurrency(),
-                '%{provider}' => $family->getDefaultExchangeRateProvider() ?? 'nbp',
+                '%{provider}' => $family->getDefaultExchangeRateProvider(),
             ]);
 
             $builder->button($this->translator->trans('settings.family_settings_btn'), 'settings:family:view')->row();
@@ -476,7 +476,7 @@ class SettingsFlowHandler implements FlowHandlerInterface
             sprintf('• <b>%s:</b> <code>%s</code>', $this->translator->trans('settings.edit_timezone_btn'), (string) $family->getTimezone()),
             sprintf('• <b>%s:</b> <code>%s</code>', $this->translator->trans('settings.edit_default_currency_btn'), (string) $family->getDefaultExpenseCurrency()),
             sprintf('• <b>%s:</b> <code>%s</code>', $this->translator->trans('settings.edit_reporting_currency_btn'), (string) $family->getReportingCurrency()),
-            sprintf('• <b>%s:</b> <code>%s</code>', $this->translator->trans('settings.edit_provider_btn'), $family->getDefaultExchangeRateProvider() ?? 'nbp'),
+            sprintf('• <b>%s:</b> <code>%s</code>', $this->translator->trans('settings.edit_provider_btn'), $family->getDefaultExchangeRateProvider()),
         ];
 
         $kb = (new InlineKeyboardBuilder())

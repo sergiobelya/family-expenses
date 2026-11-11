@@ -53,7 +53,6 @@ class CreateInvitationHandler
         return [
             'invitation' => $invitation,
             'raw_token' => $rawToken,
-            'plain_token' => $rawToken,
         ];
     }
 }

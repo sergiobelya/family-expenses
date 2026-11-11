@@ -76,7 +76,7 @@ final class CatalogSearch
             ?: strcasecmp($left->getName(), $right->getName())
         );
 
-        return array_values($categories);
+        return $categories;
     }
 
     private function distance(string $left, string $right): int

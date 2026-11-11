@@ -12,7 +12,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
-use UnexpectedValueException;
 
 #[AsCommand(
     name: 'app:telegram:poll',
@@ -50,10 +49,6 @@ class PollTelegramUpdatesCommand extends Command
 
             foreach ($updates as $data) {
                 try {
-                    if (!is_array($data)) {
-                        throw new UnexpectedValueException('Telegram returned an invalid update.');
-                    }
-
                     $update = TelegramUpdate::fromArray($data);
                     $this->updateProcessor->process($update);
                     $offset = $update->updateId + 1;

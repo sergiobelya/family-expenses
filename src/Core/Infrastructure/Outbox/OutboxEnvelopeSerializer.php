@@ -27,8 +27,7 @@ final class OutboxEnvelopeSerializer implements SerializerInterface
     public function decode(array $encodedEnvelope): Envelope
     {
         if (
-            !is_string($encodedEnvelope['body'] ?? null)
-            || !is_array($encodedEnvelope['headers'] ?? null)
+            !is_array($encodedEnvelope['headers'] ?? null)
             || ($encodedEnvelope['headers']['type'] ?? null) !== OutboxEnvelope::class
         ) {
             throw new MessageDecodingFailedException('Encoded envelope is not a valid OutboxEnvelope.');

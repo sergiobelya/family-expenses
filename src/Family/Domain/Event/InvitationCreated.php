@@ -29,12 +29,12 @@ final readonly class InvitationCreated implements AuditableEventInterface
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?FamilyId
+    public function getFamilyId(): FamilyId
     {
         return $this->familyId;
     }
 
-    public function getActorUserId(): ?UserId
+    public function getActorUserId(): UserId
     {
         return $this->createdByUserId;
     }
@@ -59,7 +59,7 @@ final readonly class InvitationCreated implements AuditableEventInterface
         return null;
     }
 
-    public function getAfterData(): ?array
+    public function getAfterData(): array
     {
         return [
             'id' => (string) $this->invitationId,

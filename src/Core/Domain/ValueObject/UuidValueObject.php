@@ -7,7 +7,7 @@ use Symfony\Component\Uid\Uuid;
 
 abstract readonly class UuidValueObject implements Stringable
 {
-    public function __construct(protected Uuid $uuid)
+    final public function __construct(protected Uuid $uuid)
     {
     }
 

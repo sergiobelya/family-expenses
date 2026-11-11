@@ -12,24 +12,26 @@ class AggregateRootTest extends TestCase
     public function testRecordAndReleaseEvents(): void
     {
         $dummy = new class extends AggregateRoot {
-            public function trigger(string $name): void
+            public function trigger(DomainEventInterface $event): void
             {
-                $this->recordEvent(new class($name) implements DomainEventInterface {
-                    public function __construct(private string $name) {}
-                    public function name(): string { return $this->name; }
-                    public function getOccurredAt(): DateTimeImmutable { return new DateTimeImmutable(); }
-                });
+                $this->recordEvent($event);
             }
         };
 
-        $dummy->trigger('event_1');
-        $dummy->trigger('event_2');
+        $event1 = new class implements DomainEventInterface {
+            public function getOccurredAt(): DateTimeImmutable { return new DateTimeImmutable(); }
+        };
+        $event2 = new class implements DomainEventInterface {
+            public function getOccurredAt(): DateTimeImmutable { return new DateTimeImmutable(); }
+        };
+        $dummy->trigger($event1);
+        $dummy->trigger($event2);
 
         $events = iterator_to_array($dummy->releaseEvents(), false);
 
         $this->assertCount(2, $events);
-        $this->assertSame('event_1', $events[0]->name());
-        $this->assertSame('event_2', $events[1]->name());
+        $this->assertSame($event1, $events[0]);
+        $this->assertSame($event2, $events[1]);
 
         $subsequentEvents = iterator_to_array($dummy->releaseEvents(), false);
         $this->assertEmpty($subsequentEvents);

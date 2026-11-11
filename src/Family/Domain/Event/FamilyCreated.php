@@ -33,7 +33,7 @@ final readonly class FamilyCreated implements AuditableEventInterface
         return $this->occurredAt;
     }
 
-    public function getFamilyId(): ?FamilyId
+    public function getFamilyId(): FamilyId
     {
         return $this->familyId;
     }
@@ -63,7 +63,7 @@ final readonly class FamilyCreated implements AuditableEventInterface
         return null;
     }
 
-    public function getAfterData(): ?array
+    public function getAfterData(): array
     {
         return [
             'id' => (string) $this->familyId,

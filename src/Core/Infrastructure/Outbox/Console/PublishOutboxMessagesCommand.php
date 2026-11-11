@@ -101,7 +101,7 @@ class PublishOutboxMessagesCommand extends Command implements SignalableCommandI
                 usleep((int) ($sleepSeconds * 1_000_000));
             }
 
-        } while ($continuous && !$this->shouldStop);
+        } while ($continuous);
 
         $pendingLeft = $this->outboxRepository->countPending();
         $io->success(sprintf(

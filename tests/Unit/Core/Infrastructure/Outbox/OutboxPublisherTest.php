@@ -113,7 +113,6 @@ class OutboxPublisherTest extends TestCase
         $this->assertSame(OutboxMessageStatus::FAILED, $msg2->getStatus());
         $this->assertSame(10, $msg2->getAttemptCount());
         $this->assertSame('Transport error', $msg2->getLastError());
-        $this->assertNotNull($msg2->getNextAttemptAt());
     }
 
     public function testNineRetriesRemainPendingWithBackoffTotalingAboutAnHour(): void

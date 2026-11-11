@@ -95,9 +95,11 @@ class User extends AggregateRoot
         $this->activeFamilyId = $newFamilyId;
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
-        if (($oldFamilyId === null && $newFamilyId !== null) ||
-            ($oldFamilyId !== null && $newFamilyId === null) ||
-            ($oldFamilyId !== null && $newFamilyId !== null && !$oldFamilyId->equals($newFamilyId))) {
+        $familyChanged = $oldFamilyId === null
+            ? $newFamilyId !== null
+            : $newFamilyId === null || !$oldFamilyId->equals($newFamilyId);
+
+        if ($familyChanged) {
             $this->recordEvent(new UserActiveFamilySwitched(
                 $this->getId(),
                 $oldFamilyId,

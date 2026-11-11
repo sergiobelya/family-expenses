@@ -209,7 +209,7 @@ class TelegramFlowHandlersTest extends TestCase
         $invitation = Invitation::create($family->getId(), UserId::generate(), 'hash', null, 1);
 
         $createInvHandler->method('__invoke')->willReturn([
-            'plain_token' => 'plain_123',
+            'raw_token' => 'plain_123',
             'invitation' => $invitation,
         ]);
 

@@ -247,7 +247,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
                     new StoreAliasId($aliasId)
                 )
                 : null;
-            if ($alias !== null && $storeId !== null && $aliasId !== null) {
+            if ($alias !== null) {
                 $this->stateRepository->set($this->state($context, 'alias_name', [
                     'store_id' => (string) $storeId,
                     'alias_id' => (string) $aliasId,
@@ -347,7 +347,8 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         }
         if ($data === 'catalog:cancel') {
             $state = $this->stateRepository->get($context->telegramUserId);
-            if (($state?->step ?? '') === 'alias_name' || ($state?->step ?? '') === 'alias_conflict') {
+            $step = $state?->step;
+            if ($step === 'alias_name' || $step === 'alias_conflict') {
                 $storeId = $this->stateUuid($state, 'store_id');
                 if ($storeId !== null) {
                     $this->renderAliases($context, $storeId);

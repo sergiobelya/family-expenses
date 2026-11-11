@@ -30,7 +30,7 @@ final readonly class UserLanguageChanged implements AuditableEventInterface
         return null;
     }
 
-    public function getActorUserId(): ?UserId
+    public function getActorUserId(): UserId
     {
         return $this->userId;
     }
@@ -50,12 +50,12 @@ final readonly class UserLanguageChanged implements AuditableEventInterface
         return 'user.language_changed';
     }
 
-    public function getBeforeData(): ?array
+    public function getBeforeData(): array
     {
         return ['language' => $this->oldLanguage];
     }
 
-    public function getAfterData(): ?array
+    public function getAfterData(): array
     {
         return ['language' => $this->newLanguage];
     }
