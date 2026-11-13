@@ -1,0 +1,7 @@
+- Read and strictly follow `Agents.md` at the repository root (which routes to `src/Agents.md` and `docs/Agents.md`).
+- Check `Dockerfile` for the active PHP version and extensions.
+- **Architecture:** Modular Monolith with strict DDD layers (`Domain`, `Application`, `Infrastructure`) inside `src/{Context}/` and Telegram handlers in `src/Presentation/Telegram/`.
+- **Doctrine:** Use **XML mappings only** (`*.orm.xml`). Never generate `#[ORM\...]` PHP attributes in `Domain/Entity`.
+- **Types & IDs:** Always use domain identifier Value Objects (`FamilyId`, `UserId`, etc.) and backed enums; never pass raw Symfony `Uuid` or strings into Domain/Application APIs.
+- **Transactions & Events:** Never manually instantiate/persist `OutboxMessage` or `AuditLog` in Command Handlers; rely on aggregate `recordEvent()` and `command.bus` transaction middleware.
+- **Multi-tenancy:** Always scope family-related repository/DBAL queries by `FamilyId`.
