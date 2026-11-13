@@ -98,3 +98,8 @@ docker compose run --rm php-app php vendor/bin/phpunit --configuration phpunit.d
 ```bash
 docker compose run --rm php-app vendor/bin/phpstan analyse --memory-limit 256M
 ```
+
+### Security audit
+```bash
+docker compose run --rm php-app composer audit
+```
