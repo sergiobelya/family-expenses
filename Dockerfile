@@ -28,6 +28,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
         unzip \
+    && git config --system --add safe.directory /app \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pecl install xdebug \

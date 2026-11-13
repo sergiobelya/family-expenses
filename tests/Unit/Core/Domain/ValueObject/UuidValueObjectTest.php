@@ -30,7 +30,9 @@ final class UuidValueObjectTest extends TestCase
         $familyId = FamilyId::generate();
 
         self::assertSame((string) $familyId, $type->convertToDatabaseValue($familyId, $platform));
-        self::assertTrue($familyId->equals($type->convertToPHPValue((string) $familyId, $platform)));
+        $convertedFamilyId = $type->convertToPHPValue((string) $familyId, $platform);
+        self::assertInstanceOf(FamilyId::class, $convertedFamilyId);
+        self::assertTrue($familyId->equals($convertedFamilyId));
         self::assertSame(
             (string) $familyId,
             $type->convertToDatabaseValue(Uuid::fromString((string) $familyId), $platform)

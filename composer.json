@@ -2,7 +2,7 @@
     "name": "family-expenses/backend",
     "description": "Family Expenses Telegram Bot",
     "type": "project",
-    "license": "proprietary",
+    "license": "GPL-3.0-only",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {

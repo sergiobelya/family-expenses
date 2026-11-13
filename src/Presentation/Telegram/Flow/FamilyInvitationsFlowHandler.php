@@ -14,13 +14,14 @@ use App\Core\Domain\ValueObject\InvitationId;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FamilyInvitationsFlowHandler implements FlowHandlerInterface
+class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
@@ -36,10 +37,6 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
-        if (!$context->hasActiveFamily()) {
-            return false;
-        }
-
         if ($update->callbackData === 'family:invite:create' || $update->callbackData === 'family:invitations:list') {
             return true;
         }
@@ -51,16 +48,13 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
         return false;
     }
 
-    public function handle(TelegramUpdate $update, TelegramUserContext $context): void
+    public function handle(TelegramUpdate $update, TelegramFamilyMemberContext $context): void
     {
         if ($update->isCallbackQuery()) {
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
         $activeFamily = $context->activeFamily;
-        if ($activeFamily === null) {
-            return;
-        }
 
         // 1. Create Invitation
         if ($update->callbackData === 'family:invite:create') {
@@ -156,7 +150,7 @@ class FamilyInvitationsFlowHandler implements FlowHandlerInterface
         }
     }
 
-    private function renderList(TelegramUserContext $context, Family $activeFamily): void
+    private function renderList(TelegramFamilyMemberContext $context, Family $activeFamily): void
     {
         $invitations = ($this->getFamilyInvitationsHandler)(new GetFamilyInvitationsQuery(
             $activeFamily->getId(),

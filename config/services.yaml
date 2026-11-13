@@ -26,6 +26,7 @@ services:
             - '../src/Core/Infrastructure/Persistence/Redis/UserInteractionState.php'
             - '../src/Presentation/Telegram/DTO/'
             - '../src/Presentation/Telegram/Context/TelegramUserContext.php'
+            - '../src/Presentation/Telegram/Context/TelegramFamilyMemberContext.php'
             - '../src/Kernel.php'
 
     Predis\ClientInterface:

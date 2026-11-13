@@ -5,14 +5,11 @@ namespace App\Tests\Unit\Presentation\Telegram\Context;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
 use App\Family\Domain\Entity\Family;
-use App\Family\Domain\Entity\FamilyMember;
-use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
-use App\Family\Domain\Repository\FamilyRepositoryInterface;
-use App\Identity\Application\Command\EnsureUserExistsCommand;
 use App\Identity\Application\Command\EnsureUserExistsHandler;
 use App\Identity\Domain\Entity\User;
-use App\Identity\Domain\Repository\UserRepositoryInterface;
+use App\Presentation\Telegram\Context\ResolveActiveFamilyForUser;
 use App\Presentation\Telegram\Context\TelegramUserContextResolver;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
@@ -22,12 +19,12 @@ class TelegramUserContextResolverTest extends TestCase
     public function testResolveReturnsNullWhenNoUserOrChat(): void
     {
         $ensureHandler = $this->createMock(EnsureUserExistsHandler::class);
-        $userRepo = $this->createMock(UserRepositoryInterface::class);
-        $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
-        $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
+        $ensureHandler->expects(self::never())->method('__invoke');
+        $resolveActiveFamily = $this->createMock(ResolveActiveFamilyForUser::class);
+        $resolveActiveFamily->expects(self::never())->method('__invoke');
         $translator = $this->createMock(LocaleAwareInterface::class);
 
-        $resolver = new TelegramUserContextResolver($ensureHandler, $userRepo, $familyRepo, $memberRepo, $translator);
+        $resolver = new TelegramUserContextResolver($ensureHandler, $resolveActiveFamily, $translator);
 
         $update = new TelegramUpdate(1, null, null, null, null, null, null, null, null, null, null, null);
         $this->assertNull($resolver->resolve($update));
@@ -42,20 +39,16 @@ class TelegramUserContextResolverTest extends TestCase
         $ensureHandler = $this->createMock(EnsureUserExistsHandler::class);
         $ensureHandler->expects($this->once())->method('__invoke')->willReturn($user);
 
-        $userRepo = $this->createMock(UserRepositoryInterface::class);
-        $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
-        $familyRepo->expects($this->once())->method('findById')->with($family->getId())->willReturn($family);
-
-        $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
-        $memberRepo->expects($this->once())
-            ->method('findByFamilyAndUser')
-            ->with($family->getId(), $user->getId())
-            ->willReturn(new FamilyMember($family->getId(), $user->getId()));
+        $resolveActiveFamily = $this->createMock(ResolveActiveFamilyForUser::class);
+        $resolveActiveFamily->expects(self::once())
+            ->method('__invoke')
+            ->with($user)
+            ->willReturn($family);
 
         $translator = $this->createMock(LocaleAwareInterface::class);
         $translator->expects($this->once())->method('setLocale')->with('uk');
 
-        $resolver = new TelegramUserContextResolver($ensureHandler, $userRepo, $familyRepo, $memberRepo, $translator);
+        $resolver = new TelegramUserContextResolver($ensureHandler, $resolveActiveFamily, $translator);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 10,
@@ -76,7 +69,8 @@ class TelegramUserContextResolverTest extends TestCase
 
         $this->assertNotNull($context);
         $this->assertSame($user, $context->user);
-        $this->assertSame($family, $context->activeFamily);
+        $this->assertInstanceOf(TelegramFamilyMemberContext::class, $context);
+        self::assertSame($family, $context->activeFamily);
         $this->assertSame('uk', $context->language);
         $this->assertSame(123456, $context->telegramUserId);
         $this->assertSame(999, $context->chatId);

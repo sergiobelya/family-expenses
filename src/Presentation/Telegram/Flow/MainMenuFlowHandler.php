@@ -4,12 +4,13 @@ namespace App\Presentation\Telegram\Flow;
 
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class MainMenuFlowHandler implements FlowHandlerInterface
+class MainMenuFlowHandler implements FamilyContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
@@ -20,10 +21,6 @@ class MainMenuFlowHandler implements FlowHandlerInterface
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
-        if (!$context->hasActiveFamily()) {
-            return false;
-        }
-
         if ($update->text === '/start' || $update->text === '/menu') {
             return true;
         }
@@ -47,16 +44,13 @@ class MainMenuFlowHandler implements FlowHandlerInterface
         return false;
     }
 
-    public function handle(TelegramUpdate $update, TelegramUserContext $context): void
+    public function handle(TelegramUpdate $update, TelegramFamilyMemberContext $context): void
     {
         if ($update->isCallbackQuery()) {
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
         $activeFamily = $context->activeFamily;
-        if ($activeFamily === null) {
-            return;
-        }
 
         $memberships = $this->familyMemberRepository->findByUserId($context->user->getId());
         $hasMultipleFamilies = count($memberships) > 1;

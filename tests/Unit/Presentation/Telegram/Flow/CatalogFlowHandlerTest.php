@@ -12,6 +12,7 @@ use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Identity\Domain\Entity\User;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Flow\CatalogFlowHandler;
@@ -55,7 +56,7 @@ final class CatalogFlowHandlerTest extends TestCase
             $this->createMock(MessageBusInterface::class),
             $translator
         );
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
             'update_id' => 4,
             'callback_query' => [
@@ -120,7 +121,7 @@ final class CatalogFlowHandlerTest extends TestCase
             $this->createMock(MessageBusInterface::class),
             $translator
         );
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
             'update_id' => 3,
             'callback_query' => [
@@ -134,8 +135,9 @@ final class CatalogFlowHandlerTest extends TestCase
         self::assertTrue($handler->supports($update, $context));
         $handler->handle($update, $context);
 
+        self::assertIsArray($markup);
         $callbackData = array_column(
-            array_merge(...$markup['inline_keyboard']),
+            array_merge(...($markup['inline_keyboard'] ?? [])),
             'callback_data'
         );
         self::assertContains('catdef:search', $callbackData);
@@ -181,7 +183,7 @@ final class CatalogFlowHandlerTest extends TestCase
             $this->createMock(MessageBusInterface::class),
             $translator
         );
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
             'message' => ['message_id' => 9, 'chat' => ['id' => 111], 'text' => 'main_menu.stores'],
@@ -209,7 +211,7 @@ final class CatalogFlowHandlerTest extends TestCase
             $members,
             $translator
         );
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
             'update_id' => 2,
             'message' => ['message_id' => 10, 'chat' => ['id' => 111], 'text' => 'main_menu.stores'],

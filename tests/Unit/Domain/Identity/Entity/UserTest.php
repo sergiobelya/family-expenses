@@ -48,6 +48,8 @@ class UserTest extends TestCase
         $user = new User(123456789);
         $familyId = Uuid::v7();
         $user->setActiveFamilyId(new FamilyId($familyId));
-        $this->assertTrue((new FamilyId($familyId))->equals($user->getActiveFamilyId()));
+        $activeFamilyId = $user->getActiveFamilyId();
+        self::assertNotNull($activeFamilyId);
+        $this->assertTrue((new FamilyId($familyId))->equals($activeFamilyId));
     }
 }

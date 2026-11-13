@@ -3,12 +3,13 @@
 namespace App\Presentation\Telegram\Flow;
 
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FamilyOnboardingFlowHandler implements FlowHandlerInterface
+class FamilyOnboardingFlowHandler implements UserContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
@@ -17,7 +18,7 @@ class FamilyOnboardingFlowHandler implements FlowHandlerInterface
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
-        if ($context->hasActiveFamily()) {
+        if ($context instanceof TelegramFamilyMemberContext) {
             return false;
         }
 

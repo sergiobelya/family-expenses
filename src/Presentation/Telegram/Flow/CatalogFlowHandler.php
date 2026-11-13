@@ -28,6 +28,7 @@ use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
@@ -39,7 +40,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final class CatalogFlowHandler implements FlowHandlerInterface
+final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
 {
     private const string FLOW_NAME = 'catalog';
     private const int PAGE_SIZE = 8;
@@ -58,10 +59,6 @@ final class CatalogFlowHandler implements FlowHandlerInterface
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
-        if (!$context->hasActiveFamily()) {
-            return false;
-        }
-
         if (str_starts_with($update->callbackData ?? '', 'catalog:')
             || str_starts_with($update->callbackData ?? '', 'catdef:')) {
             return true;
@@ -79,16 +76,13 @@ final class CatalogFlowHandler implements FlowHandlerInterface
             && !str_starts_with($update->text, '/');
     }
 
-    public function handle(TelegramUpdate $update, TelegramUserContext $context): void
+    public function handle(TelegramUpdate $update, TelegramFamilyMemberContext $context): void
     {
         if ($update->isCallbackQuery()) {
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
         $family = $context->activeFamily;
-        if ($family === null) {
-            return;
-        }
         $familyId = $family->getId()->toUuid();
         $this->access->assertMember($family->getId(), $context->user->getId());
 
@@ -414,7 +408,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
 
     private function handleTextInput(
         TelegramUpdate $update,
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         UserInteractionState $state
     ): void {
         $text = trim($update->text ?? '');
@@ -447,7 +441,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     }
 
     private function renderList(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         string $type,
         int $page,
         ?string $notice = null
@@ -519,7 +513,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
      * @param Store[]|Category[] $results
      */
     private function renderSearchResults(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         string $type,
         string $query,
         array $results
@@ -559,7 +553,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     }
 
     private function renderDetails(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         string $type,
         Uuid $id,
         ?string $notice = null
@@ -612,7 +606,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     }
 
     private function renderDefaultCategoryPicker(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         Uuid $storeId,
         int $page = 0,
         string $query = ''
@@ -672,7 +666,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     }
 
     private function setDefaultCategory(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         Uuid $familyId,
         Uuid $storeId,
         ?Uuid $categoryId
@@ -691,7 +685,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     }
 
     private function renderAliases(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         Uuid $storeId,
         ?string $notice = null
     ): void {
@@ -718,7 +712,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     }
 
     private function renderAliasDetails(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         Uuid $storeId,
         Uuid $aliasId,
         string $name
@@ -734,7 +728,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         $this->render($context, '<b>' . $this->escape($name) . '</b>', $builder->toArray());
     }
 
-    private function renderDeleteConfirmation(TelegramUserContext $context, string $type, Uuid $id): void
+    private function renderDeleteConfirmation(TelegramFamilyMemberContext $context, string $type, Uuid $id): void
     {
         $entry = $type === 'store'
             ? $this->catalog->findStore($context->activeFamily->getId(), new StoreId($id))
@@ -758,7 +752,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     }
 
     private function startNameInput(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         string $type,
         string $operation,
         ?Uuid $id = null,
@@ -791,13 +785,13 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         $this->render($context, $this->namePrompt($value), $this->formKeyboard($this->listCallback($type)));
     }
 
-    private function startSearch(TelegramUserContext $context, string $type): void
+    private function startSearch(TelegramFamilyMemberContext $context, string $type): void
     {
         $this->stateRepository->set($this->state($context, 'search', ['type' => $type]));
         $this->render($context, 'catalog.search_prompt', $this->formKeyboard($this->listCallback($type)));
     }
 
-    private function startAliasInput(TelegramUserContext $context, Uuid $storeId): void
+    private function startAliasInput(TelegramFamilyMemberContext $context, Uuid $storeId): void
     {
         if ($this->catalog->findStore($context->activeFamily->getId(), new StoreId($storeId)) === null) {
             $this->renderList($context, 'store', 0, 'catalog.unavailable');
@@ -814,7 +808,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     /**
      * @param array<string, mixed> $data
      */
-    private function processNameInput(TelegramUserContext $context, array $data, string $value): void
+    private function processNameInput(TelegramFamilyMemberContext $context, array $data, string $value): void
     {
         $type = (string) ($data['type'] ?? 'store');
         try {
@@ -904,7 +898,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
      * @param array<string, mixed> $data
      */
     private function renderHardConflict(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         string $type,
         array $data,
         string $value,
@@ -935,7 +929,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     /**
      * @param array<string, mixed> $data
      */
-    private function saveNameOperation(TelegramUserContext $context, array $data): void
+    private function saveNameOperation(TelegramFamilyMemberContext $context, array $data): void
     {
         $familyId = $context->activeFamily->getId();
         $type = (string) ($data['type'] ?? 'store');
@@ -991,7 +985,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     /**
      * @param array<string, mixed> $data
      */
-    private function processAliasInput(TelegramUserContext $context, array $data, string $value): void
+    private function processAliasInput(TelegramFamilyMemberContext $context, array $data, string $value): void
     {
         try {
             $name = CatalogName::fromString($value);
@@ -1061,7 +1055,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
         $this->renderAliases($context, $storeId, 'catalog.alias_saved');
     }
 
-    private function deleteEntry(TelegramUserContext $context, string $type, Uuid $id): void
+    private function deleteEntry(TelegramFamilyMemberContext $context, string $type, Uuid $id): void
     {
         $familyId = $context->activeFamily->getId();
         try {
@@ -1088,7 +1082,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
      * @param array<string, mixed> $markup
      */
     private function render(
-        TelegramUserContext $context,
+        TelegramFamilyMemberContext $context,
         string $textOrKey,
         array $markup,
         ?UserInteractionState $previousState = null
@@ -1152,7 +1146,7 @@ final class CatalogFlowHandler implements FlowHandlerInterface
     /**
      * @param array<string, mixed> $data
      */
-    private function state(TelegramUserContext $context, string $step, array $data): UserInteractionState
+    private function state(TelegramFamilyMemberContext $context, string $step, array $data): UserInteractionState
     {
         $old = $this->stateRepository->get($context->telegramUserId);
         if (isset($old?->data['message_id'])) {

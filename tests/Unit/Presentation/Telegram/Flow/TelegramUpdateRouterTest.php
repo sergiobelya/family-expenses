@@ -7,8 +7,9 @@ use App\Identity\Domain\Entity\User;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\Context\TelegramUserContextResolver;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
-use App\Presentation\Telegram\Flow\FlowHandlerInterface;
+use App\Presentation\Telegram\Flow\FamilyContextFlowHandlerInterface;
 use App\Presentation\Telegram\Flow\TelegramUpdateRouter;
+use App\Presentation\Telegram\Flow\UserContextFlowHandlerInterface;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -17,7 +18,7 @@ class TelegramUpdateRouterTest extends TestCase
 {
     public function testMainMenuButtonClearsActiveFlowBeforeRouting(): void
     {
-        $context = new TelegramUserContext(new User(123456), null, 'en', 123456, 111);
+        $context = new TelegramUserContext(new User(123456), 'en', 123456, 111);
         $contextResolver = $this->createMock(TelegramUserContextResolver::class);
         $contextResolver->method('resolve')->willReturn($context);
 
@@ -30,7 +31,7 @@ class TelegramUpdateRouterTest extends TestCase
                 $events[] = 'clear';
             });
 
-        $handler = $this->createMock(FlowHandlerInterface::class);
+        $handler = $this->createMock(UserContextFlowHandlerInterface::class);
         $handler->expects(self::once())
             ->method('supports')
             ->willReturnCallback(static function () use (&$events): bool {
@@ -67,14 +68,14 @@ class TelegramUpdateRouterTest extends TestCase
 
     public function testOrdinaryTextDoesNotClearActiveFlow(): void
     {
-        $context = new TelegramUserContext(new User(123456), null, 'en', 123456, 111);
+        $context = new TelegramUserContext(new User(123456), 'en', 123456, 111);
         $contextResolver = $this->createMock(TelegramUserContextResolver::class);
         $contextResolver->method('resolve')->willReturn($context);
 
         $stateRepository = $this->createMock(UserInteractionStateRepository::class);
         $stateRepository->expects(self::never())->method('clear');
 
-        $handler = $this->createMock(FlowHandlerInterface::class);
+        $handler = $this->createMock(UserContextFlowHandlerInterface::class);
         $handler->expects(self::once())->method('supports')->willReturn(true);
         $handler->expects(self::once())->method('handle');
 
@@ -91,6 +92,42 @@ class TelegramUpdateRouterTest extends TestCase
             'update_id' => 2,
             'message' => [
                 'message_id' => 11,
+                'chat' => ['id' => 111],
+                'text' => 'family name input',
+            ],
+        ]));
+    }
+
+    public function testFamilyHandlerIsSkippedBeforeSupportsWhenContextHasNoFamily(): void
+    {
+        $context = new TelegramUserContext(new User(123456), 'en', 123456, 111);
+        $contextResolver = $this->createMock(TelegramUserContextResolver::class);
+        $contextResolver->method('resolve')->willReturn($context);
+
+        $stateRepository = $this->createMock(UserInteractionStateRepository::class);
+        $stateRepository->expects(self::never())->method('clear');
+
+        $familyHandler = $this->createMock(FamilyContextFlowHandlerInterface::class);
+        $familyHandler->expects(self::never())->method('supports');
+        $familyHandler->expects(self::never())->method('handle');
+
+        $userHandler = $this->createMock(UserContextFlowHandlerInterface::class);
+        $userHandler->expects(self::once())->method('supports')->willReturn(true);
+        $userHandler->expects(self::once())->method('handle');
+
+        $translator = $this->createMock(TranslatorInterface::class);
+        $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
+        $router = new TelegramUpdateRouter(
+            $contextResolver,
+            $stateRepository,
+            new MainMenuKeyboard($translator),
+            [$familyHandler, $userHandler]
+        );
+
+        $router->route(TelegramUpdate::fromArray([
+            'update_id' => 3,
+            'message' => [
+                'message_id' => 12,
                 'chat' => ['id' => 111],
                 'text' => 'family name input',
             ],

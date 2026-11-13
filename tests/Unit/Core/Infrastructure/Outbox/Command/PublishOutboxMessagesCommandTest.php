@@ -59,6 +59,7 @@ class PublishOutboxMessagesCommandTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, $exitCode);
         $output = preg_replace('/\s+/', ' ', $tester->getDisplay());
+        self::assertIsString($output);
         $this->assertStringContainsString('Total published in session: 10', $output);
         $this->assertStringContainsString('Pending remaining in queue: 2', $output);
     }

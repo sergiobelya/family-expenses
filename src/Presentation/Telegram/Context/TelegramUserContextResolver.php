@@ -2,13 +2,8 @@
 
 namespace App\Presentation\Telegram\Context;
 
-use App\Family\Domain\Entity\Family;
-use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
-use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Identity\Application\Command\EnsureUserExistsCommand;
 use App\Identity\Application\Command\EnsureUserExistsHandler;
-use App\Identity\Domain\Entity\User;
-use App\Identity\Domain\Repository\UserRepositoryInterface;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 
@@ -18,9 +13,7 @@ class TelegramUserContextResolver
 
     public function __construct(
         private EnsureUserExistsHandler $ensureUserExistsHandler,
-        private UserRepositoryInterface $userRepository,
-        private FamilyRepositoryInterface $familyRepository,
-        private FamilyMemberRepositoryInterface $familyMemberRepository,
+        private ResolveActiveFamilyForUser $resolveActiveFamily,
         private LocaleAwareInterface $translator
     ) {}
 
@@ -46,37 +39,19 @@ class TelegramUserContextResolver
         $userLanguage = $user->getLanguage();
         $this->translator->setLocale($userLanguage);
 
-        $activeFamily = null;
-        $activeFamilyId = $user->getActiveFamilyId();
+        $activeFamily = ($this->resolveActiveFamily)($user);
 
-        if ($activeFamilyId !== null) {
-            $family = $this->familyRepository->findById($activeFamilyId);
-            if ($family !== null) {
-                $member = $this->familyMemberRepository->findByFamilyAndUser(
-                    $family->getId(),
-                    $user->getId()
-                );
-                if ($member !== null && $member->isActive()) {
-                    $activeFamily = $family;
-                } else {
-                    // Stale family membership
-                    $user->switchActiveFamily(null);
-                    $this->userRepository->save($user);
-                }
-            } else {
-                $user->switchActiveFamily(null);
-                $this->userRepository->save($user);
-            }
-        }
-
-        return new TelegramUserContext(
+        $context = new TelegramUserContext(
             user: $user,
-            activeFamily: $activeFamily,
             language: $userLanguage,
             telegramUserId: $update->fromUserId,
             chatId: $update->chatId,
             fromUsername: $update->fromUsername,
             fromFirstName: $update->fromFirstName
         );
+
+        return $activeFamily === null
+            ? $context
+            : new TelegramFamilyMemberContext($context, $activeFamily);
     }
 }

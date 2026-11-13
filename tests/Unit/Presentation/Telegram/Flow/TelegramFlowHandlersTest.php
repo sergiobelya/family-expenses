@@ -26,15 +26,18 @@ use App\Identity\Application\Command\ChangeUserLanguageHandler;
 use App\Identity\Application\Command\SwitchActiveFamilyHandler;
 use App\Identity\Domain\Entity\User;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Flow\FamilyCreationWizardHandler;
 use App\Presentation\Telegram\Flow\FamilyInvitationsFlowHandler;
 use App\Presentation\Telegram\Flow\FamilyMembersFlowHandler;
 use App\Presentation\Telegram\Flow\FamilyOnboardingFlowHandler;
+use App\Presentation\Telegram\Flow\FamilySettingsFlowHandler;
 use App\Presentation\Telegram\Flow\FamilySelectorFlowHandler;
 use App\Presentation\Telegram\Flow\JoinFamilyFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
+use App\Presentation\Telegram\Flow\SettingsMenuRenderer;
 use App\Presentation\Telegram\Flow\SettingsFlowHandler;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
@@ -55,7 +58,7 @@ class TelegramFlowHandlersTest extends TestCase
         return new class($translator) implements TranslatorInterface, LocaleAwareInterface {
             public function __construct(private TranslatorInterface&MockObject $mock) {}
             /** @param array<string|int, mixed> $parameters */
-            public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string {
+            public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string {
                 return $this->mock->trans($id, $parameters, $domain, $locale);
             }
             public function setLocale(string $locale): void {}
@@ -81,7 +84,7 @@ class TelegramFlowHandlersTest extends TestCase
 
         $user = new User(123456);
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
@@ -101,7 +104,7 @@ class TelegramFlowHandlersTest extends TestCase
         $handler = new FamilyOnboardingFlowHandler($telegramClient, $translator);
 
         $user = new User(123456);
-        $context = new TelegramUserContext($user, null, 'en', 123456, 111);
+        $context = new TelegramUserContext($user, 'en', 123456, 111);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
@@ -132,7 +135,7 @@ class TelegramFlowHandlersTest extends TestCase
         );
 
         $user = new User(123456);
-        $context = new TelegramUserContext($user, null, 'en', 123456, 111);
+        $context = new TelegramUserContext($user, 'en', 123456, 111);
 
         $updateStart = TelegramUpdate::fromArray([
             'update_id' => 1,
@@ -165,7 +168,7 @@ class TelegramFlowHandlersTest extends TestCase
 
         $user = new User(123456);
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
@@ -190,7 +193,7 @@ class TelegramFlowHandlersTest extends TestCase
 
         $user = new User(123456);
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
@@ -233,7 +236,7 @@ class TelegramFlowHandlersTest extends TestCase
         );
 
         $user = new User(123456);
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
@@ -289,7 +292,7 @@ class TelegramFlowHandlersTest extends TestCase
         );
 
         $user = new User(123456);
-        $context = new TelegramUserContext($user, null, 'en', 123456, 111);
+        $context = new TelegramUserContext($user, 'en', 123456, 111);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
@@ -311,24 +314,22 @@ class TelegramFlowHandlersTest extends TestCase
                 return [];
             });
 
-        $changeLangHandler = $this->createMock(ChangeUserLanguageHandler::class);
         $updateFamilySettingsHandler = $this->createMock(UpdateFamilySettingsHandler::class);
         $stateRepo = $this->createMock(UserInteractionStateRepository::class);
         $translator = $this->createTranslator();
 
-        $handler = new SettingsFlowHandler(
+        $handler = new FamilySettingsFlowHandler(
             $telegramClient,
-            $changeLangHandler,
             $updateFamilySettingsHandler,
             $stateRepo,
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
-            $translator
+            new SettingsMenuRenderer($telegramClient, $translator)
         );
 
         $user = new User(123456);
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $context = new TelegramUserContext($user, $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
@@ -354,18 +355,17 @@ class TelegramFlowHandlersTest extends TestCase
             });
 
         $translator = $this->createTranslator();
-        $handler = new SettingsFlowHandler(
+        $handler = new FamilySettingsFlowHandler(
             $telegramClient,
-            $this->createMock(ChangeUserLanguageHandler::class),
             $this->createMock(UpdateFamilySettingsHandler::class),
             $this->createMock(UserInteractionStateRepository::class),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
-            $translator
+            new SettingsMenuRenderer($telegramClient, $translator)
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $context = new TelegramUserContext(new User(123456), $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext(new User(123456), 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
             'callback_query' => [
@@ -402,18 +402,17 @@ class TelegramFlowHandlersTest extends TestCase
         $updateFamilySettingsHandler->expects($this->never())->method('__invoke');
 
         $translator = $this->createTranslator();
-        $handler = new SettingsFlowHandler(
+        $handler = new FamilySettingsFlowHandler(
             $telegramClient,
-            $this->createMock(ChangeUserLanguageHandler::class),
             $updateFamilySettingsHandler,
             $this->createMock(UserInteractionStateRepository::class),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
-            $translator
+            new SettingsMenuRenderer($telegramClient, $translator)
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $context = new TelegramUserContext(new User(123456), $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext(new User(123456), 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
             'callback_query' => [
@@ -449,7 +448,7 @@ class TelegramFlowHandlersTest extends TestCase
             $translator
         );
 
-        $context = new TelegramUserContext(new User(123456), null, 'en', 123456, 111);
+        $context = new TelegramUserContext(new User(123456), 'en', 123456, 111);
         $update = TelegramUpdate::fromArray([
             'update_id' => 1,
             'callback_query' => [
@@ -474,20 +473,18 @@ class TelegramFlowHandlersTest extends TestCase
             });
 
         $stateRepo = $this->createMock(UserInteractionStateRepository::class);
-        $stateRepo->expects($this->once())->method('get')->willReturn(null);
 
         $handler = new SettingsFlowHandler(
             $telegramClient,
             $this->createMock(ChangeUserLanguageHandler::class),
-            $this->createMock(UpdateFamilySettingsHandler::class),
             $stateRepo,
-            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $this->createTranslator()),
             $this->createTranslator(),
-            $this->createTranslator()
+            $this->createTranslator(),
+            new SettingsMenuRenderer($telegramClient, $this->createTranslator())
         );
 
         $user = new User(123456);
-        $context = new TelegramUserContext($user, null, 'en', 123456, 111);
+        $context = new TelegramUserContext($user, 'en', 123456, 111);
         $languageCallback = TelegramUpdate::fromArray([
             'update_id' => 1,
             'callback_query' => ['id' => 'cb1', 'data' => 'settings:lang:select', 'message' => ['chat' => ['id' => 111]]],
@@ -522,18 +519,17 @@ class TelegramFlowHandlersTest extends TestCase
         $stateRepo->expects($this->exactly(2))->method('set');
 
         $translator = $this->createTranslator();
-        $handler = new SettingsFlowHandler(
+        $handler = new FamilySettingsFlowHandler(
             $telegramClient,
-            $this->createMock(ChangeUserLanguageHandler::class),
             $this->createMock(UpdateFamilySettingsHandler::class),
             $stateRepo,
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
-            $translator
+            new SettingsMenuRenderer($telegramClient, $translator)
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $context = new TelegramUserContext(new User(123456), $family, 'en', 123456, 111);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext(new User(123456), 'en', 123456, 111), $family);
         $searchCallback = TelegramUpdate::fromArray([
             'update_id' => 1,
             'callback_query' => ['id' => 'cb1', 'data' => 'settings:family:timezone:search', 'message' => ['chat' => ['id' => 111]]],
@@ -581,7 +577,7 @@ class TelegramFlowHandlersTest extends TestCase
             $translator
         );
 
-        $context = new TelegramUserContext(new User(123456), null, 'en', 123456, 111);
+        $context = new TelegramUserContext(new User(123456), 'en', 123456, 111);
         $searchCallback = TelegramUpdate::fromArray([
             'update_id' => 1,
             'callback_query' => ['id' => 'cb1', 'data' => 'family:create:timezone:search', 'message' => ['chat' => ['id' => 111]]],

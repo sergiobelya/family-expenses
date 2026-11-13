@@ -101,6 +101,9 @@ final readonly class TelegramUpdate
         );
     }
 
+    /**
+     * @phpstan-assert-if-true string $this->callbackQueryId
+     */
     public function isCallbackQuery(): bool
     {
         return $this->callbackQueryId !== null;

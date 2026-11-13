@@ -69,6 +69,8 @@ class IdentityCommandHandlersTest extends TestCase
         $handler = new SwitchActiveFamilyHandler($userRepo);
         $handler(new SwitchActiveFamilyCommand($user->getId(), $newFamilyId));
 
-        $this->assertTrue($newFamilyId->equals($user->getActiveFamilyId()));
+        $activeFamilyId = $user->getActiveFamilyId();
+        self::assertNotNull($activeFamilyId);
+        $this->assertTrue($newFamilyId->equals($activeFamilyId));
     }
 }

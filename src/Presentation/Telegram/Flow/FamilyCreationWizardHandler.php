@@ -7,6 +7,7 @@ use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\CreateFamilyCommand;
 use App\Family\Application\Command\CreateFamilyHandler;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\ExchangeRateProviderOptions;
@@ -15,7 +16,7 @@ use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\TimezoneSelector;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FamilyCreationWizardHandler implements FlowHandlerInterface
+class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
 {
     private const string FLOW_NAME = 'family_create';
 
@@ -299,7 +300,9 @@ class FamilyCreationWizardHandler implements FlowHandlerInterface
         string $query = '',
         int $page = 0
     ): void {
-        $suggestedTimezone = $context->activeFamily?->getTimezone()->value ?? 'UTC';
+        $suggestedTimezone = $context instanceof TelegramFamilyMemberContext
+            ? $context->activeFamily->getTimezone()->value
+            : 'UTC';
         $selection = $this->timezoneSelector->build(
             callbackPrefix: 'family:create:timezone',
             selectedValue: $suggestedTimezone,

@@ -111,7 +111,11 @@ class Store extends AggregateRoot
         ?DateTimeImmutable $now = null
     ): void {
         $newCategoryId = $categoryId;
-        if ($this->defaultCategoryId?->equals($newCategoryId) ?? $newCategoryId === null) {
+        if (
+            $newCategoryId === null
+                ? $this->defaultCategoryId === null
+                : $this->defaultCategoryId?->equals($newCategoryId) === true
+        ) {
             return;
         }
 

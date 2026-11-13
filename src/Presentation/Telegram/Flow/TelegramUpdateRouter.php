@@ -4,8 +4,10 @@ namespace App\Presentation\Telegram\Flow;
 
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Presentation\Telegram\Context\TelegramUserContextResolver;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
+use LogicException;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
 class TelegramUpdateRouter
@@ -33,10 +35,26 @@ class TelegramUpdateRouter
         }
 
         foreach ($this->handlers as $handler) {
-            if ($handler->supports($update, $context)) {
+            if ($handler instanceof FamilyContextFlowHandlerInterface) {
+                if (!$context instanceof TelegramFamilyMemberContext) {
+                    continue;
+                }
+                if (!$handler->supports($update, $context)) {
+                    continue;
+                }
                 $handler->handle($update, $context);
                 return;
             }
+
+            if ($handler instanceof UserContextFlowHandlerInterface) {
+                if (!$handler->supports($update, $context)) {
+                    continue;
+                }
+                $handler->handle($update, $context);
+                return;
+            }
+
+            throw new LogicException('Telegram flow handler must declare its context type.');
         }
     }
 
