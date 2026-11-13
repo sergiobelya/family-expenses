@@ -20,7 +20,7 @@ class EnsureUserExistsHandler
             return $user;
         }
 
-        $user = User::create($command->telegramUserId, $command->language ?? 'en');
+        $user = User::create($command->telegramUserId, $command->language);
         $this->userRepository->save($user);
 
         return $user;

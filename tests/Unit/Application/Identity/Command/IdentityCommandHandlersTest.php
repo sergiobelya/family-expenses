@@ -10,6 +10,7 @@ use App\Identity\Application\Command\SwitchActiveFamilyCommand;
 use App\Identity\Application\Command\SwitchActiveFamilyHandler;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Identity\Domain\Entity\User;
+use App\Identity\Domain\Enum\UserLanguage;
 use App\Identity\Domain\Repository\UserRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -41,6 +42,7 @@ class IdentityCommandHandlersTest extends TestCase
 
         $this->assertSame($existing, $user);
         $this->assertSame('en', $user->getLanguage());
+        $this->assertSame(UserLanguage::ENGLISH->value, $user->getLanguage());
     }
 
     public function testChangeUserLanguage(): void

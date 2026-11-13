@@ -24,7 +24,7 @@ class User extends AggregateRoot
 
     public function __construct(
         int $telegramUserId,
-        string $language = 'en',
+        string $language = UserLanguage::ENGLISH->value,
         ?UserId $id = null,
         ?DateTimeImmutable $now = null
     ) {
@@ -37,7 +37,7 @@ class User extends AggregateRoot
 
     public static function create(
         int $telegramUserId,
-        string $language = 'en',
+        string $language = UserLanguage::ENGLISH->value,
         ?UserId $id = null,
         ?DateTimeImmutable $now = null
     ): self {

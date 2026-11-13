@@ -13,6 +13,7 @@ use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
+use App\Presentation\Telegram\Keyboard\SupportedLanguages;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -67,7 +68,7 @@ class SettingsFlowHandler implements UserContextFlowHandlerInterface
         }
 
         $language = substr($update->callbackData, strlen('settings:lang:set:'));
-        if (!array_key_exists($language, $this->languages())) {
+        if (!SupportedLanguages::isSupported($language)) {
             return;
         }
 
@@ -90,7 +91,7 @@ class SettingsFlowHandler implements UserContextFlowHandlerInterface
     private function renderLanguageSelector(TelegramUserContext $context): void
     {
         $builder = new InlineKeyboardBuilder();
-        foreach ($this->languages() as $code => $name) {
+        foreach (SupportedLanguages::localNames() as $code => $name) {
             $badge = $context->user->getLanguage() === $code ? ' ✅' : '';
             $builder->button($name . $badge, 'settings:lang:set:' . $code)->row();
         }
@@ -101,18 +102,5 @@ class SettingsFlowHandler implements UserContextFlowHandlerInterface
             text: $this->translator->trans('settings.lang_selector_title'),
             replyMarkup: $builder->toArray()
         );
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function languages(): array
-    {
-        return [
-            'en' => 'English',
-            'uk' => 'Українська',
-            'pl' => 'Polski',
-            'ru' => 'Русский',
-        ];
     }
 }

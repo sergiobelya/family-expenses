@@ -3,6 +3,7 @@
 namespace App\Tests\Unit\Domain\Identity\Entity;
 
 use App\Identity\Domain\Entity\User;
+use App\Identity\Domain\Enum\UserLanguage;
 use App\Identity\Domain\Exception\UnsupportedUserLanguageException;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\UserId;
@@ -29,6 +30,7 @@ class UserTest extends TestCase
 
         $user->setLanguage('PL');
         $this->assertSame('pl', $user->getLanguage());
+        $this->assertSame(UserLanguage::POLISH->value, $user->getLanguage());
     }
 
     public function testSetInvalidLanguageThrowsException(): void

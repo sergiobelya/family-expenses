@@ -5,12 +5,11 @@ namespace App\Presentation\Telegram\Context;
 use App\Identity\Application\Command\EnsureUserExistsCommand;
 use App\Identity\Application\Command\EnsureUserExistsHandler;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
+use App\Presentation\Telegram\Keyboard\SupportedLanguages;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 
 class TelegramUserContextResolver
 {
-    private const array SUPPORTED_LANGUAGES = ['en', 'uk', 'pl', 'ru'];
-
     public function __construct(
         private EnsureUserExistsHandler $ensureUserExistsHandler,
         private ResolveActiveFamilyForUser $resolveActiveFamily,
@@ -23,13 +22,7 @@ class TelegramUserContextResolver
             return null;
         }
 
-        $detectedLanguage = 'en';
-        if ($update->languageCode !== null) {
-            $code = strtolower(substr($update->languageCode, 0, 2));
-            if (in_array($code, self::SUPPORTED_LANGUAGES, true)) {
-                $detectedLanguage = $code;
-            }
-        }
+        $detectedLanguage = $this->detectTelegramUserLanguage($update);
 
         $user = ($this->ensureUserExistsHandler)(new EnsureUserExistsCommand(
             telegramUserId: $update->fromUserId,
@@ -53,5 +46,19 @@ class TelegramUserContextResolver
         return $activeFamily === null
             ? $context
             : new TelegramFamilyMemberContext($context, $activeFamily);
+    }
+
+    private function detectTelegramUserLanguage(TelegramUpdate $update): string
+    {
+        $detectedLanguage = SupportedLanguages::DEFAULT;
+
+        if ($update->languageCode !== null) {
+            $code = strtolower(substr($update->languageCode, 0, 2));
+            if (SupportedLanguages::isSupported($code)) {
+                $detectedLanguage = $code;
+            }
+        }
+
+        return $detectedLanguage;
     }
 }
