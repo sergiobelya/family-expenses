@@ -12,6 +12,7 @@ use App\Family\Application\Command\CreateInvitationHandler;
 use App\Family\Application\Command\JoinFamilyByInvitationHandler;
 use App\Family\Application\Command\RevokeInvitationHandler;
 use App\Family\Application\Command\UpdateFamilySettingsHandler;
+use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Family\Application\Query\GetFamilyInvitationsHandler;
 use App\Family\Application\Query\GetFamilyMembersHandler;
 use App\Family\Application\Query\GetUserFamiliesHandler;
@@ -98,7 +99,7 @@ class TelegramFlowHandlersTest extends TestCase
     public function testFamilyOnboardingFlowHandler(): void
     {
         $telegramClient = $this->createMock(TelegramApiClientInterface::class);
-        $telegramClient->expects($this->once())->method('sendMessage');
+        $telegramClient->expects($this->exactly(2))->method('sendMessage');
 
         $translator = $this->createTranslator();
         $handler = new FamilyOnboardingFlowHandler($telegramClient, $translator);
@@ -113,6 +114,17 @@ class TelegramFlowHandlersTest extends TestCase
 
         $this->assertTrue($handler->supports($update, $context));
         $handler->handle($update, $context);
+
+        $mainMenuCallback = TelegramUpdate::fromArray([
+            'update_id' => 2,
+            'callback_query' => [
+                'id' => 'cb1',
+                'data' => 'nav:main_menu',
+                'message' => ['chat' => ['id' => 111]],
+            ],
+        ]);
+        self::assertTrue($handler->supports($mainMenuCallback, $context));
+        $handler->handle($mainMenuCallback, $context);
     }
 
     public function testFamilyCreationWizardStepByStep(): void
@@ -177,6 +189,44 @@ class TelegramFlowHandlersTest extends TestCase
 
         $this->assertTrue($handler->supports($update, $context));
         $handler->handle($update, $context);
+    }
+
+    public function testFamilyScopedMenuButtonOpensFamilySelectorWithoutActiveFamily(): void
+    {
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $telegramClient->expects(self::once())
+            ->method('sendMessage')
+            ->with(111, 'family.selector.title', self::anything());
+
+        $getUserFamiliesHandler = $this->createMock(GetUserFamiliesHandler::class);
+        $getUserFamiliesHandler->expects(self::once())->method('__invoke')->willReturn([]);
+
+        $translator = $this->createTranslator();
+        $handler = new FamilySelectorFlowHandler(
+            $telegramClient,
+            $getUserFamiliesHandler,
+            $this->createMock(SwitchActiveFamilyHandler::class),
+            new MainMenuKeyboard($translator),
+            $translator
+        );
+
+        $user = new User(123456);
+        $context = new TelegramUserContext($user, 'en', 123456, 111);
+        $update = TelegramUpdate::fromArray([
+            'update_id' => 1,
+            'message' => [
+                'message_id' => 10,
+                'chat' => ['id' => 111],
+                'text' => 'main_menu.stores',
+            ],
+        ]);
+
+        self::assertTrue($handler->supports($update, $context));
+        $handler->handle($update, $context);
+
+        $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
+        $familyContext = new TelegramFamilyMemberContext($context, $family);
+        self::assertFalse($handler->supports($update, $familyContext));
     }
 
     public function testFamilyMembersFlowHandler(): void
@@ -477,10 +527,12 @@ class TelegramFlowHandlersTest extends TestCase
         $handler = new SettingsFlowHandler(
             $telegramClient,
             $this->createMock(ChangeUserLanguageHandler::class),
+            $this->createMock(GetUserFamiliesHandler::class),
             $stateRepo,
             $this->createTranslator(),
             $this->createTranslator(),
-            new SettingsMenuRenderer($telegramClient, $this->createTranslator())
+            new SettingsMenuRenderer($telegramClient, $this->createTranslator()),
+            new MainMenuKeyboard($this->createTranslator())
         );
 
         $user = new User(123456);
@@ -499,6 +551,68 @@ class TelegramFlowHandlersTest extends TestCase
         $this->assertSame('settings:lang:set:pl', $buttons[2][0]['callback_data']);
         $this->assertSame('settings:lang:set:ru', $buttons[3][0]['callback_data']);
         $this->assertSame('settings:main', $buttons[4][0]['callback_data']);
+    }
+
+    public function testChangingLanguageRefreshesMainMenuKeyboard(): void
+    {
+        $messages = [];
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $telegramClient->expects(self::once())->method('answerCallbackQuery')->with('cb1');
+        $telegramClient->expects(self::exactly(2))
+            ->method('sendMessage')
+            ->willReturnCallback(function ($chatId, $text, $replyMarkup) use (&$messages): array {
+                $messages[] = ['chat_id' => $chatId, 'text' => $text, 'reply_markup' => $replyMarkup];
+
+                return [];
+            });
+
+        $user = new User(123456);
+        $changeLanguageHandler = $this->createMock(ChangeUserLanguageHandler::class);
+        $changeLanguageHandler->expects(self::once())
+            ->method('__invoke')
+            ->with(self::callback(static fn ($command): bool => $command->language === 'uk'));
+
+        $familyA = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
+        $familyB = Family::create('Jones', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
+        $getUserFamiliesHandler = $this->createMock(GetUserFamiliesHandler::class);
+        $getUserFamiliesHandler->expects(self::once())
+            ->method('__invoke')
+            ->with(self::callback(static fn (GetUserFamiliesQuery $query): bool => $query->userId->equals($user->getId())))
+            ->willReturn([$familyA, $familyB]);
+
+        $stateRepository = $this->createMock(UserInteractionStateRepository::class);
+        $stateRepository->expects(self::once())->method('clear')->with(123456);
+
+        $translator = $this->createTranslator();
+        $localeAwareTranslator = $this->createMock(LocaleAwareInterface::class);
+        $localeAwareTranslator->expects(self::once())->method('setLocale')->with('uk');
+        $mainMenuKeyboard = new MainMenuKeyboard($translator);
+        $handler = new SettingsFlowHandler(
+            $telegramClient,
+            $changeLanguageHandler,
+            $getUserFamiliesHandler,
+            $stateRepository,
+            $translator,
+            $localeAwareTranslator,
+            new SettingsMenuRenderer($telegramClient, $translator),
+            $mainMenuKeyboard
+        );
+
+        $context = new TelegramUserContext($user, 'en', 123456, 111);
+        $update = TelegramUpdate::fromArray([
+            'update_id' => 1,
+            'callback_query' => [
+                'id' => 'cb1',
+                'data' => 'settings:lang:set:uk',
+                'message' => ['chat' => ['id' => 111]],
+            ],
+        ]);
+
+        $handler->handle($update, $context);
+
+        self::assertSame('settings.lang_changed', $messages[0]['text']);
+        self::assertSame($mainMenuKeyboard->build(true), $messages[0]['reply_markup']);
+        self::assertStringStartsWith('settings.title', $messages[1]['text']);
     }
 
     public function testSettingsTimezoneSelectorCanSearchByIanaIdentifier(): void

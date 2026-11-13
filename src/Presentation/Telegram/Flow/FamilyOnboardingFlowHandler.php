@@ -26,7 +26,7 @@ class FamilyOnboardingFlowHandler implements UserContextFlowHandlerInterface
             return true;
         }
 
-        if ($update->callbackData === 'nav:onboarding') {
+        if ($update->callbackData === 'nav:onboarding' || $update->callbackData === 'nav:main_menu') {
             return true;
         }
 

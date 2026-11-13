@@ -8,6 +8,7 @@ use App\Identity\Application\Command\SwitchActiveFamilyCommand;
 use App\Identity\Application\Command\SwitchActiveFamilyHandler;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
@@ -31,6 +32,14 @@ class FamilySelectorFlowHandler implements UserContextFlowHandlerInterface
         }
 
         if ($update->callbackData === 'family:selector' || str_starts_with($update->callbackData ?? '', 'family:select:')) {
+            return true;
+        }
+
+        if (
+            !($context instanceof TelegramFamilyMemberContext)
+            && $update->text !== null
+            && $this->mainMenuKeyboard->isFamilyScopedButton($update->text)
+        ) {
             return true;
         }
 
