@@ -10,7 +10,7 @@ final class CountryCodeTest extends TestCase
 {
     public function testNormalizesCountryCode(): void
     {
-        self::assertSame('PL', CountryCode::fromString(' pl ')->value);
+        self::assertSame('PL', (string) CountryCode::fromString(' pl '));
     }
 
     public function testRejectsInvalidCountryCode(): void

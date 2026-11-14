@@ -34,7 +34,7 @@ final class AddStoreAliasHandler
         $alias = StoreAlias::create(
             $familyId,
             $store->getId(),
-            $name->value,
+            (string) $name,
             $command->createdByUserId
         );
         $this->catalog->saveStoreAlias($alias);

@@ -2,23 +2,22 @@
 
 namespace App\Catalog\Application;
 
+use App\Core\Domain\Repository\FamilyMembershipInterface;
 use App\Family\Domain\Exception\NotFamilyMemberException;
-use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
-use App\Catalog\Domain\Repository\FamilyCatalogLockInterface;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\UserId;
 
 final class CatalogAccess
 {
     public function __construct(
-        private FamilyMemberRepositoryInterface $familyMembers,
-        private FamilyCatalogLockInterface $catalog
+        private FamilyMembershipInterface $familyMembership,
+        private FamilyCatalogLockInterface $lock
     ) {
     }
 
     public function assertMember(FamilyId $familyId, UserId $userId): void
     {
-        if (!$this->familyMembers->isMember($familyId, $userId)) {
+        if (!$this->familyMembership->isMember($familyId, $userId)) {
             throw NotFamilyMemberException::forFamily((string) $familyId, (string) $userId);
         }
     }
@@ -26,7 +25,7 @@ final class CatalogAccess
     public function lockFamilyForMemberMutation(FamilyId $familyId, UserId $userId): void
     {
         $this->assertMember($familyId, $userId);
-        $this->catalog->lockFamily($familyId);
+        $this->lock->lockFamily($familyId);
         $this->assertMember($familyId, $userId);
     }
 }

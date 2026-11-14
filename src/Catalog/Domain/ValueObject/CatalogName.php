@@ -5,12 +5,17 @@ namespace App\Catalog\Domain\ValueObject;
 use InvalidArgumentException;
 use Normalizer;
 
-readonly class CatalogName
+readonly class CatalogName implements \Stringable
 {
     final protected function __construct(
-        public string $value,
+        private string $value,
         public string $dedupeKey
     ) {}
+
+    public function __toString(): string
+    {
+        return $this->value;
+    }
 
     public static function fromString(string $value): static
     {

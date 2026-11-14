@@ -6,6 +6,7 @@ use App\Catalog\Application\Query\CatalogSearch;
 use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Entity\StoreAlias;
 use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\UserId;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -14,7 +15,8 @@ final class CatalogSearchTest extends TestCase
     public function testSearchFindsRussianTransliterationVariantBySingleEditSuggestion(): void
     {
         $familyId = FamilyId::generate();
-        $store = Store::create($familyId, 'Biedronka');
+        $userId = UserId::generate();
+        $store = Store::create($familyId, 'Biedronka', $userId);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
         $repository->method('findStores')->with($familyId)->willReturn([$store]);
         $repository->method('findStoreAliasesInFamily')->with($familyId)->willReturn([]);
@@ -25,8 +27,9 @@ final class CatalogSearchTest extends TestCase
     public function testSearchMatchesFamilyScopedStoreAlias(): void
     {
         $familyId = FamilyId::generate();
-        $store = Store::create($familyId, 'Local Market');
-        $alias = StoreAlias::create($familyId, $store->getId(), 'Biedronka');
+        $userId = UserId::generate();
+        $store = Store::create($familyId, 'Local Market', $userId);
+        $alias = StoreAlias::create($familyId, $store->getId(), 'Biedronka', $userId);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
         $repository->method('findStores')->with($familyId)->willReturn([$store]);
         $repository->method('findStoreAliasesInFamily')->with($familyId)->willReturn([$alias]);

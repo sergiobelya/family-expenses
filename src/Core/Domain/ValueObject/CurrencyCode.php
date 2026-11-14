@@ -16,8 +16,8 @@ final readonly class CurrencyCode
     public function __construct(string $value)
     {
         $normalized = strtoupper(trim($value));
-        if ($normalized === '' || strlen($normalized) !== 3) {
-            throw new InvalidArgumentException('Currency code must contain exactly 3 characters.');
+        if (!in_array($normalized, self::SUPPORTED, true)) {
+            throw new InvalidArgumentException('Unsupported currency code: ' . $normalized . '.');
         }
 
         $this->value = $normalized;

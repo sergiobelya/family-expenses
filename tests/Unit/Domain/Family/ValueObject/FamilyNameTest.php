@@ -10,7 +10,7 @@ final class FamilyNameTest extends TestCase
 {
     public function testTrimsAndPreservesFamilyName(): void
     {
-        self::assertSame('Biely Family', FamilyName::fromString(' Biely Family ')->value);
+        self::assertSame('Biely Family', (string) FamilyName::fromString(' Biely Family '));
     }
 
     public function testRejectsAnEmptyFamilyName(): void

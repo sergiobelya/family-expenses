@@ -28,7 +28,7 @@ class FamilyQueryHandlersTest extends TestCase
     {
         $familyId = FamilyId::generate();
         $userId = UserId::generate();
-        $members = [new FamilyMember($familyId, $userId)];
+        $members = [FamilyMember::join($familyId, $userId)];
 
         $repo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $repo->method('isMember')->with($familyId, $userId)->willReturn(true);
@@ -79,7 +79,7 @@ class FamilyQueryHandlersTest extends TestCase
     {
         $userId = UserId::generate();
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $member = new FamilyMember($family->getId(), $userId);
+        $member = FamilyMember::join($family->getId(), $userId);
 
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $memberRepo->method('findByUserId')->with($userId)->willReturn([$member]);

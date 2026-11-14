@@ -21,7 +21,7 @@ class FamilyMember extends AggregateRoot
     private DateTimeImmutable $joinedAt;
     private DateTimeImmutable $createdAt;
 
-    public function __construct(
+    private function __construct(
         FamilyId $familyId,
         UserId $userId,
         FamilyMemberStatus $status = FamilyMemberStatus::ACTIVE,

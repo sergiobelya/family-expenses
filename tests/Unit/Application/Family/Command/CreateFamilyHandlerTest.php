@@ -40,7 +40,7 @@ class CreateFamilyHandlerTest extends TestCase
 
         $family = $handler($command);
 
-        $this->assertSame('Our Family', $family->getName());
+        $this->assertSame('Our Family', (string) $family->getName());
         $this->assertSame('Europe/Kyiv', (string) $family->getTimezone());
         $this->assertSame('UAH', (string) $family->getDefaultExpenseCurrency());
         $this->assertSame('USD', (string) $family->getReportingCurrency());

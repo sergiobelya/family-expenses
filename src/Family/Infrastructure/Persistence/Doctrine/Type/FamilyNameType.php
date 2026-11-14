@@ -28,7 +28,7 @@ final class FamilyNameType extends Type
             throw new InvalidArgumentException('Expected FamilyName value object.');
         }
 
-        return $value->value;
+        return (string) $value;
     }
 
     public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?FamilyName

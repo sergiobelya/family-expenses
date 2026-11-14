@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Catalog\Domain\Repository;
+namespace App\Catalog\Application;
 
 use App\Core\Domain\ValueObject\FamilyId;
 

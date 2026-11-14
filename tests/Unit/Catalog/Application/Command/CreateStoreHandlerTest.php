@@ -43,11 +43,13 @@ final class CreateStoreHandlerTest extends TestCase
     {
         $familyId = Uuid::v7();
         $userId = Uuid::v7();
-        $existingStore = Store::create(new FamilyId($familyId), 'Market');
+        $userId2 = Uuid::v7();
+        $existingStore = Store::create(new FamilyId($familyId), 'Market', new UserId($userId2));
         $alias = \App\Catalog\Domain\Entity\StoreAlias::create(
             new FamilyId($familyId),
             $existingStore->getId(),
-            'Biedronka'
+            'Biedronka',
+            new UserId($userId2)
         );
         $catalog = $this->createMock(CatalogRepositoryInterface::class);
         $catalog->method('findStoreByDedupeKey')->willReturn(null);

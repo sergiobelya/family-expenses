@@ -59,7 +59,7 @@ class JoinFamilyByInvitationHandler
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
         if ($this->familyMemberRepository->isMember($family->getId(), $user->getId())) {
-            $user->setActiveFamilyId($family->getId(), $now);
+            $user->switchActiveFamily($family->getId(), $now);
             $this->userRepository->save($user);
 
             return [
@@ -100,7 +100,7 @@ class JoinFamilyByInvitationHandler
         );
         $this->familyMemberRepository->save($member);
 
-        $user->setActiveFamilyId($family->getId(), $now);
+        $user->switchActiveFamily($family->getId(), $now);
         $this->userRepository->save($user);
 
         return [

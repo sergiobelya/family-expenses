@@ -53,11 +53,11 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         [$userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
 
         $user = new User(111);
-        $family = new Family('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
+        $family = Family::create('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
-        $invitation = new Invitation($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 2);
+        $invitation = Invitation::create($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 2);
 
         $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->with($tokenHash)->willReturn($invitation);
@@ -83,11 +83,11 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         [$userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
 
         $user = new User(111);
-        $family = new Family('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
+        $family = Family::create('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
-        $invitation = new Invitation($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 1);
+        $invitation = Invitation::create($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 1);
 
         $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->with($tokenHash)->willReturn($invitation);
@@ -112,11 +112,11 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         [$userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
 
         $user = new User(111);
-        $family = new Family('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
+        $family = Family::create('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
-        $invitation = new Invitation($family->getId(), new UserId(Uuid::v7()), $tokenHash);
+        $invitation = Invitation::create($family->getId(), new UserId(Uuid::v7()), $tokenHash);
         $invitation->revoke();
 
         $userRepo->method('findById')->willReturn($user);
@@ -135,11 +135,11 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         [$userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
 
         $user = new User(111);
-        $family = new Family('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
+        $family = Family::create('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
-        $invitation = new Invitation($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 1);
+        $invitation = Invitation::create($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 1);
 
         $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->willReturn($invitation);

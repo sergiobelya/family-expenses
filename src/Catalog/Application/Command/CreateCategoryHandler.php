@@ -28,7 +28,7 @@ final class CreateCategoryHandler
             throw new CatalogNameConflictException('category', $conflict->getName());
         }
 
-        $category = Category::create($familyId, $name->value, $command->createdByUserId);
+        $category = Category::create($familyId, (string) $name, $command->createdByUserId);
         $this->catalog->saveCategory($category);
 
         return $category;

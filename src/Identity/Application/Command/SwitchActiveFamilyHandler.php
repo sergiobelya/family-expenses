@@ -21,7 +21,7 @@ class SwitchActiveFamilyHandler
             throw UserNotFoundException::withId((string) $command->userId);
         }
 
-        $user->setActiveFamilyId($command->activeFamilyId);
+        $user->switchActiveFamily($command->activeFamilyId);
         $this->userRepository->save($user);
 
         return $user;

@@ -52,7 +52,7 @@ class ResolveActiveFamilyForUserTest extends TestCase
         $familyMemberRepository->expects(self::once())
             ->method('findByFamilyAndUser')
             ->with($family->getId(), $user->getId())
-            ->willReturn(new FamilyMember($family->getId(), $user->getId()));
+            ->willReturn(FamilyMember::join($family->getId(), $user->getId()));
 
         $resolve = new ResolveActiveFamilyForUser($userRepository, $familyRepository, $familyMemberRepository);
 
@@ -123,7 +123,7 @@ class ResolveActiveFamilyForUserTest extends TestCase
         $familyMemberRepository->expects(self::once())
             ->method('findByFamilyAndUser')
             ->with($family->getId(), $user->getId())
-            ->willReturn(new FamilyMember($family->getId(), $user->getId(), FamilyMemberStatus::INACTIVE));
+            ->willReturn(FamilyMember::join($family->getId(), $user->getId(), status: FamilyMemberStatus::INACTIVE));
 
         $resolve = new ResolveActiveFamilyForUser($userRepository, $familyRepository, $familyMemberRepository);
 

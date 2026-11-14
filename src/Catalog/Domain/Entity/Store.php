@@ -2,7 +2,10 @@
 
 namespace App\Catalog\Domain\Entity;
 
-use App\Catalog\Domain\Event\StoreChanged;
+use App\Catalog\Domain\Event\StoreCreated;
+use App\Catalog\Domain\Event\StoreDefaultCategoryChanged;
+use App\Catalog\Domain\Event\StoreDeleted;
+use App\Catalog\Domain\Event\StoreRenamed;
 use App\Catalog\Domain\ValueObject\StoreName;
 use App\Core\Domain\Aggregate\AggregateRoot;
 use App\Core\Domain\ValueObject\CategoryId;
@@ -39,7 +42,7 @@ class Store extends AggregateRoot
     public static function create(
         FamilyId $familyId,
         string $name,
-        ?UserId $createdByUserId = null,
+        UserId $createdByUserId,
         ?StoreId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
@@ -51,7 +54,13 @@ class Store extends AggregateRoot
             $id,
             $now
         );
-        $store->recordChange('store.created', null, $store->snapshot(), $createdByUserId, $now);
+        $store->recordEvent(new StoreCreated(
+            entityId: $store->getId(),
+            familyId: $store->getFamilyId(),
+            actorUserId: $createdByUserId,
+            afterData: $store->snapshot(),
+            occurredAt: $now
+        ));
 
         return $store;
     }
@@ -68,7 +77,7 @@ class Store extends AggregateRoot
 
     public function getName(): string
     {
-        return $this->name->value;
+        return (string) $this->name;
     }
 
     public function getDedupeKey(): string
@@ -91,10 +100,10 @@ class Store extends AggregateRoot
         return $this->updatedAt;
     }
 
-    public function rename(string $name, ?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function rename(string $name, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $storeName = StoreName::fromString($name);
-        if ($this->name->value === $storeName->value && $this->dedupeKey === $storeName->dedupeKey) {
+        if ((string) $this->name === (string) $storeName && $this->dedupeKey === $storeName->dedupeKey) {
             return;
         }
 
@@ -102,12 +111,19 @@ class Store extends AggregateRoot
         $this->name = $storeName;
         $this->dedupeKey = $storeName->dedupeKey;
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->recordChange('store.renamed', $before, $this->snapshot(), $actorUserId, $this->updatedAt);
+        $this->recordEvent(new StoreRenamed(
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $before,
+            afterData: $this->snapshot(),
+            occurredAt: $this->updatedAt
+        ));
     }
 
     public function setDefaultCategory(
         ?CategoryId $categoryId,
-        ?UserId $actorUserId = null,
+        UserId $actorUserId,
         ?DateTimeImmutable $now = null
     ): void {
         $newCategoryId = $categoryId;
@@ -122,13 +138,26 @@ class Store extends AggregateRoot
         $before = $this->snapshot();
         $this->defaultCategoryId = $newCategoryId;
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->recordChange('store.default_category_changed', $before, $this->snapshot(), $actorUserId, $this->updatedAt);
+        $this->recordEvent(new StoreDefaultCategoryChanged(
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $before,
+            afterData: $this->snapshot(),
+            occurredAt: $this->updatedAt
+        ));
     }
 
-    public function delete(?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function delete(UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->recordChange('store.deleted', $this->snapshot(), null, $actorUserId, $now);
+        $this->recordEvent(new StoreDeleted(
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $this->snapshot(),
+            occurredAt: $now
+        ));
     }
 
     /**
@@ -138,31 +167,9 @@ class Store extends AggregateRoot
     {
         return [
             'family_id' => (string) $this->familyId,
-            'name' => $this->name->value,
+            'name' => (string) $this->name,
             'dedupe_key' => $this->dedupeKey,
             'default_category_id' => $this->defaultCategoryId === null ? null : (string) $this->defaultCategoryId,
         ];
-    }
-
-    /**
-     * @param array<string, mixed>|null $before
-     * @param array<string, mixed>|null $after
-     */
-    private function recordChange(
-        string $action,
-        ?array $before,
-        ?array $after,
-        ?UserId $actorUserId,
-        DateTimeImmutable $occurredAt
-    ): void {
-        $this->recordEvent(new StoreChanged(
-            action: $action,
-            entityId: $this->id,
-            familyId: $this->getFamilyId(),
-            actorUserId: $actorUserId,
-            beforeData: $before,
-            afterData: $after,
-            occurredAt: $occurredAt
-        ));
     }
 }

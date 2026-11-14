@@ -2,6 +2,7 @@
 
 namespace App\Catalog\Infrastructure\Persistence\Doctrine\Repository;
 
+use App\Catalog\Application\FamilyCatalogLockInterface;
 use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Entity\StoreAlias;
@@ -14,7 +15,7 @@ use App\Core\Domain\ValueObject\StoreId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-class DoctrineCatalogRepository implements CatalogRepositoryInterface
+class DoctrineCatalogRepository implements CatalogRepositoryInterface, FamilyCatalogLockInterface
 {
     /** @var EntityRepository<Store> */
     private EntityRepository $stores;

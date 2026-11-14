@@ -18,10 +18,10 @@ class InvitationTest extends TestCase
         $familyId = Uuid::v7();
         $userId = Uuid::v7();
         $token = 'random_secret_token';
-        $tokenHash = Invitation::hashToken($token);
+        $tokenHash = hash('sha256', $token);
 
         $now = new DateTimeImmutable('2026-10-31 12:00:00', new DateTimeZone('UTC'));
-        $invitation = new Invitation(
+        $invitation = Invitation::create(
             familyId: new FamilyId($familyId),
             createdByUserId: new UserId($userId),
             tokenHash: $tokenHash,
@@ -49,7 +49,7 @@ class InvitationTest extends TestCase
     public function testInvalidMaxUsesThrowsException(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new Invitation(
+        Invitation::create(
             familyId: new FamilyId(Uuid::v7()),
             createdByUserId: new UserId(Uuid::v7()),
             tokenHash: 'hash',

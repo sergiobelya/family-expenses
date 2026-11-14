@@ -15,7 +15,7 @@ final class FamilyMemberTest extends TestCase
         $familyId = FamilyId::generate();
         $userId = UserId::generate();
 
-        self::assertTrue((new FamilyMember($familyId, $userId, FamilyMemberStatus::ACTIVE))->isActive());
-        self::assertFalse((new FamilyMember($familyId, $userId, FamilyMemberStatus::INACTIVE))->isActive());
+        self::assertTrue((FamilyMember::join($familyId, $userId, status: FamilyMemberStatus::ACTIVE))->isActive());
+        self::assertFalse((FamilyMember::join($familyId, $userId, status: FamilyMemberStatus::INACTIVE))->isActive());
     }
 }

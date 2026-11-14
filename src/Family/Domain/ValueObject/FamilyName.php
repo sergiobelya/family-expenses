@@ -7,7 +7,7 @@ use Stringable;
 
 final readonly class FamilyName implements Stringable
 {
-    private function __construct(public string $value)
+    private function __construct(private string $value)
     {
     }
 

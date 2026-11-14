@@ -25,7 +25,7 @@ class Invitation extends AggregateRoot
     private ?int $maxUses = null;
     private DateTimeImmutable $createdAt;
 
-    public function __construct(
+    private function __construct(
         FamilyId $familyId,
         UserId $createdByUserId,
         string $tokenHash,
@@ -51,10 +51,6 @@ class Invitation extends AggregateRoot
         $this->maxUses = $maxUses;
     }
 
-    public static function hashToken(string $token): string
-    {
-        return hash('sha256', $token);
-    }
 
     public static function create(
         FamilyId $familyId,

@@ -28,7 +28,7 @@ final class CountryCodeType extends Type
             throw new InvalidArgumentException('Expected a country code value object.');
         }
 
-        return $value->value;
+        return (string) $value;
     }
 
     public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?CountryCode

@@ -26,7 +26,7 @@ class Family extends AggregateRoot
     private DateTimeImmutable $createdAt;
     private DateTimeImmutable $updatedAt;
 
-    public function __construct(
+    private function __construct(
         string $name,
         Timezone $timezone,
         CurrencyCode $defaultExpenseCurrency,
@@ -71,12 +71,12 @@ class Family extends AggregateRoot
 
         $family->recordEvent(new FamilyCreated(
             familyId: $family->getId(),
-            name: $family->getName(),
+            name: (string) $family->getName(),
             timezone: $timezone,
             defaultExpenseCurrency: $defaultExpenseCurrency,
             reportingCurrency: $reportingCurrency,
             defaultExchangeRateProvider: $family->getDefaultExchangeRateProvider(),
-            countryCode: $family->getCountryCode(),
+            countryCode: $family->getCountryCode() !== null ? (string) $family->getCountryCode() : null,
             creatorUserId: $creatorUserId,
             occurredAt: $family->getCreatedAt()
         ));
@@ -89,19 +89,14 @@ class Family extends AggregateRoot
         return $this->id;
     }
 
-    public function getName(): string
+    public function getName(): FamilyName
     {
-        return $this->name->value;
+        return $this->name;
     }
 
-    public function getCountryCode(): ?string
+    public function getCountryCode(): ?CountryCode
     {
-        return $this->countryCode?->value;
-    }
-
-    public function getCountry(): ?string
-    {
-        return $this->getCountryCode();
+        return $this->countryCode;
     }
 
     public function getTimezone(): Timezone
@@ -145,12 +140,12 @@ class Family extends AggregateRoot
         ?DateTimeImmutable $now = null
     ): void {
         $beforeData = [
-            'name' => $this->name->value,
+            'name' => (string) $this->name,
             'timezone' => $this->timezone,
             'default_expense_currency' => $this->defaultExpenseCurrency,
             'reporting_currency' => $this->reportingCurrency,
             'default_exchange_rate_provider' => $this->defaultExchangeRateProvider,
-            'country_code' => $this->countryCode?->value,
+            'country_code' => $this->countryCode?->__toString(),
         ];
 
         $this->name = FamilyName::fromString($name);
@@ -162,12 +157,12 @@ class Family extends AggregateRoot
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
         $afterData = [
-            'name' => $this->name->value,
+            'name' => (string) $this->name,
             'timezone' => $this->timezone,
             'default_expense_currency' => $this->defaultExpenseCurrency,
             'reporting_currency' => $this->reportingCurrency,
             'default_exchange_rate_provider' => $this->defaultExchangeRateProvider,
-            'country_code' => $this->countryCode?->value,
+            'country_code' => $this->countryCode?->__toString(),
         ];
 
         $this->recordEvent(new FamilySettingsUpdated(

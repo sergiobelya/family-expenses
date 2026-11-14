@@ -336,12 +336,12 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
     ): void {
         $selection = $this->timezoneSelector->build(
             callbackPrefix: 'settings:family:timezone',
-            selectedValue: $context->activeFamily->getTimezone()->value,
+            selectedValue: (string) $context->activeFamily->getTimezone(),
             query: $query,
             page: $page,
             backLabel: $this->translator->trans('common.back'),
             backCallback: 'settings:family:view',
-            preferredTimezone: $context->activeFamily->getTimezone()->value
+            preferredTimezone: (string) $context->activeFamily->getTimezone()
         );
         $page = $selection['page'];
         $this->stateRepository->set(new UserInteractionState(
@@ -374,10 +374,10 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
 
         $lines = [
             $this->translator->trans('settings.family_settings_title', [
-                '%{family_name}' => htmlspecialchars($family->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                '%{family_name}' => htmlspecialchars((string) $family->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
             ]),
             '',
-            sprintf('• <b>%s:</b> %s', $this->translator->trans('settings.edit_name_btn'), htmlspecialchars($family->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
+            sprintf('• <b>%s:</b> %s', $this->translator->trans('settings.edit_name_btn'), htmlspecialchars((string) $family->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
             sprintf('• <b>%s:</b> <code>%s</code>', $this->translator->trans('settings.edit_timezone_btn'), (string) $family->getTimezone()),
             sprintf('• <b>%s:</b> <code>%s</code>', $this->translator->trans('settings.edit_default_currency_btn'), (string) $family->getDefaultExpenseCurrency()),
             sprintf('• <b>%s:</b> <code>%s</code>', $this->translator->trans('settings.edit_reporting_currency_btn'), (string) $family->getReportingCurrency()),

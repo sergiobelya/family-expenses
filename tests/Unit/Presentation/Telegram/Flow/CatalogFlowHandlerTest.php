@@ -80,8 +80,9 @@ final class CatalogFlowHandlerTest extends TestCase
             \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD')
         );
         $user = new User(123456);
-        $store = Store::create($family->getId(), 'Market');
-        $category = Category::create($family->getId(), 'Groceries');
+        $userId = \App\Core\Domain\ValueObject\UserId::generate();
+        $store = Store::create($family->getId(), 'Market', $userId);
+        $category = Category::create($family->getId(), 'Groceries', $userId);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
         $repository->expects(self::once())
             ->method('findStore')

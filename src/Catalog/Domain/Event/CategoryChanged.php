@@ -2,7 +2,7 @@
 
 namespace App\Catalog\Domain\Event;
 
-final readonly class CategoryChanged extends CatalogEntityChanged
+readonly class CategoryChanged extends CatalogEntityChanged
 {
     protected function entityType(): string
     {

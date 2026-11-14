@@ -2,7 +2,9 @@
 
 namespace App\Catalog\Domain\Entity;
 
-use App\Catalog\Domain\Event\StoreAliasChanged;
+use App\Catalog\Domain\Event\StoreAliasCreated;
+use App\Catalog\Domain\Event\StoreAliasDeleted;
+use App\Catalog\Domain\Event\StoreAliasRenamed;
 use App\Catalog\Domain\ValueObject\StoreName;
 use App\Core\Domain\Aggregate\AggregateRoot;
 use App\Core\Domain\ValueObject\FamilyId;
@@ -36,7 +38,7 @@ class StoreAlias extends AggregateRoot
         FamilyId $familyId,
         StoreId $storeId,
         string $alias,
-        ?UserId $createdByUserId = null,
+        UserId $createdByUserId,
         ?StoreAliasId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
@@ -48,7 +50,13 @@ class StoreAlias extends AggregateRoot
             $id,
             $now
         );
-        $storeAlias->recordChange('store_alias.created', null, $storeAlias->snapshot(), $createdByUserId, $now);
+        $storeAlias->recordEvent(new StoreAliasCreated(
+            entityId: $storeAlias->getId(),
+            familyId: $storeAlias->getFamilyId(),
+            actorUserId: $createdByUserId,
+            afterData: $storeAlias->snapshot(),
+            occurredAt: $now
+        ));
 
         return $storeAlias;
     }
@@ -70,7 +78,7 @@ class StoreAlias extends AggregateRoot
 
     public function getAlias(): string
     {
-        return $this->alias->value;
+        return (string) $this->alias;
     }
 
     public function getAliasDedupeKey(): string
@@ -83,34 +91,37 @@ class StoreAlias extends AggregateRoot
         return $this->createdAt;
     }
 
-    public function rename(string $alias, ?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function rename(string $alias, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $storeName = StoreName::fromString($alias);
-        if ($this->alias->value === $storeName->value && $this->aliasDedupeKey === $storeName->dedupeKey) {
+        if ((string) $this->alias === (string) $storeName && $this->aliasDedupeKey === $storeName->dedupeKey) {
             return;
         }
 
         $before = $this->snapshot();
         $this->alias = $storeName;
         $this->aliasDedupeKey = $storeName->dedupeKey;
-        $this->recordChange(
-            'store_alias.renamed',
-            $before,
-            $this->snapshot(),
-            $actorUserId,
-            $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'))
-        );
+        $occurredAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $this->recordEvent(new StoreAliasRenamed(
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $before,
+            afterData: $this->snapshot(),
+            occurredAt: $occurredAt
+        ));
     }
 
-    public function delete(?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function delete(UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
-        $this->recordChange(
-            'store_alias.deleted',
-            $this->snapshot(),
-            null,
-            $actorUserId,
-            $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'))
-        );
+        $occurredAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $this->recordEvent(new StoreAliasDeleted(
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $this->snapshot(),
+            occurredAt: $occurredAt
+        ));
     }
 
     /**
@@ -121,30 +132,8 @@ class StoreAlias extends AggregateRoot
         return [
             'family_id' => (string) $this->familyId,
             'store_id' => (string) $this->storeId,
-            'alias' => $this->alias->value,
+            'alias' => (string) $this->alias,
             'alias_dedupe_key' => $this->aliasDedupeKey,
         ];
-    }
-
-    /**
-     * @param array<string, mixed>|null $before
-     * @param array<string, mixed>|null $after
-     */
-    private function recordChange(
-        string $action,
-        ?array $before,
-        ?array $after,
-        ?UserId $actorUserId,
-        DateTimeImmutable $occurredAt
-    ): void {
-        $this->recordEvent(new StoreAliasChanged(
-            action: $action,
-            entityId: $this->id,
-            familyId: $this->getFamilyId(),
-            actorUserId: $actorUserId,
-            beforeData: $before,
-            afterData: $after,
-            occurredAt: $occurredAt
-        ));
     }
 }

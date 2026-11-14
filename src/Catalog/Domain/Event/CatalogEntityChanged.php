@@ -21,7 +21,7 @@ abstract readonly class CatalogEntityChanged implements AuditableEventInterface
         private string $action,
         private UuidValueObject $entityId,
         private FamilyId $familyId,
-        private ?UserId $actorUserId,
+        private UserId $actorUserId,
         private ?array $beforeData,
         private ?array $afterData,
         ?DateTimeImmutable $occurredAt = null
@@ -41,7 +41,7 @@ abstract readonly class CatalogEntityChanged implements AuditableEventInterface
         return $this->familyId;
     }
 
-    public function getActorUserId(): ?UserId
+    public function getActorUserId(): UserId
     {
         return $this->actorUserId;
     }

@@ -2,7 +2,9 @@
 
 namespace App\Catalog\Domain\Entity;
 
-use App\Catalog\Domain\Event\CategoryChanged;
+use App\Catalog\Domain\Event\CategoryCreated;
+use App\Catalog\Domain\Event\CategoryDeleted;
+use App\Catalog\Domain\Event\CategoryRenamed;
 use App\Catalog\Domain\ValueObject\CategoryName;
 use App\Core\Domain\Aggregate\AggregateRoot;
 use App\Core\Domain\ValueObject\CategoryId;
@@ -35,7 +37,7 @@ class Category extends AggregateRoot
     public static function create(
         FamilyId $familyId,
         string $name,
-        ?UserId $createdByUserId = null,
+        UserId $createdByUserId,
         ?CategoryId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
@@ -46,7 +48,13 @@ class Category extends AggregateRoot
             $id,
             $now
         );
-        $category->recordChange('category.created', null, $category->snapshot(), $createdByUserId, $now);
+        $category->recordEvent(new CategoryCreated(
+            entityId: $category->getId(),
+            familyId: $category->getFamilyId(),
+            actorUserId: $createdByUserId,
+            afterData: $category->snapshot(),
+            occurredAt: $now
+        ));
 
         return $category;
     }
@@ -63,7 +71,7 @@ class Category extends AggregateRoot
 
     public function getName(): string
     {
-        return $this->name->value;
+        return (string) $this->name;
     }
 
     public function getDedupeKey(): string
@@ -81,10 +89,10 @@ class Category extends AggregateRoot
         return $this->updatedAt;
     }
 
-    public function rename(string $name, ?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function rename(string $name, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $categoryName = CategoryName::fromString($name);
-        if ($this->name->value === $categoryName->value && $this->dedupeKey === $categoryName->dedupeKey) {
+        if ((string) $this->name === (string) $categoryName && $this->dedupeKey === $categoryName->dedupeKey) {
             return;
         }
 
@@ -92,13 +100,26 @@ class Category extends AggregateRoot
         $this->name = $categoryName;
         $this->dedupeKey = $categoryName->dedupeKey;
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->recordChange('category.renamed', $before, $this->snapshot(), $actorUserId, $this->updatedAt);
+        $this->recordEvent(new CategoryRenamed(
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $before,
+            afterData: $this->snapshot(),
+            occurredAt: $this->updatedAt
+        ));
     }
 
-    public function delete(?UserId $actorUserId = null, ?DateTimeImmutable $now = null): void
+    public function delete(UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->recordChange('category.deleted', $this->snapshot(), null, $actorUserId, $now);
+        $this->recordEvent(new CategoryDeleted(
+            entityId: $this->id,
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $this->snapshot(),
+            occurredAt: $now
+        ));
     }
 
     /**
@@ -108,30 +129,8 @@ class Category extends AggregateRoot
     {
         return [
             'family_id' => (string) $this->familyId,
-            'name' => $this->name->value,
+            'name' => (string) $this->name,
             'dedupe_key' => $this->dedupeKey,
         ];
-    }
-
-    /**
-     * @param array<string, mixed>|null $before
-     * @param array<string, mixed>|null $after
-     */
-    private function recordChange(
-        string $action,
-        ?array $before,
-        ?array $after,
-        ?UserId $actorUserId,
-        DateTimeImmutable $occurredAt
-    ): void {
-        $this->recordEvent(new CategoryChanged(
-            action: $action,
-            entityId: $this->id,
-            familyId: $this->getFamilyId(),
-            actorUserId: $actorUserId,
-            beforeData: $before,
-            afterData: $after,
-            occurredAt: $occurredAt
-        ));
     }
 }

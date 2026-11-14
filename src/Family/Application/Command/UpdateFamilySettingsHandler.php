@@ -34,12 +34,12 @@ class UpdateFamilySettingsHandler
         }
 
         $family->updateSettings(
-            name: $command->name ?? $family->getName(),
+            name: $command->name ?? (string) $family->getName(),
             timezone: $command->timezone !== null ? Timezone::fromString($command->timezone) : $family->getTimezone(),
             defaultExpenseCurrency: $command->defaultExpenseCurrency !== null ? CurrencyCode::fromString($command->defaultExpenseCurrency) : $family->getDefaultExpenseCurrency(),
             reportingCurrency: $command->reportingCurrency !== null ? CurrencyCode::fromString($command->reportingCurrency) : $family->getReportingCurrency(),
             defaultExchangeRateProvider: $command->defaultExchangeRateProvider ?? $family->getDefaultExchangeRateProvider(),
-            countryCode: $command->countryCode ?? $family->getCountry(),
+            countryCode: $command->countryCode ?? $family->getCountryCode()?->__toString(),
             actorUserId: $userId
         );
 

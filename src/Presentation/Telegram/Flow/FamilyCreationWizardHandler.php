@@ -301,7 +301,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
         int $page = 0
     ): void {
         $suggestedTimezone = $context instanceof TelegramFamilyMemberContext
-            ? $context->activeFamily->getTimezone()->value
+            ? (string) $context->activeFamily->getTimezone()
             : 'UTC';
         $selection = $this->timezoneSelector->build(
             callbackPrefix: 'family:create:timezone',

@@ -29,7 +29,7 @@ abstract class CatalogNameType extends Type
             throw new InvalidArgumentException('Expected a catalog name value object.');
         }
 
-        return $value->value;
+        return (string) $value;
     }
 
     public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?CatalogName

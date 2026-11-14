@@ -69,8 +69,8 @@ final class CatalogNameTest extends TestCase
 
     public function testDisplayNameIsTrimmedButOtherwisePreserved(): void
     {
-        self::assertSame('Żabka.', CatalogName::fromString('  Żabka.  ')->value);
-        self::assertSame('Żabka', CatalogName::fromString("\u{00A0}Żabka\u{00A0}")->value);
+        self::assertSame('Żabka.', (string) CatalogName::fromString('  Żabka.  '));
+        self::assertSame('Żabka', (string) CatalogName::fromString("\u{00A0}Żabka\u{00A0}"));
     }
 
     public function testStoreAndCategoryNamesHaveDistinctTypes(): void

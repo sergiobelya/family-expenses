@@ -42,7 +42,7 @@ final class RenameStoreHandler
             throw new CatalogNameConflictException('store alias', $alias->getAlias());
         }
 
-        $store->rename($name->value, $command->updatedByUserId);
+        $store->rename((string) $name, $command->updatedByUserId);
         $this->catalog->saveStore($store);
 
         return $store;

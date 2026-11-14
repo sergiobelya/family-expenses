@@ -2,11 +2,12 @@
 
 namespace App\Family\Domain\Repository;
 
+use App\Core\Domain\Repository\FamilyMembershipInterface;
 use App\Family\Domain\Entity\FamilyMember;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\UserId;
 
-interface FamilyMemberRepositoryInterface
+interface FamilyMemberRepositoryInterface extends FamilyMembershipInterface
 {
     public function save(FamilyMember $member): void;
 

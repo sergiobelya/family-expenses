@@ -46,7 +46,7 @@ class CreateFamilyHandler
         );
         $this->familyMemberRepository->save($member);
 
-        $user->setActiveFamilyId($family->getId());
+        $user->switchActiveFamily($family->getId());
         $this->userRepository->save($user);
 
         return $family;

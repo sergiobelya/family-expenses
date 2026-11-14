@@ -26,7 +26,7 @@ final class CreateStoreHandler
         $familyId = $command->familyId;
         $this->assertNameAvailable($familyId, $name->dedupeKey);
 
-        $store = Store::create($familyId, $name->value, $command->createdByUserId);
+        $store = Store::create($familyId, (string) $name, $command->createdByUserId);
         $this->catalog->saveStore($store);
 
         return $store;

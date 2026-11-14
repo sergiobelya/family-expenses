@@ -107,8 +107,8 @@ class MoreFamilyCommandHandlersTest extends TestCase
             country: 'PL'
         ));
 
-        $this->assertSame('New Name', $family->getName());
-        $this->assertSame('PL', $family->getCountry());
+        $this->assertSame('New Name', (string) $family->getName());
+        $this->assertSame('PL', (string) $family->getCountryCode());
         $this->assertSame('Europe/Warsaw', (string) $family->getTimezone());
         $this->assertSame('PLN', (string) $family->getDefaultExpenseCurrency());
         $this->assertSame('EUR', (string) $family->getReportingCurrency());

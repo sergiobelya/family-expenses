@@ -64,7 +64,7 @@ class FamilySelectorFlowHandler implements UserContextFlowHandlerInterface
             $selectedFamilyName = 'Family';
             foreach ($families as $f) {
                 if ($f->getId()->equals($familyId)) {
-                    $selectedFamilyName = $f->getName();
+                    $selectedFamilyName = (string) $f->getName();
                     break;
                 }
             }
@@ -89,7 +89,7 @@ class FamilySelectorFlowHandler implements UserContextFlowHandlerInterface
         foreach ($families as $family) {
             $isActive = $activeFamilyId !== null && $activeFamilyId->equals($family->getId());
             $badge = $isActive ? $this->translator->trans('family.selector.current_badge') : '';
-            $label = $family->getName() . $badge;
+            $label = (string) $family->getName() . $badge;
 
             $builder->button($label, 'family:select:' . $family->getId()->toRfc4122())->row();
         }

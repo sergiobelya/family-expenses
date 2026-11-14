@@ -88,7 +88,7 @@ class User extends AggregateRoot
         return $this->activeFamilyId;
     }
 
-    public function setActiveFamilyId(?FamilyId $activeFamilyId, ?DateTimeImmutable $now = null): void
+    public function switchActiveFamily(?FamilyId $activeFamilyId, ?DateTimeImmutable $now = null): void
     {
         $oldFamilyId = $this->activeFamilyId;
         $newFamilyId = $activeFamilyId;
@@ -107,11 +107,6 @@ class User extends AggregateRoot
                 $this->updatedAt
             ));
         }
-    }
-
-    public function switchActiveFamily(?FamilyId $activeFamilyId, ?DateTimeImmutable $now = null): void
-    {
-        $this->setActiveFamilyId($activeFamilyId, $now);
     }
 
     public function getCreatedAt(): DateTimeImmutable

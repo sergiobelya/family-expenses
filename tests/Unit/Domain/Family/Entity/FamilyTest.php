@@ -12,14 +12,14 @@ class FamilyTest extends TestCase
 {
     public function testCreateFamily(): void
     {
-        $family = new Family(
+        $family = Family::create(
             name: 'Smith Family',
             timezone: new Timezone('Europe/Warsaw'),
             defaultExpenseCurrency: new CurrencyCode('PLN'),
             reportingCurrency: new CurrencyCode('PLN')
         );
 
-        $this->assertSame('Smith Family', $family->getName());
+        $this->assertSame('Smith Family', (string) $family->getName());
         $this->assertSame('Europe/Warsaw', (string) $family->getTimezone());
         $this->assertSame('PLN', (string) $family->getDefaultExpenseCurrency());
         $this->assertSame('PLN', (string) $family->getReportingCurrency());
@@ -29,7 +29,7 @@ class FamilyTest extends TestCase
     public function testEmptyNameThrowsException(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new Family(
+        Family::create(
             name: '   ',
             timezone: new Timezone('Europe/Warsaw'),
             defaultExpenseCurrency: new CurrencyCode('PLN'),
