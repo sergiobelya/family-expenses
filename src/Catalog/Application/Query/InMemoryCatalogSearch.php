@@ -9,7 +9,7 @@ use App\Catalog\Domain\ValueObject\CatalogName;
 use App\Core\Domain\ValueObject\FamilyId;
 use InvalidArgumentException;
 
-final class CatalogSearch
+final class InMemoryCatalogSearch implements CatalogSearchInterface
 {
     public function __construct(private CatalogRepositoryInterface $catalog)
     {

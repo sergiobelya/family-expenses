@@ -2,7 +2,7 @@
 
 namespace App\Tests\Unit\Catalog\Application\Query;
 
-use App\Catalog\Application\Query\CatalogSearch;
+use App\Catalog\Application\Query\InMemoryCatalogSearch;
 use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Entity\StoreAlias;
 use App\Core\Domain\ValueObject\FamilyId;
@@ -10,7 +10,7 @@ use App\Core\Domain\ValueObject\UserId;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
-final class CatalogSearchTest extends TestCase
+final class InMemoryCatalogSearchTest extends TestCase
 {
     public function testSearchFindsRussianTransliterationVariantBySingleEditSuggestion(): void
     {
@@ -21,7 +21,7 @@ final class CatalogSearchTest extends TestCase
         $repository->method('findStores')->with($familyId)->willReturn([$store]);
         $repository->method('findStoreAliasesInFamily')->with($familyId)->willReturn([]);
 
-        self::assertSame([$store], (new CatalogSearch($repository))->stores($familyId, 'бедронка'));
+        self::assertSame([$store], (new InMemoryCatalogSearch($repository))->stores($familyId, 'бедронка'));
     }
 
     public function testSearchMatchesFamilyScopedStoreAlias(): void
@@ -34,7 +34,7 @@ final class CatalogSearchTest extends TestCase
         $repository->method('findStores')->with($familyId)->willReturn([$store]);
         $repository->method('findStoreAliasesInFamily')->with($familyId)->willReturn([$alias]);
 
-        self::assertSame([$store], (new CatalogSearch($repository))->stores($familyId, 'Бєдронка'));
+        self::assertSame([$store], (new InMemoryCatalogSearch($repository))->stores($familyId, 'Бєдронка'));
     }
 
     public function testInvalidSearchInputReturnsNoCandidates(): void
@@ -43,6 +43,6 @@ final class CatalogSearchTest extends TestCase
         $repository = $this->createMock(CatalogRepositoryInterface::class);
         $repository->expects(self::never())->method('findStores');
 
-        self::assertSame([], (new CatalogSearch($repository))->stores($familyId, '🍎'));
+        self::assertSame([], (new InMemoryCatalogSearch($repository))->stores($familyId, '🍎'));
     }
 }

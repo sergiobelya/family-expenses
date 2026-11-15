@@ -13,7 +13,7 @@ use App\Catalog\Application\Command\RenameStoreCommand;
 use App\Catalog\Application\Command\RemoveStoreAliasCommand;
 use App\Catalog\Application\Command\SetStoreDefaultCategoryCommand;
 use App\Catalog\Application\CatalogAccess;
-use App\Catalog\Application\Query\CatalogSearch;
+use App\Catalog\Application\Query\CatalogSearchInterface;
 use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Exception\CatalogEntryNotFoundException;
@@ -50,7 +50,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         private UserInteractionStateRepository $stateRepository,
         private CatalogRepositoryInterface $catalog,
         private CatalogAccess $access,
-        private CatalogSearch $search,
+        private CatalogSearchInterface $search,
         private InlineOptionSelector $optionSelector,
         private MessageBusInterface $commandBus,
         private TranslatorInterface $translator

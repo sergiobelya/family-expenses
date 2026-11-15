@@ -11,7 +11,7 @@ final class SearchCategoriesHandler
 {
     public function __construct(
         private CatalogAccess $access,
-        private CatalogSearch $search
+        private CatalogSearchInterface $search
     ) {
     }
 

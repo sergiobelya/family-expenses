@@ -4,7 +4,7 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow;
 
 use App\Catalog\Application\CatalogAccess;
 use App\Catalog\Application\FamilyCatalogLockInterface;
-use App\Catalog\Application\Query\CatalogSearch;
+use App\Catalog\Application\Query\InMemoryCatalogSearch;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Entity\Store;
@@ -53,7 +53,7 @@ final class CatalogFlowHandlerTest extends TestCase
             $states,
             $repository,
             new CatalogAccess($members, $lock),
-            new CatalogSearch($repository),
+            new InMemoryCatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
             $translator
@@ -120,7 +120,7 @@ final class CatalogFlowHandlerTest extends TestCase
             $states,
             $repository,
             new CatalogAccess($members, $lock),
-            new CatalogSearch($repository),
+            new InMemoryCatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
             $translator
@@ -183,7 +183,7 @@ final class CatalogFlowHandlerTest extends TestCase
             $stateRepository,
             $repository,
             new CatalogAccess($members, $lock),
-            new CatalogSearch($repository),
+            new InMemoryCatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
             $translator
