@@ -133,7 +133,9 @@ class TelegramFlowHandlersTest extends TestCase
         $telegramClient->expects($this->atLeastOnce())->method('sendMessage');
 
         $stateRepo = $this->createMock(UserInteractionStateRepository::class);
-        $createFamilyHandler = $this->createMock(CreateFamilyHandler::class);
+        $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
+        $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
+        $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
         $translator = $this->createTranslator();
         $mainMenuKb = new MainMenuKeyboard($translator);
 
@@ -488,11 +490,14 @@ class TelegramFlowHandlersTest extends TestCase
         );
         $stateRepo->expects($this->never())->method('set');
 
+        $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
+        $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
+        $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
         $translator = $this->createTranslator();
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
-            $this->createMock(CreateFamilyHandler::class),
+            $createFamilyHandler,
             new MainMenuKeyboard($translator),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator
@@ -681,11 +686,14 @@ class TelegramFlowHandlersTest extends TestCase
             );
         $stateRepo->expects($this->exactly(2))->method('set');
 
+        $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
+        $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
+        $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
         $translator = $this->createTranslator();
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
-            $this->createMock(CreateFamilyHandler::class),
+            $createFamilyHandler,
             new MainMenuKeyboard($translator),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator

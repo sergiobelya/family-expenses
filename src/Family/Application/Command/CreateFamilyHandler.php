@@ -6,17 +6,14 @@ use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Entity\FamilyMember;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
-use App\Identity\Domain\Repository\UserRepositoryInterface;
-use App\Identity\Domain\Exception\UserNotFoundException;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-class CreateFamilyHandler
+final readonly class CreateFamilyHandler
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository,
         private FamilyRepositoryInterface $familyRepository,
         private FamilyMemberRepositoryInterface $familyMemberRepository
     ) {
@@ -24,11 +21,6 @@ class CreateFamilyHandler
 
     public function __invoke(CreateFamilyCommand $command): Family
     {
-        $user = $this->userRepository->findById($command->userId);
-        if ($user === null) {
-            throw UserNotFoundException::withId((string) $command->userId);
-        }
-
         $family = Family::create(
             name: $command->name,
             timezone: Timezone::fromString($command->timezone),
@@ -36,18 +28,15 @@ class CreateFamilyHandler
             reportingCurrency: CurrencyCode::fromString($command->reportingCurrency),
             defaultExchangeRateProvider: $command->defaultExchangeRateProvider,
             countryCode: $command->countryCode,
-            creatorUserId: $user->getId()
+            creatorUserId: $command->userId
         );
         $this->familyRepository->save($family);
 
         $member = FamilyMember::join(
             familyId: $family->getId(),
-            userId: $user->getId()
+            userId: $command->userId
         );
         $this->familyMemberRepository->save($member);
-
-        $user->switchActiveFamily($family->getId());
-        $this->userRepository->save($user);
 
         return $family;
     }

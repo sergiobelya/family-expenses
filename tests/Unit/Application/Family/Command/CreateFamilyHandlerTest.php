@@ -8,19 +8,15 @@ use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Entity\FamilyMember;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
-use App\Identity\Domain\Entity\User;
-use App\Identity\Domain\Repository\UserRepositoryInterface;
+use App\Core\Domain\ValueObject\UserId;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\Uuid;
 
 class CreateFamilyHandlerTest extends TestCase
 {
     public function testCreateFamilySuccess(): void
     {
-        $user = new User(123456);
-
-        $userRepo = $this->createMock(UserRepositoryInterface::class);
-        $userRepo->expects($this->once())->method('findById')->with($user->getId())->willReturn($user);
-        $userRepo->expects($this->once())->method('save')->with($user);
+        $userId = new UserId(Uuid::v7());
 
         $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
         $familyRepo->expects($this->once())->method('save')->with($this->isInstanceOf(Family::class));
@@ -28,10 +24,10 @@ class CreateFamilyHandlerTest extends TestCase
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $memberRepo->expects($this->once())->method('save')->with($this->isInstanceOf(FamilyMember::class));
 
-        $handler = new CreateFamilyHandler($userRepo, $familyRepo, $memberRepo);
+        $handler = new CreateFamilyHandler($familyRepo, $memberRepo);
 
         $command = new CreateFamilyCommand(
-            userId: $user->getId(),
+            userId: $userId,
             name: 'Our Family',
             timezone: 'Europe/Kyiv',
             defaultExpenseCurrency: 'UAH',
@@ -44,6 +40,5 @@ class CreateFamilyHandlerTest extends TestCase
         $this->assertSame('Europe/Kyiv', (string) $family->getTimezone());
         $this->assertSame('UAH', (string) $family->getDefaultExpenseCurrency());
         $this->assertSame('USD', (string) $family->getReportingCurrency());
-        $this->assertEquals($family->getId(), $user->getActiveFamilyId());
     }
 }

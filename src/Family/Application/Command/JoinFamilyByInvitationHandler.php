@@ -16,8 +16,6 @@ use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Family\Infrastructure\Security\InvitationTokenGenerator;
-use App\Identity\Domain\Repository\UserRepositoryInterface;
-use App\Identity\Domain\Exception\UserNotFoundException;
 use DateTimeImmutable;
 use DateTimeZone;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -26,7 +24,6 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 class JoinFamilyByInvitationHandler
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository,
         private FamilyRepositoryInterface $familyRepository,
         private FamilyMemberRepositoryInterface $familyMemberRepository,
         private InvitationRepositoryInterface $invitationRepository,
@@ -40,11 +37,6 @@ class JoinFamilyByInvitationHandler
      */
     public function __invoke(JoinFamilyByInvitationCommand $command): array
     {
-        $user = $this->userRepository->findById($command->userId);
-        if ($user === null) {
-            throw UserNotFoundException::withId((string) $command->userId);
-        }
-
         $tokenHash = $this->tokenGenerator->hashToken($command->token);
         $invitation = $this->invitationRepository->findByTokenHash($tokenHash);
         if ($invitation === null) {
@@ -58,10 +50,7 @@ class JoinFamilyByInvitationHandler
 
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
-        if ($this->familyMemberRepository->isMember($family->getId(), $user->getId())) {
-            $user->switchActiveFamily($family->getId(), $now);
-            $this->userRepository->save($user);
-
+        if ($this->familyMemberRepository->isMember($family->getId(), $command->userId)) {
             return [
                 'family' => $family,
                 'already_member' => true,
@@ -86,22 +75,19 @@ class JoinFamilyByInvitationHandler
 
         $invitationUse = new InvitationUse(
             invitationId: $invitation->getId(),
-            joinedUserId: $user->getId(),
+            joinedUserId: $command->userId,
             now: $now
         );
         $this->invitationUseRepository->save($invitationUse);
 
         $member = FamilyMember::join(
             familyId: $family->getId(),
-            userId: $user->getId(),
+            userId: $command->userId,
             invitationId: $invitation->getId(),
             status: FamilyMemberStatus::ACTIVE,
             now: $now
         );
         $this->familyMemberRepository->save($member);
-
-        $user->switchActiveFamily($family->getId(), $now);
-        $this->userRepository->save($user);
 
         return [
             'family' => $family,

@@ -15,8 +15,6 @@ use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Family\Infrastructure\Security\InvitationTokenGenerator;
-use App\Identity\Domain\Entity\User;
-use App\Identity\Domain\Repository\UserRepositoryInterface;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
 use App\Core\Domain\ValueObject\UserId;
@@ -28,7 +26,6 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
 {
     /**
      * @return array{
-     *     MockObject&UserRepositoryInterface,
      *     MockObject&FamilyRepositoryInterface,
      *     MockObject&FamilyMemberRepositoryInterface,
      *     MockObject&InvitationRepositoryInterface,
@@ -39,7 +36,6 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
     private function createDependencies(): array
     {
         return [
-            $this->createMock(UserRepositoryInterface::class),
             $this->createMock(FamilyRepositoryInterface::class),
             $this->createMock(FamilyMemberRepositoryInterface::class),
             $this->createMock(InvitationRepositoryInterface::class),
@@ -50,16 +46,15 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
 
     public function testJoinSuccess(): void
     {
-        [$userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
+        [$familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
 
-        $user = new User(111);
+        $userId = new UserId(Uuid::v7());
         $family = Family::create('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
         $invitation = Invitation::create($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 2);
 
-        $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->with($tokenHash)->willReturn($invitation);
         $familyRepo->method('findById')->with($family->getId())->willReturn($family);
         $memberRepo->method('isMember')->willReturn(false);
@@ -67,41 +62,37 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
 
         $useRepo->expects($this->once())->method('save')->with($this->isInstanceOf(InvitationUse::class));
         $memberRepo->expects($this->once())->method('save')->with($this->isInstanceOf(FamilyMember::class));
-        $userRepo->expects($this->once())->method('save')->with($user);
 
-        $handler = new JoinFamilyByInvitationHandler($userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
+        $handler = new JoinFamilyByInvitationHandler($familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
 
-        $result = $handler(new JoinFamilyByInvitationCommand($rawToken, $user->getId()));
+        $result = $handler(new JoinFamilyByInvitationCommand($rawToken, $userId));
 
         $this->assertSame($family, $result['family']);
         $this->assertFalse($result['already_member']);
-        $this->assertEquals($family->getId(), $user->getActiveFamilyId());
     }
 
     public function testJoinWhenAlreadyMemberDoesNotConsumeUse(): void
     {
-        [$userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
+        [$familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
 
-        $user = new User(111);
+        $userId = new UserId(Uuid::v7());
         $family = Family::create('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
         $invitation = Invitation::create($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 1);
 
-        $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->with($tokenHash)->willReturn($invitation);
         $familyRepo->method('findById')->with($family->getId())->willReturn($family);
-        $memberRepo->method('isMember')->with($family->getId(), $user->getId())->willReturn(true);
+        $memberRepo->method('isMember')->with($family->getId(), $userId)->willReturn(true);
 
         // No new invitation use or member saved!
         $useRepo->expects($this->never())->method('save');
         $memberRepo->expects($this->never())->method('save');
-        $userRepo->expects($this->once())->method('save')->with($user);
 
-        $handler = new JoinFamilyByInvitationHandler($userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
+        $handler = new JoinFamilyByInvitationHandler($familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
 
-        $result = $handler(new JoinFamilyByInvitationCommand($rawToken, $user->getId()));
+        $result = $handler(new JoinFamilyByInvitationCommand($rawToken, $userId));
 
         $this->assertSame($family, $result['family']);
         $this->assertTrue($result['already_member']);
@@ -109,9 +100,9 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
 
     public function testJoinRevokedThrowsException(): void
     {
-        [$userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
+        [$familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
 
-        $user = new User(111);
+        $userId = new UserId(Uuid::v7());
         $family = Family::create('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
@@ -119,37 +110,35 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         $invitation = Invitation::create($family->getId(), new UserId(Uuid::v7()), $tokenHash);
         $invitation->revoke();
 
-        $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->willReturn($invitation);
         $familyRepo->method('findById')->willReturn($family);
         $memberRepo->method('isMember')->willReturn(false);
 
-        $handler = new JoinFamilyByInvitationHandler($userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
+        $handler = new JoinFamilyByInvitationHandler($familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
 
         $this->expectException(InvitationRevokedException::class);
-        $handler(new JoinFamilyByInvitationCommand($rawToken, $user->getId()));
+        $handler(new JoinFamilyByInvitationCommand($rawToken, $userId));
     }
 
     public function testJoinLimitExceededThrowsException(): void
     {
-        [$userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
+        [$familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen] = $this->createDependencies();
 
-        $user = new User(111);
+        $userId = new UserId(Uuid::v7());
         $family = Family::create('My Family', new Timezone('Europe/Warsaw'), new CurrencyCode('PLN'), new CurrencyCode('PLN'));
         $rawToken = 'token123';
         $tokenHash = $tokenGen->hashToken($rawToken);
 
         $invitation = Invitation::create($family->getId(), new UserId(Uuid::v7()), $tokenHash, maxUses: 1);
 
-        $userRepo->method('findById')->willReturn($user);
         $invRepo->method('findByTokenHash')->willReturn($invitation);
         $familyRepo->method('findById')->willReturn($family);
         $memberRepo->method('isMember')->willReturn(false);
         $useRepo->method('countByInvitationId')->willReturn(1); // Already 1 use!
 
-        $handler = new JoinFamilyByInvitationHandler($userRepo, $familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
+        $handler = new JoinFamilyByInvitationHandler($familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
 
         $this->expectException(InvitationLimitExceededException::class);
-        $handler(new JoinFamilyByInvitationCommand($rawToken, $user->getId()));
+        $handler(new JoinFamilyByInvitationCommand($rawToken, $userId));
     }
 }
