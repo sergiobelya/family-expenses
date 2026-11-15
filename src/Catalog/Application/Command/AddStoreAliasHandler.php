@@ -30,11 +30,11 @@ final class AddStoreAliasHandler
             throw CatalogEntryNotFoundException::forEntry('store', (string) $command->storeId);
         }
 
-        $this->assertAliasNameAvailable($familyId, $name->dedupeKey);
+        $this->assertAliasNameAvailable($familyId, $name->getDedupeKey());
         $alias = StoreAlias::create(
             $familyId,
             $store->getId(),
-            (string) $name,
+            $name->getValue(),
             $command->createdByUserId
         );
         $this->catalog->saveStoreAlias($alias);

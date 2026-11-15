@@ -24,9 +24,9 @@ final class CreateStoreHandler
         $name = StoreName::fromString($command->name);
         $this->access->lockFamilyForMemberMutation($command->familyId, $command->createdByUserId);
         $familyId = $command->familyId;
-        $this->assertNameAvailable($familyId, $name->dedupeKey);
+        $this->assertNameAvailable($familyId, $name->getDedupeKey());
 
-        $store = Store::create($familyId, (string) $name, $command->createdByUserId);
+        $store = Store::create($familyId, $name->getValue(), $command->createdByUserId);
         $this->catalog->saveStore($store);
 
         return $store;

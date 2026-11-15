@@ -14,7 +14,7 @@ final class CatalogNameTest extends TestCase
     #[DataProvider('hardKeyVectors')]
     public function testHardKeyNormalization(string $input, string $expected): void
     {
-        self::assertSame($expected, CatalogName::fromString($input)->dedupeKey);
+        self::assertSame($expected, CatalogName::fromString($input)->getDedupeKey());
     }
 
     /** @return iterable<array{string, string}> */
@@ -69,8 +69,8 @@ final class CatalogNameTest extends TestCase
 
     public function testDisplayNameIsTrimmedButOtherwisePreserved(): void
     {
-        self::assertSame('Żabka.', (string) CatalogName::fromString('  Żabka.  '));
-        self::assertSame('Żabka', (string) CatalogName::fromString("\u{00A0}Żabka\u{00A0}"));
+        self::assertSame('Żabka.', CatalogName::fromString('  Żabka.  ')->getValue());
+        self::assertSame('Żabka', CatalogName::fromString("\u{00A0}Żabka\u{00A0}")->getValue());
     }
 
     public function testStoreAndCategoryNamesHaveDistinctTypes(): void

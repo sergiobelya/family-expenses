@@ -31,18 +31,18 @@ final class RenameStoreHandler
 
         $conflict = $this->catalog->findStoreByDedupeKey(
             $familyId,
-            $name->dedupeKey,
+            $name->getDedupeKey(),
             $store->getId()
         );
         if ($conflict !== null) {
             throw new CatalogNameConflictException('store', $conflict->getName());
         }
-        $alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $name->dedupeKey);
+        $alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $name->getDedupeKey());
         if ($alias !== null) {
             throw new CatalogNameConflictException('store alias', $alias->getAlias());
         }
 
-        $store->rename((string) $name, $command->updatedByUserId);
+        $store->rename($name->getValue(), $command->updatedByUserId);
         $this->catalog->saveStore($store);
 
         return $store;

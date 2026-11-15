@@ -7,6 +7,7 @@ use App\Core\Domain\ValueObject\UserId;
 use App\Catalog\Application\CatalogAccess;
 use App\Catalog\Application\Command\CreateStoreCommand;
 use App\Catalog\Application\Command\CreateStoreHandler;
+use App\Catalog\Application\FamilyCatalogLockInterface;
 use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Exception\CatalogNameConflictException;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
@@ -21,7 +22,8 @@ final class CreateStoreHandlerTest extends TestCase
         $familyId = Uuid::v7();
         $userId = Uuid::v7();
         $catalog = $this->createMock(CatalogRepositoryInterface::class);
-        $catalog->expects(self::once())->method('lockFamily')->with(new FamilyId($familyId));
+        $lock = $this->createMock(FamilyCatalogLockInterface::class);
+        $lock->expects(self::once())->method('lockFamily')->with(new FamilyId($familyId));
         $catalog->method('findStoreByDedupeKey')->with(new FamilyId($familyId), 'biedronka')->willReturn(null);
         $catalog->method('findStoreAliasByDedupeKey')->with(new FamilyId($familyId), 'biedronka')->willReturn(null);
         $catalog->expects(self::once())->method('saveStore')->with(self::callback(
@@ -32,7 +34,7 @@ final class CreateStoreHandlerTest extends TestCase
 
         $members = $this->createMock(FamilyMemberRepositoryInterface::class);
         $members->expects(self::exactly(2))->method('isMember')->with(new FamilyId($familyId), new UserId($userId))->willReturn(true);
-        $handler = new CreateStoreHandler($catalog, new CatalogAccess($members, $catalog));
+        $handler = new CreateStoreHandler($catalog, new CatalogAccess($members, $lock));
 
         $store = $handler(new CreateStoreCommand(new FamilyId($familyId), new UserId($userId), ' Biedronka '));
 
@@ -56,7 +58,8 @@ final class CreateStoreHandlerTest extends TestCase
         $catalog->method('findStoreAliasByDedupeKey')->willReturn($alias);
         $members = $this->createMock(FamilyMemberRepositoryInterface::class);
         $members->method('isMember')->willReturn(true);
-        $handler = new CreateStoreHandler($catalog, new CatalogAccess($members, $catalog));
+        $lock = $this->createMock(FamilyCatalogLockInterface::class);
+        $handler = new CreateStoreHandler($catalog, new CatalogAccess($members, $lock));
 
         $this->expectException(CatalogNameConflictException::class);
         $handler(new CreateStoreCommand(new FamilyId($familyId), new UserId($userId), 'Biedronka'));

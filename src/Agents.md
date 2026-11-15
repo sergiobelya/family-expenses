@@ -12,6 +12,7 @@ Code is organized by Bounded Contexts in `src/`:
 ### Layer Responsibilities within a Context
 - **`Domain/`**: Pure domain logic and POPO entities. No framework or ORM dependencies.
   - `Entity/` (aggregates and entities extending `AggregateRoot` where applicable)
+  - Aggregate roots are instantiated exclusively through factory methods (e.g., `create()`, `join()`). Keep constructors `private` to enforce invariant validation and domain event recording on creation. Doctrine hydrates entities via reflection, bypassing the constructor.
   - `ValueObject/` (immutable self-validating types)
   - `Event/` (domain events implementing `DomainEventInterface`)
   - `Exception/` (typed domain exceptions)

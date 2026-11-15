@@ -21,7 +21,7 @@ final class CatalogSearch
     public function stores(FamilyId $familyId, string $query): array
     {
         try {
-            $queryKey = CatalogName::fromString($query)->dedupeKey;
+            $queryKey = CatalogName::fromString($query)->getDedupeKey();
         } catch (InvalidArgumentException) {
             return [];
         }
@@ -61,7 +61,7 @@ final class CatalogSearch
     public function categories(FamilyId $familyId, string $query): array
     {
         try {
-            $queryKey = CatalogName::fromString($query)->dedupeKey;
+            $queryKey = CatalogName::fromString($query)->getDedupeKey();
         } catch (InvalidArgumentException) {
             return [];
         }

@@ -33,7 +33,7 @@ class Store extends AggregateRoot
     ) {
         $this->id = $id ?? StoreId::generate();
         $this->name = $name;
-        $this->dedupeKey = $name->dedupeKey;
+        $this->dedupeKey = $name->getDedupeKey();
         $this->defaultCategoryId = $defaultCategoryId;
         $this->createdAt = $now;
         $this->updatedAt = $now;
@@ -77,7 +77,7 @@ class Store extends AggregateRoot
 
     public function getName(): string
     {
-        return (string) $this->name;
+        return $this->name->getValue();
     }
 
     public function getDedupeKey(): string
@@ -103,13 +103,13 @@ class Store extends AggregateRoot
     public function rename(string $name, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $storeName = StoreName::fromString($name);
-        if ((string) $this->name === (string) $storeName && $this->dedupeKey === $storeName->dedupeKey) {
+        if ($this->name->getValue() === $storeName->getValue() && $this->dedupeKey === $storeName->getDedupeKey()) {
             return;
         }
 
         $before = $this->snapshot();
         $this->name = $storeName;
-        $this->dedupeKey = $storeName->dedupeKey;
+        $this->dedupeKey = $storeName->getDedupeKey();
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $this->recordEvent(new StoreRenamed(
             entityId: $this->id,
@@ -167,7 +167,7 @@ class Store extends AggregateRoot
     {
         return [
             'family_id' => (string) $this->familyId,
-            'name' => (string) $this->name,
+            'name' => $this->name->getValue(),
             'dedupe_key' => $this->dedupeKey,
             'default_category_id' => $this->defaultCategoryId === null ? null : (string) $this->defaultCategoryId,
         ];

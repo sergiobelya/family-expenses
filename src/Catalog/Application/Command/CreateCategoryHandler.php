@@ -23,12 +23,12 @@ final class CreateCategoryHandler
         $name = CategoryName::fromString($command->name);
         $this->access->lockFamilyForMemberMutation($command->familyId, $command->createdByUserId);
         $familyId = $command->familyId;
-        $conflict = $this->catalog->findCategoryByDedupeKey($familyId, $name->dedupeKey);
+        $conflict = $this->catalog->findCategoryByDedupeKey($familyId, $name->getDedupeKey());
         if ($conflict !== null) {
             throw new CatalogNameConflictException('category', $conflict->getName());
         }
 
-        $category = Category::create($familyId, (string) $name, $command->createdByUserId);
+        $category = Category::create($familyId, $name->getValue(), $command->createdByUserId);
         $this->catalog->saveCategory($category);
 
         return $category;

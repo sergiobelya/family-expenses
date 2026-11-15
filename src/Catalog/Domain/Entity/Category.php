@@ -29,7 +29,7 @@ class Category extends AggregateRoot
     ) {
         $this->id = $id ?? CategoryId::generate();
         $this->name = $name;
-        $this->dedupeKey = $name->dedupeKey;
+        $this->dedupeKey = $name->getDedupeKey();
         $this->createdAt = $now;
         $this->updatedAt = $now;
     }
@@ -71,7 +71,7 @@ class Category extends AggregateRoot
 
     public function getName(): string
     {
-        return (string) $this->name;
+        return $this->name->getValue();
     }
 
     public function getDedupeKey(): string
@@ -92,13 +92,13 @@ class Category extends AggregateRoot
     public function rename(string $name, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $categoryName = CategoryName::fromString($name);
-        if ((string) $this->name === (string) $categoryName && $this->dedupeKey === $categoryName->dedupeKey) {
+        if ($this->nameIsDifferentFrom($categoryName)) {
             return;
         }
 
         $before = $this->snapshot();
         $this->name = $categoryName;
-        $this->dedupeKey = $categoryName->dedupeKey;
+        $this->dedupeKey = $categoryName->getDedupeKey();
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $this->recordEvent(new CategoryRenamed(
             entityId: $this->id,
@@ -129,8 +129,14 @@ class Category extends AggregateRoot
     {
         return [
             'family_id' => (string) $this->familyId,
-            'name' => (string) $this->name,
+            'name' => $this->name->getValue(),
             'dedupe_key' => $this->dedupeKey,
         ];
+    }
+
+    private function nameIsDifferentFrom(CategoryName $categoryName): bool
+    {
+        return $this->name->getValue() !== $categoryName->getValue()
+            || $this->dedupeKey !== $categoryName->getDedupeKey();
     }
 }

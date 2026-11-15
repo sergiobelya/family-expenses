@@ -30,7 +30,7 @@ class StoreAlias extends AggregateRoot
     ) {
         $this->id = $id ?? StoreAliasId::generate();
         $this->alias = $name;
-        $this->aliasDedupeKey = $name->dedupeKey;
+        $this->aliasDedupeKey = $name->getDedupeKey();
         $this->createdAt = $now;
     }
 
@@ -78,7 +78,7 @@ class StoreAlias extends AggregateRoot
 
     public function getAlias(): string
     {
-        return (string) $this->alias;
+        return $this->alias->getValue();
     }
 
     public function getAliasDedupeKey(): string
@@ -94,13 +94,13 @@ class StoreAlias extends AggregateRoot
     public function rename(string $alias, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $storeName = StoreName::fromString($alias);
-        if ((string) $this->alias === (string) $storeName && $this->aliasDedupeKey === $storeName->dedupeKey) {
+        if ($this->alias->getValue() === $storeName->getValue() && $this->aliasDedupeKey === $storeName->getDedupeKey()) {
             return;
         }
 
         $before = $this->snapshot();
         $this->alias = $storeName;
-        $this->aliasDedupeKey = $storeName->dedupeKey;
+        $this->aliasDedupeKey = $storeName->getDedupeKey();
         $occurredAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $this->recordEvent(new StoreAliasRenamed(
             entityId: $this->id,
@@ -132,7 +132,7 @@ class StoreAlias extends AggregateRoot
         return [
             'family_id' => (string) $this->familyId,
             'store_id' => (string) $this->storeId,
-            'alias' => (string) $this->alias,
+            'alias' => $this->alias->getValue(),
             'alias_dedupe_key' => $this->aliasDedupeKey,
         ];
     }

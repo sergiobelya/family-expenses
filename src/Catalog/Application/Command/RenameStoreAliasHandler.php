@@ -33,20 +33,20 @@ final class RenameStoreAliasHandler
             throw CatalogEntryNotFoundException::forEntry('store alias', (string) $command->aliasId);
         }
 
-        $store = $this->catalog->findStoreByDedupeKey($familyId, $name->dedupeKey);
+        $store = $this->catalog->findStoreByDedupeKey($familyId, $name->getDedupeKey());
         if ($store !== null) {
             throw new CatalogNameConflictException('store', $store->getName());
         }
         $conflict = $this->catalog->findStoreAliasByDedupeKey(
             $familyId,
-            $name->dedupeKey,
+            $name->getDedupeKey(),
             $alias->getId()
         );
         if ($conflict !== null) {
             throw new CatalogNameConflictException('store alias', $conflict->getAlias());
         }
 
-        $alias->rename((string) $name, $command->updatedByUserId);
+        $alias->rename($name->getValue(), $command->updatedByUserId);
         $this->catalog->saveStoreAlias($alias);
 
         return $alias;

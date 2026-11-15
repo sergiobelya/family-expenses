@@ -826,43 +826,43 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         $id = isset($data['id']) ? $this->parseUuid((string) $data['id']) : null;
         if ($type === 'store') {
             $storeId = $id === null ? null : new StoreId($id);
-            $conflict = $this->catalog->findStoreByDedupeKey($familyId, $name->dedupeKey, $storeId);
+            $conflict = $this->catalog->findStoreByDedupeKey($familyId, $name->getDedupeKey(), $storeId);
             if ($conflict !== null) {
-                $this->renderHardConflict($context, $type, $data, (string) $name, $conflict->getName(), $conflict->getId()->toUuid());
+                $this->renderHardConflict($context, $type, $data, $name->getValue(), $conflict->getName(), $conflict->getId()->toUuid());
                 return;
             }
-            $alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $name->dedupeKey);
+            $alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $name->getDedupeKey());
             if ($alias !== null) {
                 $this->renderHardConflict(
                     $context,
                     $type,
                     $data,
-                    (string) $name,
+                    $name->getValue(),
                     $alias->getAlias(),
                     $alias->getStoreId()->toUuid()
                 );
                 return;
             }
             $matches = array_filter(
-                $this->search->stores($familyId, (string) $name),
-                fn (Store $store): bool => $store->getDedupeKey() !== $name->dedupeKey
+                $this->search->stores($familyId, $name->getValue()),
+                fn (Store $store): bool => $store->getDedupeKey() !== $name->getDedupeKey()
                     && ($storeId === null || !$store->getId()->equals($storeId))
             );
         } else {
             $categoryId = $id === null ? null : new CategoryId($id);
-            $conflict = $this->catalog->findCategoryByDedupeKey($familyId, $name->dedupeKey, $categoryId);
+            $conflict = $this->catalog->findCategoryByDedupeKey($familyId, $name->getDedupeKey(), $categoryId);
             if ($conflict !== null) {
-                $this->renderHardConflict($context, $type, $data, (string) $name, $conflict->getName(), $conflict->getId()->toUuid());
+                $this->renderHardConflict($context, $type, $data, $name->getValue(), $conflict->getName(), $conflict->getId()->toUuid());
                 return;
             }
             $matches = array_filter(
-                $this->search->categories($familyId, (string) $name),
-                fn (Category $category): bool => $category->getDedupeKey() !== $name->dedupeKey
+                $this->search->categories($familyId, $name->getValue()),
+                fn (Category $category): bool => $category->getDedupeKey() !== $name->getDedupeKey()
                     && ($categoryId === null || !$category->getId()->equals($categoryId))
             );
         }
 
-        $data['value'] = (string) $name;
+        $data['value'] = $name->getValue();
         if ($matches !== []) {
             $this->stateRepository->set($this->state($context, 'warning', $data));
             $operation = ($data['operation'] ?? 'create') === 'rename' ? 'rename' : 'create';
@@ -885,7 +885,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                 $context,
                 $this->trans(
                     'catalog.similar_' . $type . '_' . $operation,
-                    ['%{name}' => $this->escape((string) $name)]
+                    ['%{name}' => $this->escape($name->getValue())]
                 ),
                 $builder->toArray()
             );
@@ -1000,17 +1000,17 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             return;
         }
 
-        $canonical = $this->catalog->findStoreByDedupeKey($familyId, $name->dedupeKey);
+        $canonical = $this->catalog->findStoreByDedupeKey($familyId, $name->getDedupeKey());
         $aliasId = isset($data['alias_id']) ? $this->parseUuid((string) $data['alias_id']) : null;
         $existingAlias = $this->catalog->findStoreAliasByDedupeKey(
             $familyId,
-            $name->dedupeKey,
+            $name->getDedupeKey(),
             $aliasId === null ? null : new StoreAliasId($aliasId)
         );
         if ($canonical !== null || $existingAlias !== null) {
             $existingName = $canonical?->getName() ?? $existingAlias?->getAlias() ?? '';
             $conflictingStoreId = $canonical?->getId() ?? $existingAlias?->getStoreId() ?? $storeId;
-            $data['value'] = (string) $name;
+            $data['value'] = $name->getValue();
             $this->stateRepository->set($this->state($context, 'alias_conflict', $data));
             $builder = new InlineKeyboardBuilder()
                 ->button($this->trans('catalog.open_conflict'), 'catalog:warning:open:' . $conflictingStoreId)->row()
@@ -1031,14 +1031,14 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                     new StoreId($storeId),
                     new StoreAliasId($aliasId),
                     $context->user->getId(),
-                    (string) $name
+                    $name->getValue()
                 ));
             } else {
                 $this->runCommand(new AddStoreAliasCommand(
                     $familyId,
                     new StoreId($storeId),
                     $context->user->getId(),
-                    (string) $name
+                    $name->getValue()
                 ));
             }
         } catch (CatalogEntryNotFoundException) {

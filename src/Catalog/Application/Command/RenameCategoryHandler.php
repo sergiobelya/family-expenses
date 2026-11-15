@@ -31,14 +31,14 @@ final class RenameCategoryHandler
 
         $conflict = $this->catalog->findCategoryByDedupeKey(
             $familyId,
-            $name->dedupeKey,
+            $name->getDedupeKey(),
             $category->getId()
         );
         if ($conflict !== null) {
             throw new CatalogNameConflictException('category', $conflict->getName());
         }
 
-        $category->rename((string) $name, $command->updatedByUserId);
+        $category->rename($name->getValue(), $command->updatedByUserId);
         $this->catalog->saveCategory($category);
 
         return $category;

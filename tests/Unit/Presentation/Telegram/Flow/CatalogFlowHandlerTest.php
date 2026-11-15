@@ -3,6 +3,7 @@
 namespace App\Tests\Unit\Presentation\Telegram\Flow;
 
 use App\Catalog\Application\CatalogAccess;
+use App\Catalog\Application\FamilyCatalogLockInterface;
 use App\Catalog\Application\Query\CatalogSearch;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Catalog\Domain\Entity\Category;
@@ -46,11 +47,12 @@ final class CatalogFlowHandlerTest extends TestCase
         $telegram->expects(self::never())->method('sendMessage');
         $translator = $this->createMock(TranslatorInterface::class);
         $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
+        $lock = $this->createMock(FamilyCatalogLockInterface::class);
         $handler = new CatalogFlowHandler(
             $telegram,
             $states,
             $repository,
-            new CatalogAccess($members, $repository),
+            new CatalogAccess($members, $lock),
             new CatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
@@ -112,11 +114,12 @@ final class CatalogFlowHandlerTest extends TestCase
             });
         $translator = $this->createMock(TranslatorInterface::class);
         $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
+        $lock = $this->createMock(FamilyCatalogLockInterface::class);
         $handler = new CatalogFlowHandler(
             $telegram,
             $states,
             $repository,
-            new CatalogAccess($members, $repository),
+            new CatalogAccess($members, $lock),
             new CatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
@@ -174,11 +177,12 @@ final class CatalogFlowHandlerTest extends TestCase
         $translator = $this->createMock(TranslatorInterface::class);
         $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
 
+        $lock = $this->createMock(FamilyCatalogLockInterface::class);
         $handler = new CatalogFlowHandler(
             $telegram,
             $stateRepository,
             $repository,
-            new CatalogAccess($members, $repository),
+            new CatalogAccess($members, $lock),
             new CatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
