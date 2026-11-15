@@ -16,11 +16,6 @@ readonly class InvitationUseRepository implements InvitationUseRepositoryInterfa
     ) {
     }
 
-    public function save(InvitationUse $use): void
-    {
-        $this->entityManager->persist($use);
-    }
-
     public function countByInvitationId(FamilyId $familyId, InvitationId $invitationId): int
     {
         return (int) $this->entityManager->getConnection()->fetchOne(
@@ -54,5 +49,37 @@ readonly class InvitationUseRepository implements InvitationUseRepositoryInterfa
                 'userId' => (string) $userId,
             ]
         ) !== false;
+    }
+
+    public function insertIfUnderLimit(FamilyId $familyId, InvitationUse $use): bool
+    {
+        $connection = $this->entityManager->getConnection();
+        $invitationId = $use->getInvitationId();
+
+        $affected = $connection->executeStatement(
+            <<<'SQL'
+            INSERT INTO invitation_uses (id, invitation_id, joined_user_id, used_at)
+            SELECT :id, :invitationId, :joinedUserId, :usedAt
+            FROM invitations
+            WHERE invitations.id = :invitationId2
+              AND invitations.family_id = :familyId
+              AND (invitations.max_uses IS NULL OR (
+                  SELECT COUNT(*)
+                  FROM invitation_uses
+                  WHERE invitation_uses.invitation_id = :invitationId3
+              ) < invitations.max_uses)
+            SQL,
+            [
+                'id' => (string) $use->getId(),
+                'invitationId' => (string) $invitationId,
+                'invitationId2' => (string) $invitationId,
+                'invitationId3' => (string) $invitationId,
+                'joinedUserId' => (string) $use->getJoinedUserId(),
+                'usedAt' => $use->getUsedAt()->format(\DateTimeInterface::ATOM),
+                'familyId' => (string) $familyId,
+            ]
+        );
+
+        return $affected > 0;
     }
 }

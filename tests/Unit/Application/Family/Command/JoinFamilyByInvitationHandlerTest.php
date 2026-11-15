@@ -58,9 +58,8 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         $invRepo->method('findByTokenHash')->with($tokenHash)->willReturn($invitation);
         $familyRepo->method('findById')->with($family->getId())->willReturn($family);
         $memberRepo->method('isMember')->willReturn(false);
-        $useRepo->method('countByInvitationId')->willReturn(0);
+        $useRepo->method('insertIfUnderLimit')->willReturn(true);
 
-        $useRepo->expects($this->once())->method('save')->with($this->isInstanceOf(InvitationUse::class));
         $memberRepo->expects($this->once())->method('save')->with($this->isInstanceOf(FamilyMember::class));
 
         $handler = new JoinFamilyByInvitationHandler($familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
@@ -87,7 +86,7 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         $memberRepo->method('isMember')->with($family->getId(), $userId)->willReturn(true);
 
         // No new invitation use or member saved!
-        $useRepo->expects($this->never())->method('save');
+        $useRepo->expects($this->never())->method('insertIfUnderLimit');
         $memberRepo->expects($this->never())->method('save');
 
         $handler = new JoinFamilyByInvitationHandler($familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
@@ -134,7 +133,8 @@ class JoinFamilyByInvitationHandlerTest extends TestCase
         $invRepo->method('findByTokenHash')->willReturn($invitation);
         $familyRepo->method('findById')->willReturn($family);
         $memberRepo->method('isMember')->willReturn(false);
-        $useRepo->method('countByInvitationId')->willReturn(1); // Already 1 use!
+        $useRepo->method('insertIfUnderLimit')->willReturn(false); // Insert failed
+        $useRepo->method('countByInvitationId')->willReturn(1); // Count equals maxUses (1)
 
         $handler = new JoinFamilyByInvitationHandler($familyRepo, $memberRepo, $invRepo, $useRepo, $tokenGen);
 

@@ -16,6 +16,7 @@ use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Family\Infrastructure\Security\InvitationTokenGenerator;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use DateTimeImmutable;
 use DateTimeZone;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -65,29 +66,37 @@ class JoinFamilyByInvitationHandler
             throw InvitationExpiredException::create();
         }
 
-        $currentUses = $this->invitationUseRepository->countByInvitationId(
-            $invitation->getFamilyId(),
-            $invitation->getId()
-        );
-        if (!$invitation->canBeUsed($currentUses, $now)) {
-            throw InvitationLimitExceededException::create();
-        }
-
         $invitationUse = new InvitationUse(
             invitationId: $invitation->getId(),
             joinedUserId: $command->userId,
             now: $now
         );
-        $this->invitationUseRepository->save($invitationUse);
 
-        $member = FamilyMember::join(
-            familyId: $family->getId(),
-            userId: $command->userId,
-            invitationId: $invitation->getId(),
-            status: FamilyMemberStatus::ACTIVE,
-            now: $now
-        );
-        $this->familyMemberRepository->save($member);
+        $inserted = $this->invitationUseRepository->insertIfUnderLimit($invitation->getFamilyId(), $invitationUse);
+
+        if (!$inserted) {
+            $currentUses = $this->invitationUseRepository->countByInvitationId(
+                $invitation->getFamilyId(),
+                $invitation->getId()
+            );
+            if (!$invitation->canBeUsed($currentUses, $now)) {
+                throw InvitationLimitExceededException::create();
+            }
+            throw InvitationExpiredException::create();
+        }
+
+        try {
+            $member = FamilyMember::join(
+                familyId: $family->getId(),
+                userId: $command->userId,
+                invitationId: $invitation->getId(),
+                status: FamilyMemberStatus::ACTIVE,
+                now: $now
+            );
+            $this->familyMemberRepository->save($member);
+        } catch (UniqueConstraintViolationException $e) {
+            throw InvitationExpiredException::create();
+        }
 
         return [
             'family' => $family,
