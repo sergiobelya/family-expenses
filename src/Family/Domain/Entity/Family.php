@@ -32,7 +32,7 @@ class Family extends AggregateRoot
         CurrencyCode $defaultExpenseCurrency,
         CurrencyCode $reportingCurrency,
         string $defaultExchangeRateProvider = 'nbp',
-        ?string $countryCode = null,
+        ?CountryCode $countryCode = null,
         ?FamilyId $id = null,
         ?DateTimeImmutable $now = null
     ) {
@@ -42,7 +42,7 @@ class Family extends AggregateRoot
         $this->defaultExpenseCurrency = (string) $defaultExpenseCurrency;
         $this->reportingCurrency = (string) $reportingCurrency;
         $this->defaultExchangeRateProvider = trim($defaultExchangeRateProvider);
-        $this->setCountryCodeInternal($countryCode);
+        $this->countryCode = $countryCode;
         $this->createdAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $this->updatedAt = $this->createdAt;
     }
@@ -53,7 +53,7 @@ class Family extends AggregateRoot
         CurrencyCode $defaultExpenseCurrency,
         CurrencyCode $reportingCurrency,
         string $defaultExchangeRateProvider = 'nbp',
-        ?string $countryCode = null,
+        ?CountryCode $countryCode = null,
         ?UserId $creatorUserId = null,
         ?FamilyId $id = null,
         ?DateTimeImmutable $now = null
@@ -135,7 +135,7 @@ class Family extends AggregateRoot
         CurrencyCode $defaultExpenseCurrency,
         CurrencyCode $reportingCurrency,
         string $defaultExchangeRateProvider = 'nbp',
-        ?string $countryCode = null,
+        ?CountryCode $countryCode = null,
         ?UserId $actorUserId = null,
         ?DateTimeImmutable $now = null
     ): void {
@@ -153,7 +153,7 @@ class Family extends AggregateRoot
         $this->defaultExpenseCurrency = (string) $defaultExpenseCurrency;
         $this->reportingCurrency = (string) $reportingCurrency;
         $this->defaultExchangeRateProvider = trim($defaultExchangeRateProvider);
-        $this->setCountryCodeInternal($countryCode);
+        $this->countryCode = $countryCode;
         $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
         $afterData = [
@@ -174,13 +174,4 @@ class Family extends AggregateRoot
         ));
     }
 
-    private function setCountryCodeInternal(?string $countryCode): void
-    {
-        if ($countryCode === null || trim($countryCode) === '') {
-            $this->countryCode = null;
-            return;
-        }
-
-        $this->countryCode = CountryCode::fromString($countryCode);
-    }
 }

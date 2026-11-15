@@ -7,6 +7,7 @@ use App\Family\Domain\Exception\FamilyNotFoundException;
 use App\Family\Domain\Exception\NotFamilyMemberException;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
+use App\Core\Domain\ValueObject\CountryCode;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -39,7 +40,7 @@ class UpdateFamilySettingsHandler
             defaultExpenseCurrency: $command->defaultExpenseCurrency !== null ? CurrencyCode::fromString($command->defaultExpenseCurrency) : $family->getDefaultExpenseCurrency(),
             reportingCurrency: $command->reportingCurrency !== null ? CurrencyCode::fromString($command->reportingCurrency) : $family->getReportingCurrency(),
             defaultExchangeRateProvider: $command->defaultExchangeRateProvider ?? $family->getDefaultExchangeRateProvider(),
-            countryCode: $command->countryCode ?? $family->getCountryCode()?->__toString(),
+            countryCode: $command->countryCode !== null ? CountryCode::fromString($command->countryCode) : $family->getCountryCode(),
             actorUserId: $userId
         );
 

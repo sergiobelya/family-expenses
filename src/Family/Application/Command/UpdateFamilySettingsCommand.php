@@ -25,7 +25,6 @@ final readonly class UpdateFamilySettingsCommand
         ?string $reportingCurrency = null,
         ?string $defaultExchangeRateProvider = null,
         ?string $countryCode = null,
-        ?string $country = null,
         ?UserId $userId = null
     ) {
         $this->familyId = $familyId;
@@ -35,6 +34,6 @@ final readonly class UpdateFamilySettingsCommand
         $this->defaultExpenseCurrency = $defaultExpenseCurrency;
         $this->reportingCurrency = $reportingCurrency;
         $this->defaultExchangeRateProvider = $defaultExchangeRateProvider;
-        $this->countryCode = $countryCode ?? $country;
+        $this->countryCode = $countryCode;
     }
 }

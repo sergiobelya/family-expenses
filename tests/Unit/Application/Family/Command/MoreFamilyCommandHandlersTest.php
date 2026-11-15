@@ -104,7 +104,7 @@ class MoreFamilyCommandHandlersTest extends TestCase
             defaultExpenseCurrency: 'PLN',
             reportingCurrency: 'EUR',
             defaultExchangeRateProvider: 'nbp',
-            country: 'PL'
+            countryCode: 'PL'
         ));
 
         $this->assertSame('New Name', (string) $family->getName());

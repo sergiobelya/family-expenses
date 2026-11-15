@@ -6,6 +6,7 @@ use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Entity\FamilyMember;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
+use App\Core\Domain\ValueObject\CountryCode;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -27,7 +28,7 @@ final readonly class CreateFamilyHandler
             defaultExpenseCurrency: CurrencyCode::fromString($command->defaultExpenseCurrency),
             reportingCurrency: CurrencyCode::fromString($command->reportingCurrency),
             defaultExchangeRateProvider: $command->defaultExchangeRateProvider,
-            countryCode: $command->countryCode,
+            countryCode: $command->countryCode !== null ? CountryCode::fromString($command->countryCode) : null,
             creatorUserId: $command->userId
         );
         $this->familyRepository->save($family);
