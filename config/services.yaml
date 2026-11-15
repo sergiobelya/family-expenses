@@ -40,3 +40,6 @@ services:
 
     App\Catalog\Domain\Repository\CatalogRepositoryInterface:
         alias: App\Catalog\Infrastructure\Persistence\Doctrine\Repository\DoctrineCatalogRepository
+
+    App\Catalog\Application\Query\CatalogSearchInterface:
+        alias: App\Catalog\Infrastructure\Persistence\Doctrine\Search\PgTrgmCatalogSearch
