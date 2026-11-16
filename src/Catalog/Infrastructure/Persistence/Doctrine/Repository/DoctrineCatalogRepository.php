@@ -36,7 +36,7 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface, FamilyCat
     public function lockFamily(FamilyId $familyId): void
     {
         $found = $this->entityManager->getConnection()->fetchOne(
-            'SELECT id FROM families WHERE id = CAST(:id AS UUID) FOR UPDATE',
+            'SELECT id FROM families WHERE id = CAST(:id AS UUID) FOR NO KEY UPDATE',
             ['id' => (string) $familyId]
         );
         if ($found === false) {
