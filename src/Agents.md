@@ -29,6 +29,7 @@ Code is organized by Bounded Contexts in `src/`:
 - Contexts must remain decoupled.
 - Cross-context references in entities and aggregates must use IDs/Value Objects (`UserId`, `FamilyId`), never direct ORM entity associations across context boundaries.
 - Cross-context communication is performed via Domain Events and Application queries/commands.
+- When a domain event from one bounded context requires modifying an entity in another context, place the event handler in the context that owns the entity being modified. The handler should use its own context's repositories, not import repositories from the publishing context. This aligns with the DDD Event Carrier pattern — the publishing context does not know who listens to its events.
 
 ## 3. Doctrine Persistence & Mappings
 - **XML mappings only:** All Doctrine metadata is defined in `src/{Context}/Infrastructure/Persistence/Doctrine/Mapping/*.orm.xml` or `src/Core/Infrastructure/Persistence/Doctrine/Mapping/*.orm.xml`.
@@ -42,19 +43,26 @@ Code is organized by Bounded Contexts in `src/`:
 - Events implementing `AuditableEventInterface` are automatically recorded in `AuditLog` in the same database transaction.
 - **Do not manually instantiate or persist `OutboxMessage` or `AuditLog` in Command Handlers.**
 
-## 5. Domain Types & Errors
+## 5. Application Layer
 
+- Application Command and Query DTOs are `final readonly` classes with `public` properties. They use identifier value objects (e.g., `FamilyId`, `UserId`) for entity references, and scalar types for other input fields. Convert raw UUIDs into identifier value objects at transport boundaries before creating commands or queries.
+- Value objects are instantiated at the Application layer boundary (command/query handlers). Handlers convert scalar input from commands to value objects before passing them to domain entity factory methods.
+
+## 6. Domain Types & Errors
+
+- Entity constructors and factory methods accept value object types for fields that carry domain meaning or require validation (e.g., `FamilyName`, `CountryCode`, `CurrencyCode`). Scalar types are acceptable for simple data where no domain validation is needed (e.g., plain text descriptions, timestamps).
 - Entity and relationship IDs use distinct immutable identifier value objects (for example, `FamilyId`, `UserId`, `StoreId`, and `CategoryId`) throughout Domain APIs, including entity constructors/factories/mutators, domain events, and repository interfaces. Do not expose Symfony `Uuid` in Domain APIs; convert raw UUIDs at application or transport boundaries and never accept an unrelated identifier type.
-- Entity ID getters return their corresponding identifier value object. Application Command and Query DTOs, as well as Application services that accept entity IDs, use the corresponding identifier value objects. Use scalar types for other input fields unless they represent an established domain value object. Convert raw UUIDs into identifier value objects at transport boundaries.
+- Entity getters return their corresponding value object type, not the underlying scalar. If an entity field is modeled as a value object (e.g., `FamilyName`, `CountryCode`), its getter returns the value object. Cast to scalar at application or transport boundaries.
 - Every repository or DBAL read that retrieves family-scoped data must include `FamilyId` in its query/filter; authorization checks outside the query do not replace this scope. Explicit exceptions are identity reads (users are global, not family-owned), listing all families a user belongs to for family selection/navigation, and resolving an invitation by its globally unique token hash before its family is known. Operational outbox/inbox processing is also global because that data is not family-scoped. Do not add further exceptions without documenting their reason.
 - Persist domain value objects through explicit Doctrine DBAL/XML mappings. Keep serialization and database conversion in Infrastructure, not in domain entities.
 - Use value objects for validated entity names and domain codes. Use backed enums for finite state sets instead of string constants.
 - Exception messages are static by default because they may be logged. Put variable values in structured exception properties and pass them as logging context. A finite set of distinct messages or a dynamic suffix is acceptable when it materially helps and structured context is unsuitable; keep the leading message static. User-facing messages must be translated in the presentation layer. When wrapping an exception, preserve the original as `previous` and retain relevant context.
-- Give each auditable domain event a specific type and entity meaning; avoid generic event classes whose action string carries the actual event type.
+- Give each auditable domain event a specific type and entity meaning; avoid generic event classes whose action string carries the actual event type. Use abstract base classes to share common structure (timestamp, actorUserId, beforeData/afterData) among related events. Keep abstract classes non-final to allow inheritance; concrete event classes should be `final`. Each concrete event class should carry only the data relevant to its semantics — creation events carry after-state, deletion events carry before-state, and modification events carry both.
 
-## 6. Transactions & Execution Flow
+## 7. Transactions & Execution Flow
 - Every Command handled by `command.bus` executes inside an automatic transaction (`DoctrineTransactionMiddleware`).
 - Keep command handlers focused on loading aggregates, invoking domain methods, and saving through repository interfaces.
 - Use `symfony/lock` (Redis store) for concurrent critical operations (e.g. user drafts, multi-step wizards) when required.
 - Deduplicate incoming Telegram updates via `TelegramUpdateInbox` using unique `update_id`.
 - A pessimistic database lock is held for the duration of its enclosing Doctrine transaction and is released on commit or rollback. Acquire it only through a command dispatched on `command.bus`; do not assume it protects work after the transaction ends.
+- When concurrent modifications must be prevented, choose the approach per situation: atomic database operations (e.g., `INSERT ... SELECT` with conditional WHERE, unique constraints), pessimistic database locks (`SELECT ... FOR UPDATE`), or Redis-based locks via `symfony/lock`. Prefer database-level solutions when the lock must be tied to a transaction; use Redis lock for inter-process coordination outside database transactions (e.g., background workers, multi-step wizards).
