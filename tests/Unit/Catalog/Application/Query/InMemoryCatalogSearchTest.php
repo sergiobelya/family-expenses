@@ -16,10 +16,9 @@ final class InMemoryCatalogSearchTest extends TestCase
     {
         $familyId = FamilyId::generate();
         $userId = UserId::generate();
-        $store = Store::create($familyId, 'Biedronka', $userId);
+        $store = Store::create($familyId, \App\Catalog\Domain\ValueObject\StoreName::fromString('Biedronka'), $userId);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
         $repository->method('findStores')->with($familyId)->willReturn([$store]);
-        $repository->method('findStoreAliasesInFamily')->with($familyId)->willReturn([]);
 
         self::assertSame([$store], (new InMemoryCatalogSearch($repository))->stores($familyId, 'бедронка'));
     }
@@ -28,11 +27,10 @@ final class InMemoryCatalogSearchTest extends TestCase
     {
         $familyId = FamilyId::generate();
         $userId = UserId::generate();
-        $store = Store::create($familyId, 'Local Market', $userId);
-        $alias = StoreAlias::create($familyId, $store->getId(), 'Biedronka', $userId);
+        $store = Store::create($familyId, \App\Catalog\Domain\ValueObject\StoreName::fromString('Local Market'), $userId);
+        $store->addAlias(\App\Catalog\Domain\ValueObject\StoreName::fromString('Biedronka'), $userId);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
         $repository->method('findStores')->with($familyId)->willReturn([$store]);
-        $repository->method('findStoreAliasesInFamily')->with($familyId)->willReturn([$alias]);
 
         self::assertSame([$store], (new InMemoryCatalogSearch($repository))->stores($familyId, 'Бєдронка'));
     }

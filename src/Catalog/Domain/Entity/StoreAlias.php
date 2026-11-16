@@ -2,19 +2,18 @@
 
 namespace App\Catalog\Domain\Entity;
 
-use App\Catalog\Domain\Event\StoreAliasCreated;
-use App\Catalog\Domain\Event\StoreAliasDeleted;
-use App\Catalog\Domain\Event\StoreAliasRenamed;
 use App\Catalog\Domain\ValueObject\StoreName;
-use App\Core\Domain\Aggregate\AggregateRoot;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\StoreAliasId;
 use App\Core\Domain\ValueObject\StoreId;
-use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
-use DateTimeZone;
 
-class StoreAlias extends AggregateRoot
+/**
+ * StoreAlias is an entity within the Store aggregate.
+ * It is not an aggregate root — lifecycle methods are invoked by the Store root.
+ * @see Store
+ */
+class StoreAlias
 {
     private StoreAliasId $id;
     private StoreName $alias;
@@ -23,7 +22,7 @@ class StoreAlias extends AggregateRoot
 
     private function __construct(
         private FamilyId $familyId,
-        private StoreId $storeId,
+        private Store $store,
         StoreName $name,
         ?StoreAliasId $id,
         DateTimeImmutable $now
@@ -36,29 +35,19 @@ class StoreAlias extends AggregateRoot
 
     public static function create(
         FamilyId $familyId,
-        StoreId $storeId,
-        string $alias,
-        UserId $createdByUserId,
+        Store $store,
+        StoreName $name,
         ?StoreAliasId $id = null,
         ?DateTimeImmutable $now = null
     ): self {
-        $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $storeAlias = new self(
+        $now ??= new DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        return new self(
             $familyId,
-            $storeId,
-            StoreName::fromString($alias),
+            $store,
+            $name,
             $id,
             $now
         );
-        $storeAlias->recordEvent(new StoreAliasCreated(
-            entityId: $storeAlias->getId(),
-            familyId: $storeAlias->getFamilyId(),
-            actorUserId: $createdByUserId,
-            afterData: $storeAlias->snapshot(),
-            occurredAt: $now
-        ));
-
-        return $storeAlias;
     }
 
     public function getId(): StoreAliasId
@@ -71,14 +60,25 @@ class StoreAlias extends AggregateRoot
         return $this->familyId;
     }
 
-    public function getStoreId(): StoreId
+    public function getStore(): Store
     {
-        return $this->storeId;
+        return $this->store;
     }
 
-    public function getAlias(): string
+    public function setName(StoreName $name): void
     {
-        return $this->alias->getValue();
+        $this->alias = $name;
+        $this->aliasDedupeKey = $name->getDedupeKey();
+    }
+
+    public function getStoreId(): StoreId
+    {
+        return $this->store->getId();
+    }
+
+    public function getName(): StoreName
+    {
+        return $this->alias;
     }
 
     public function getAliasDedupeKey(): string
@@ -91,47 +91,14 @@ class StoreAlias extends AggregateRoot
         return $this->createdAt;
     }
 
-    public function rename(string $alias, UserId $actorUserId, ?DateTimeImmutable $now = null): void
-    {
-        $storeName = StoreName::fromString($alias);
-        if ($this->alias->getValue() === $storeName->getValue() && $this->aliasDedupeKey === $storeName->getDedupeKey()) {
-            return;
-        }
-
-        $before = $this->snapshot();
-        $this->alias = $storeName;
-        $this->aliasDedupeKey = $storeName->getDedupeKey();
-        $occurredAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->recordEvent(new StoreAliasRenamed(
-            entityId: $this->id,
-            familyId: $this->getFamilyId(),
-            actorUserId: $actorUserId,
-            beforeData: $before,
-            afterData: $this->snapshot(),
-            occurredAt: $occurredAt
-        ));
-    }
-
-    public function delete(UserId $actorUserId, ?DateTimeImmutable $now = null): void
-    {
-        $occurredAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->recordEvent(new StoreAliasDeleted(
-            entityId: $this->id,
-            familyId: $this->getFamilyId(),
-            actorUserId: $actorUserId,
-            beforeData: $this->snapshot(),
-            occurredAt: $occurredAt
-        ));
-    }
-
     /**
      * @return array<string, mixed>
      */
-    private function snapshot(): array
+    public function snapshot(): array
     {
         return [
             'family_id' => (string) $this->familyId,
-            'store_id' => (string) $this->storeId,
+            'store_id' => (string) $this->store->getId(),
             'alias' => $this->alias->getValue(),
             'alias_dedupe_key' => $this->aliasDedupeKey,
         ];

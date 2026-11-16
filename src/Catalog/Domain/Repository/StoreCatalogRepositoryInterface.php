@@ -12,15 +12,14 @@ interface StoreCatalogRepositoryInterface
 {
     public function saveStore(Store $store): void;
 
-    public function saveStoreAlias(StoreAlias $alias): void;
-
     public function removeStore(Store $store): void;
-
-    public function removeStoreAlias(StoreAlias $alias): void;
 
     public function findStore(FamilyId $familyId, StoreId $storeId): ?Store;
 
-    public function findStoreAlias(FamilyId $familyId, StoreId $storeId, StoreAliasId $aliasId): ?StoreAlias;
+    /**
+     * Find store with aliases hydrated — required for delete to generate audit events.
+     */
+    public function findStoreWithAliases(FamilyId $familyId, StoreId $storeId): ?Store;
 
     public function findStoreByDedupeKey(FamilyId $familyId, string $dedupeKey, ?StoreId $excludeStoreId = null): ?Store;
 
@@ -36,12 +35,14 @@ interface StoreCatalogRepositoryInterface
     public function findStores(FamilyId $familyId): array;
 
     /**
+     * Read-only query for UI rendering — returns aliases for a given store.
+     *
      * @return StoreAlias[]
      */
     public function findStoreAliases(FamilyId $familyId, StoreId $storeId): array;
 
     /**
-     * @return StoreAlias[]
+     * Read-only query for UI rendering — returns a single alias by ID.
      */
-    public function findStoreAliasesInFamily(FamilyId $familyId): array;
+    public function findStoreAlias(FamilyId $familyId, StoreId $storeId, StoreAliasId $aliasId): ?StoreAlias;
 }

@@ -24,31 +24,31 @@ final class RenameStoreAliasHandler
         $name = StoreName::fromString($command->alias);
         $this->access->lockFamilyForMemberMutation($command->familyId, $command->updatedByUserId);
         $familyId = $command->familyId;
-        $alias = $this->catalog->findStoreAlias(
-            $familyId,
-            $command->storeId,
-            $command->aliasId
-        );
-        if ($alias === null) {
+        $store = $this->catalog->findStore($familyId, $command->storeId);
+        if ($store === null) {
+            throw CatalogEntryNotFoundException::forEntry('store', (string) $command->storeId);
+        }
+
+        if (!$store->hasAlias($command->aliasId)) {
             throw CatalogEntryNotFoundException::forEntry('store alias', (string) $command->aliasId);
         }
 
-        $store = $this->catalog->findStoreByDedupeKey($familyId, $name->getDedupeKey());
-        if ($store !== null) {
-            throw new CatalogNameConflictException('store', $store->getName());
+        $conflictStore = $this->catalog->findStoreByDedupeKey($familyId, $name->getDedupeKey());
+        if ($conflictStore !== null) {
+            throw new CatalogNameConflictException('store', (string) $conflictStore->getName());
         }
-        $conflict = $this->catalog->findStoreAliasByDedupeKey(
+        $conflictAlias = $this->catalog->findStoreAliasByDedupeKey(
             $familyId,
             $name->getDedupeKey(),
-            $alias->getId()
+            $command->aliasId
         );
-        if ($conflict !== null) {
-            throw new CatalogNameConflictException('store alias', $conflict->getAlias());
+        if ($conflictAlias !== null) {
+            throw new CatalogNameConflictException('store alias', (string) $conflictAlias->getName());
         }
 
-        $alias->rename($name->getValue(), $command->updatedByUserId);
-        $this->catalog->saveStoreAlias($alias);
+        $renamedAlias = $store->renameAlias($command->aliasId, $name, $command->updatedByUserId);
+        $this->catalog->saveStore($store);
 
-        return $alias;
+        return $renamedAlias;
     }
 }

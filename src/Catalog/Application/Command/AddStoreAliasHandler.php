@@ -31,13 +31,8 @@ final class AddStoreAliasHandler
         }
 
         $this->assertAliasNameAvailable($familyId, $name->getDedupeKey());
-        $alias = StoreAlias::create(
-            $familyId,
-            $store->getId(),
-            $name->getValue(),
-            $command->createdByUserId
-        );
-        $this->catalog->saveStoreAlias($alias);
+        $alias = $store->addAlias($name, $command->createdByUserId);
+        $this->catalog->saveStore($store);
 
         return $alias;
     }
@@ -45,10 +40,10 @@ final class AddStoreAliasHandler
     private function assertAliasNameAvailable(FamilyId $familyId, string $dedupeKey): void
     {
         if ($store = $this->catalog->findStoreByDedupeKey($familyId, $dedupeKey)) {
-            throw new CatalogNameConflictException('store', $store->getName());
+            throw new CatalogNameConflictException('store', (string) $store->getName());
         }
         if ($alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $dedupeKey)) {
-            throw new CatalogNameConflictException('store alias', $alias->getAlias());
+            throw new CatalogNameConflictException('store alias', (string) $alias->getName());
         }
     }
 }

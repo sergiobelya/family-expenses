@@ -26,7 +26,7 @@ final class CreateStoreHandler
         $familyId = $command->familyId;
         $this->assertNameAvailable($familyId, $name->getDedupeKey());
 
-        $store = Store::create($familyId, $name->getValue(), $command->createdByUserId);
+        $store = Store::create($familyId, $name, $command->createdByUserId);
         $this->catalog->saveStore($store);
 
         return $store;
@@ -35,10 +35,10 @@ final class CreateStoreHandler
     private function assertNameAvailable(FamilyId $familyId, string $dedupeKey): void
     {
         if ($store = $this->catalog->findStoreByDedupeKey($familyId, $dedupeKey)) {
-            throw new CatalogNameConflictException('store', $store->getName());
+            throw new CatalogNameConflictException('store', (string) $store->getName());
         }
         if ($alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $dedupeKey)) {
-            throw new CatalogNameConflictException('store alias', $alias->getAlias());
+            throw new CatalogNameConflictException('store alias', (string) $alias->getName());
         }
     }
 }

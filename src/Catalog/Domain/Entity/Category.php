@@ -69,9 +69,9 @@ class Category extends AggregateRoot
         return $this->familyId;
     }
 
-    public function getName(): string
+    public function getName(): CategoryName
     {
-        return $this->name->getValue();
+        return $this->name;
     }
 
     public function getDedupeKey(): string
@@ -89,9 +89,8 @@ class Category extends AggregateRoot
         return $this->updatedAt;
     }
 
-    public function rename(string $name, UserId $actorUserId, ?DateTimeImmutable $now = null): void
+    public function rename(CategoryName $categoryName, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
-        $categoryName = CategoryName::fromString($name);
         if ($this->nameIsDifferentFrom($categoryName)) {
             return;
         }

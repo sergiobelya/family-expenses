@@ -19,17 +19,16 @@ final class RemoveStoreAliasHandler
     public function __invoke(RemoveStoreAliasCommand $command): void
     {
         $this->access->lockFamilyForMemberMutation($command->familyId, $command->deletedByUserId);
-        $userId = $command->deletedByUserId;
-        $alias = $this->catalog->findStoreAlias(
-            $command->familyId,
-            $command->storeId,
-            $command->aliasId
-        );
-        if ($alias === null) {
+        $store = $this->catalog->findStore($command->familyId, $command->storeId);
+        if ($store === null) {
+            throw CatalogEntryNotFoundException::forEntry('store', (string) $command->storeId);
+        }
+
+        if (!$store->hasAlias($command->aliasId)) {
             throw CatalogEntryNotFoundException::forEntry('store alias', (string) $command->aliasId);
         }
 
-        $alias->delete($userId);
-        $this->catalog->removeStoreAlias($alias);
+        $store->removeAlias($command->aliasId, $command->deletedByUserId);
+        $this->catalog->saveStore($store);
     }
 }

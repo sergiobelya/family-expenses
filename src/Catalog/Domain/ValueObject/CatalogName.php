@@ -17,6 +17,11 @@ readonly class CatalogName
         return $this->value;
     }
 
+    public function __toString(): string
+    {
+        return $this->getValue();
+    }
+
     public function getDedupeKey(): string
     {
         return $this->dedupeKey;

@@ -35,10 +35,10 @@ final class RenameCategoryHandler
             $category->getId()
         );
         if ($conflict !== null) {
-            throw new CatalogNameConflictException('category', $conflict->getName());
+            throw new CatalogNameConflictException('category', (string) $conflict->getName());
         }
 
-        $category->rename($name->getValue(), $command->updatedByUserId);
+        $category->rename($name, $command->updatedByUserId);
         $this->catalog->saveCategory($category);
 
         return $category;

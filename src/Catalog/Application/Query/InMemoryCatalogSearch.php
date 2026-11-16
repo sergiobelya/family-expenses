@@ -34,12 +34,12 @@ final class InMemoryCatalogSearch implements CatalogSearchInterface
         $distances = [];
         foreach ($allStores as $store) {
             $distances[(string) $store->getId()] = $this->distance($queryKey, $store->getDedupeKey());
-        }
-        foreach ($this->catalog->findStoreAliasesInFamily($familyId) as $alias) {
-            $storeId = (string) $alias->getStoreId();
-            $distance = $this->distance($queryKey, $alias->getAliasDedupeKey());
-            if (!isset($distances[$storeId]) || $distance < $distances[$storeId]) {
-                $distances[$storeId] = $distance;
+            foreach ($store->getAliases() as $alias) {
+                $storeId = (string) $store->getId();
+                $distance = $this->distance($queryKey, $alias->getAliasDedupeKey());
+                if (!isset($distances[$storeId]) || $distance < $distances[$storeId]) {
+                    $distances[$storeId] = $distance;
+                }
             }
         }
 
@@ -53,7 +53,7 @@ final class InMemoryCatalogSearch implements CatalogSearchInterface
         usort($stores, function (Store $left, Store $right) use ($distances): int {
             $distance = $distances[(string) $left->getId()] <=> $distances[(string) $right->getId()];
 
-            return $distance !== 0 ? $distance : strcasecmp($left->getName(), $right->getName());
+            return $distance !== 0 ? $distance : strcasecmp((string) $left->getName(), (string) $right->getName());
         });
 
         return $stores;
@@ -77,7 +77,7 @@ final class InMemoryCatalogSearch implements CatalogSearchInterface
 
         usort($categories, fn (Category $left, Category $right): int =>
             $this->distance($queryKey, $left->getDedupeKey()) <=> $this->distance($queryKey, $right->getDedupeKey())
-            ?: strcasecmp($left->getName(), $right->getName())
+            ?: strcasecmp((string) $left->getName(), (string) $right->getName())
         );
 
         return $categories;

@@ -2,14 +2,19 @@
 
 namespace App\Catalog\Domain\Entity;
 
+use App\Catalog\Domain\Event\StoreAliasCreated;
+use App\Catalog\Domain\Event\StoreAliasDeleted;
+use App\Catalog\Domain\Event\StoreAliasRenamed;
 use App\Catalog\Domain\Event\StoreCreated;
 use App\Catalog\Domain\Event\StoreDefaultCategoryChanged;
 use App\Catalog\Domain\Event\StoreDeleted;
 use App\Catalog\Domain\Event\StoreRenamed;
+use App\Catalog\Domain\Exception\CatalogEntryNotFoundException;
 use App\Catalog\Domain\ValueObject\StoreName;
 use App\Core\Domain\Aggregate\AggregateRoot;
 use App\Core\Domain\ValueObject\CategoryId;
 use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\StoreAliasId;
 use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
@@ -17,6 +22,9 @@ use DateTimeZone;
 
 class Store extends AggregateRoot
 {
+    /** @var StoreAlias[] */
+    private array $aliases = [];
+
     private StoreId $id;
     private StoreName $name;
     private string $dedupeKey;
@@ -41,7 +49,7 @@ class Store extends AggregateRoot
 
     public static function create(
         FamilyId $familyId,
-        string $name,
+        StoreName $name,
         UserId $createdByUserId,
         ?StoreId $id = null,
         ?DateTimeImmutable $now = null
@@ -49,7 +57,7 @@ class Store extends AggregateRoot
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $store = new self(
             $familyId,
-            StoreName::fromString($name),
+            $name,
             null,
             $id,
             $now
@@ -75,9 +83,9 @@ class Store extends AggregateRoot
         return $this->familyId;
     }
 
-    public function getName(): string
+    public function getName(): StoreName
     {
-        return $this->name->getValue();
+        return $this->name;
     }
 
     public function getDedupeKey(): string
@@ -100,9 +108,8 @@ class Store extends AggregateRoot
         return $this->updatedAt;
     }
 
-    public function rename(string $name, UserId $actorUserId, ?DateTimeImmutable $now = null): void
+    public function rename(StoreName $storeName, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
-        $storeName = StoreName::fromString($name);
         if ($this->name->getValue() === $storeName->getValue() && $this->dedupeKey === $storeName->getDedupeKey()) {
             return;
         }
@@ -151,6 +158,16 @@ class Store extends AggregateRoot
     public function delete(UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        foreach ($this->aliases as $alias) {
+            $this->recordEvent(new StoreAliasDeleted(
+                entityId: $alias->getId(),
+                familyId: $this->getFamilyId(),
+                actorUserId: $actorUserId,
+                beforeData: $alias->snapshot(),
+                occurredAt: $now
+            ));
+        }
+        $this->aliases = [];
         $this->recordEvent(new StoreDeleted(
             entityId: $this->id,
             familyId: $this->getFamilyId(),
@@ -158,6 +175,95 @@ class Store extends AggregateRoot
             beforeData: $this->snapshot(),
             occurredAt: $now
         ));
+    }
+
+    public function addAlias(StoreName $name, UserId $actorUserId, ?DateTimeImmutable $now = null): StoreAlias
+    {
+        $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $storeAlias = StoreAlias::create(
+            $this->familyId,
+            $this,
+            $name,
+            now: $now
+        );
+        $this->aliases[] = $storeAlias;
+        $this->recordEvent(new StoreAliasCreated(
+            entityId: $storeAlias->getId(),
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            afterData: $storeAlias->snapshot(),
+            occurredAt: $now
+        ));
+
+        return $storeAlias;
+    }
+
+    public function renameAlias(StoreAliasId $aliasId, StoreName $newName, UserId $actorUserId, ?DateTimeImmutable $now = null): StoreAlias
+    {
+        $alias = $this->findAlias($aliasId);
+        if ((string) $alias->getName() === $newName->getValue() && $alias->getAliasDedupeKey() === $newName->getDedupeKey()) {
+            return $alias;
+        }
+
+        $before = $alias->snapshot();
+        $alias->setName($newName);
+        $occurredAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $this->recordEvent(new StoreAliasRenamed(
+            entityId: $alias->getId(),
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $before,
+            afterData: $alias->snapshot(),
+            occurredAt: $occurredAt
+        ));
+
+        return $alias;
+    }
+
+    public function removeAlias(StoreAliasId $aliasId, UserId $actorUserId, ?DateTimeImmutable $now = null): void
+    {
+        $alias = $this->findAlias($aliasId);
+        $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $this->aliases = array_values(array_filter(
+            $this->aliases,
+            fn (StoreAlias $a) => !$a->getId()->equals($aliasId)
+        ));
+        $this->recordEvent(new StoreAliasDeleted(
+            entityId: $alias->getId(),
+            familyId: $this->getFamilyId(),
+            actorUserId: $actorUserId,
+            beforeData: $alias->snapshot(),
+            occurredAt: $now
+        ));
+    }
+
+    public function hasAlias(StoreAliasId $aliasId): bool
+    {
+        foreach ($this->aliases as $alias) {
+            if ($alias->getId()->equals($aliasId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return StoreAlias[]
+     */
+    public function getAliases(): array
+    {
+        return $this->aliases;
+    }
+
+    private function findAlias(StoreAliasId $aliasId): StoreAlias
+    {
+        foreach ($this->aliases as $alias) {
+            if ($alias->getId()->equals($aliasId)) {
+                return $alias;
+            }
+        }
+
+        throw CatalogEntryNotFoundException::forEntry('store alias', (string) $aliasId);
     }
 
     /**

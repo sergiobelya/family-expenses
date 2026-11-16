@@ -17,5 +17,10 @@
         <field name="defaultCategoryId" column="default_category_id" type="category_id" nullable="true"/>
         <field name="createdAt" column="created_at" type="datetime_immutable"/>
         <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
+        <one-to-many field="aliases" target-entity="App\Catalog\Domain\Entity\StoreAlias" mapped-by="store" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+            </cascade>
+        </one-to-many>
     </entity>
 </doctrine-mapping>

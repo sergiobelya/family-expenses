@@ -19,19 +19,12 @@ final class DeleteStoreHandler
     public function __invoke(DeleteStoreCommand $command): void
     {
         $this->access->lockFamilyForMemberMutation($command->familyId, $command->deletedByUserId);
-        $familyId = $command->familyId;
-        $storeId = $command->storeId;
-        $userId = $command->deletedByUserId;
-        $store = $this->catalog->findStore($familyId, $storeId);
+        $store = $this->catalog->findStoreWithAliases($command->familyId, $command->storeId);
         if ($store === null) {
             throw CatalogEntryNotFoundException::forEntry('store', (string) $command->storeId);
         }
 
-        $store->delete($userId);
-        foreach ($this->catalog->findStoreAliases($familyId, $storeId) as $alias) {
-            $alias->delete($userId);
-            $this->catalog->removeStoreAlias($alias);
-        }
+        $store->delete($command->deletedByUserId);
         $this->catalog->removeStore($store);
     }
 }

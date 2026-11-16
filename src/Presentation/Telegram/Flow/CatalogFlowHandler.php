@@ -224,7 +224,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                     new StoreAliasId($aliasId)
                 );
                 if ($alias !== null) {
-                    $this->renderAliasDetails($context, $storeId, $aliasId, $alias->getAlias());
+                    $this->renderAliasDetails($context, $storeId, $aliasId, (string) $alias->getName());
                 } else {
                     $this->renderAliases($context, $storeId, 'catalog.unavailable');
                 }
@@ -245,13 +245,12 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             if ($alias !== null) {
                 $this->stateRepository->set($this->state($context, 'alias_name', [
                     'store_id' => (string) $storeId,
-                    'alias_id' => (string) $aliasId,
-                    'value' => $alias->getAlias(),
+                    'value' => (string) $alias->getName(),
                 ]));
                 $this->render(
                     $context,
                     $this->trans('catalog.prompt_alias_current', [
-                        '%{name}' => $this->escape($alias->getAlias()),
+                        '%{name}' => $this->escape((string) $alias->getName()),
                     ]),
                     $this->formKeyboard('catalog:aliases:' . $storeId)
                 );
@@ -465,11 +464,11 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             $categories = [];
             if ($type === 'store') {
                 foreach ($this->catalog->findCategories($familyId) as $category) {
-                    $categories[(string) $category->getId()] = $category->getName();
+                    $categories[(string) $category->getId()] = (string) $category->getName();
                 }
             }
             foreach ($entries as $entry) {
-                $text .= "\n• " . $this->escape($entry->getName());
+                $text .= "\n• " . $this->escape((string) $entry->getName());
                 if ($entry instanceof Store && $entry->getDefaultCategoryId() !== null) {
                     $categoryName = $categories[(string) $entry->getDefaultCategoryId()] ?? null;
                     if ($categoryName !== null) {
@@ -487,7 +486,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         foreach (array_chunk($entries, 2) as $row) {
             foreach ($row as $entry) {
                 $builder->button(
-                    $this->escapeButton($entry->getName()),
+                    $this->escapeButton((string) $entry->getName()),
                     'catalog:select:' . $type . ':' . $entry->getId()
                 );
             }
@@ -539,7 +538,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         $builder = new InlineKeyboardBuilder();
         foreach ($results as $entry) {
             $builder->button(
-                $this->escapeButton($entry->getName()),
+                $this->escapeButton((string) $entry->getName()),
                 'catalog:select:' . $type . ':' . $entry->getId()
             )->row();
         }
@@ -567,16 +566,16 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             }
             $categories = [];
             foreach ($this->catalog->findCategories($familyId) as $category) {
-                $categories[(string) $category->getId()] = $category->getName();
+                $categories[(string) $category->getId()] = (string) $category->getName();
             }
             $default = $entry->getDefaultCategoryId() === null
                 ? $this->trans('catalog.none')
                 : $this->escape($categories[(string) $entry->getDefaultCategoryId()] ?? $this->trans('catalog.unavailable'));
             $aliases = array_map(
-                fn ($alias): string => $this->escape($alias->getAlias()),
+                fn ($alias): string => $this->escape((string) $alias->getName()),
                 $this->catalog->findStoreAliases($familyId, new StoreId($id))
             );
-            $text = '<b>' . $this->escape($entry->getName()) . '</b>' . "\n"
+            $text = '<b>' . $this->escape((string) $entry->getName()) . '</b>' . "\n"
                 . $this->trans('catalog.default_category') . ': ' . $default . "\n"
                 . $this->trans('catalog.aliases') . ': ' . ($aliases === [] ? $this->trans('catalog.none') : implode(', ', $aliases));
             $builder = new InlineKeyboardBuilder()
@@ -592,7 +591,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                 $this->renderList($context, 'category', 0, 'catalog.unavailable');
                 return;
             }
-            $text = '<b>' . $this->escape($entry->getName()) . '</b>';
+            $text = '<b>' . $this->escape((string) $entry->getName()) . '</b>';
             $builder = new InlineKeyboardBuilder()
                 ->button($this->trans('catalog.rename'), 'catalog:rename:category:' . $id)->row()
                 ->button($this->trans('catalog.delete'), 'catalog:confirm:category:' . $id)->row()
@@ -619,7 +618,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         }
         $options = ['none' => $this->trans('catalog.no_default')];
         foreach ($this->catalog->findCategories($context->activeFamily->getId()) as $category) {
-            $options[(string) $category->getId()] = $category->getName();
+            $options[(string) $category->getId()] = (string) $category->getName();
         }
         $query = trim($query);
         $filtered = $this->optionSelector->filterOptions($options, $query);
@@ -654,7 +653,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             'query' => $query,
             'page' => $page,
         ]));
-        $text = $this->trans('catalog.default_picker', ['%{store}' => $this->escape($store->getName())]);
+        $text = $this->trans('catalog.default_picker', ['%{store}' => $this->escape((string) $store->getName())]);
         if ($filtered === []) {
             $text .= "\n\n" . $this->trans('selector.no_results');
         }
@@ -695,7 +694,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             return;
         }
         $aliases = $this->catalog->findStoreAliases($context->activeFamily->getId(), new StoreId($storeId));
-        $text = $this->trans('catalog.aliases_title', ['%{store}' => $this->escape($store->getName())]);
+        $text = $this->trans('catalog.aliases_title', ['%{store}' => $this->escape((string) $store->getName())]);
         if ($notice !== null) {
             $text .= "\n\n" . $this->trans($notice);
         }
@@ -704,7 +703,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         }
         $builder = new InlineKeyboardBuilder()->button($this->trans('catalog.add_alias'), 'catalog:alias:add:' . $storeId)->row();
         foreach ($aliases as $alias) {
-            $builder->button($this->escapeButton($alias->getAlias()), 'catalog:alias:select:' . $alias->getId())->row();
+            $builder->button($this->escapeButton((string) $alias->getName()), 'catalog:alias:select:' . $alias->getId())->row();
         }
         $builder->button($this->trans('common.back'), 'catalog:select:store:' . $storeId);
         $this->stateRepository->set($this->state($context, 'aliases', ['store_id' => (string) $storeId]));
@@ -746,7 +745,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             ->button($this->trans('catalog.keep'), $type === 'store' ? 'catalog:select:store:' . $id : 'catalog:select:category:' . $id);
         $this->render(
             $context,
-            $this->trans('catalog.delete_confirmation', ['%{name}' => $this->escape($entry->getName())]),
+            $this->trans('catalog.delete_confirmation', ['%{name}' => $this->escape((string) $entry->getName())]),
             $builder->toArray()
         );
     }
@@ -768,7 +767,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                 $this->renderList($context, $type, 0, 'catalog.unavailable');
                 return;
             }
-            $value = $entry->getName();
+            $value = (string) $entry->getName();
         }
         $data = [
             'type' => $type,
@@ -828,7 +827,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             $storeId = $id === null ? null : new StoreId($id);
             $conflict = $this->catalog->findStoreByDedupeKey($familyId, $name->getDedupeKey(), $storeId);
             if ($conflict !== null) {
-                $this->renderHardConflict($context, $type, $data, $name->getValue(), $conflict->getName(), $conflict->getId()->toUuid());
+                $this->renderHardConflict($context, $type, $data, $name->getValue(), (string) $conflict->getName(), $conflict->getId()->toUuid());
                 return;
             }
             $alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $name->getDedupeKey());
@@ -838,7 +837,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                     $type,
                     $data,
                     $name->getValue(),
-                    $alias->getAlias(),
+                    (string) $alias->getName(),
                     $alias->getStoreId()->toUuid()
                 );
                 return;
@@ -852,7 +851,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             $categoryId = $id === null ? null : new CategoryId($id);
             $conflict = $this->catalog->findCategoryByDedupeKey($familyId, $name->getDedupeKey(), $categoryId);
             if ($conflict !== null) {
-                $this->renderHardConflict($context, $type, $data, $name->getValue(), $conflict->getName(), $conflict->getId()->toUuid());
+                $this->renderHardConflict($context, $type, $data, $name->getValue(), (string) $conflict->getName(), $conflict->getId()->toUuid());
                 return;
             }
             $matches = array_filter(
@@ -873,7 +872,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                 )->row();
             foreach (array_slice($matches, 0, 5) as $match) {
                 $builder->button(
-                    $this->escapeButton($match->getName()),
+                    $this->escapeButton((string) $match->getName()),
                     $type === 'store'
                         ? 'catalog:warning:open:' . $match->getId()
                         : 'catalog:warning:open-c:' . $match->getId()
@@ -1008,7 +1007,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             $aliasId === null ? null : new StoreAliasId($aliasId)
         );
         if ($canonical !== null || $existingAlias !== null) {
-            $existingName = $canonical?->getName() ?? $existingAlias?->getAlias() ?? '';
+            $existingName = $canonical !== null ? (string) $canonical->getName() : (string) $existingAlias->getName();
             $conflictingStoreId = $canonical?->getId() ?? $existingAlias?->getStoreId() ?? $storeId;
             $data['value'] = $name->getValue();
             $this->stateRepository->set($this->state($context, 'alias_conflict', $data));

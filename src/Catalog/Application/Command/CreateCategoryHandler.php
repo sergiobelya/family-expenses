@@ -25,7 +25,7 @@ final class CreateCategoryHandler
         $familyId = $command->familyId;
         $conflict = $this->catalog->findCategoryByDedupeKey($familyId, $name->getDedupeKey());
         if ($conflict !== null) {
-            throw new CatalogNameConflictException('category', $conflict->getName());
+            throw new CatalogNameConflictException('category', (string) $conflict->getName());
         }
 
         $category = Category::create($familyId, $name->getValue(), $command->createdByUserId);

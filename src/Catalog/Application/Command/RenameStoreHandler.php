@@ -35,14 +35,14 @@ final class RenameStoreHandler
             $store->getId()
         );
         if ($conflict !== null) {
-            throw new CatalogNameConflictException('store', $conflict->getName());
+            throw new CatalogNameConflictException('store', (string) $conflict->getName());
         }
         $alias = $this->catalog->findStoreAliasByDedupeKey($familyId, $name->getDedupeKey());
         if ($alias !== null) {
-            throw new CatalogNameConflictException('store alias', $alias->getAlias());
+            throw new CatalogNameConflictException('store alias', (string) $alias->getName());
         }
 
-        $store->rename($name->getValue(), $command->updatedByUserId);
+        $store->rename($name, $command->updatedByUserId);
         $this->catalog->saveStore($store);
 
         return $store;

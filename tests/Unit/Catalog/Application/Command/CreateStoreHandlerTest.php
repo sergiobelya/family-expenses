@@ -2,6 +2,8 @@
 
 namespace App\Tests\Unit\Catalog\Application\Command;
 
+use App\Catalog\Domain\Entity\StoreAlias;
+use App\Catalog\Domain\ValueObject\StoreName;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\UserId;
 use App\Catalog\Application\CatalogAccess;
@@ -28,7 +30,7 @@ final class CreateStoreHandlerTest extends TestCase
         $catalog->method('findStoreAliasByDedupeKey')->with(new FamilyId($familyId), 'biedronka')->willReturn(null);
         $catalog->expects(self::once())->method('saveStore')->with(self::callback(
             static fn (Store $store): bool => $store->getFamilyId()->equals(new FamilyId($familyId))
-                && $store->getName() === 'Biedronka'
+                && (string) $store->getName() === 'Biedronka'
                 && $store->getDedupeKey() === 'biedronka'
         ));
 
@@ -38,7 +40,7 @@ final class CreateStoreHandlerTest extends TestCase
 
         $store = $handler(new CreateStoreCommand(new FamilyId($familyId), new UserId($userId), ' Biedronka '));
 
-        self::assertSame('Biedronka', $store->getName());
+        self::assertSame('Biedronka', (string) $store->getName());
     }
 
     public function testRejectsStoreNameThatConflictsWithAlias(): void
@@ -46,12 +48,11 @@ final class CreateStoreHandlerTest extends TestCase
         $familyId = Uuid::v7();
         $userId = Uuid::v7();
         $userId2 = Uuid::v7();
-        $existingStore = Store::create(new FamilyId($familyId), 'Market', new UserId($userId2));
-        $alias = \App\Catalog\Domain\Entity\StoreAlias::create(
+        $existingStore = Store::create(new FamilyId($familyId), StoreName::fromString('Market'), new UserId($userId2));
+        $alias = StoreAlias::create(
             new FamilyId($familyId),
-            $existingStore->getId(),
-            'Biedronka',
-            new UserId($userId2)
+            $existingStore,
+            StoreName::fromString('Biedronka')
         );
         $catalog = $this->createMock(CatalogRepositoryInterface::class);
         $catalog->method('findStoreByDedupeKey')->willReturn(null);

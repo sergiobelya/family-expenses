@@ -11,7 +11,9 @@
         </unique-constraints>
         <id name="id" type="store_alias_id"/>
         <field name="familyId" column="family_id" type="family_id"/>
-        <field name="storeId" column="store_id" type="store_id"/>
+        <many-to-one field="store" target-entity="App\Catalog\Domain\Entity\Store" inversed-by="aliases">
+            <join-column name="store_id" referenced-column-name="id" nullable="false"/>
+        </many-to-one>
         <field name="alias" type="store_name" length="100"/>
         <field name="aliasDedupeKey" column="alias_dedupe_key" type="string" length="500"/>
         <field name="createdAt" column="created_at" type="datetime_immutable"/>

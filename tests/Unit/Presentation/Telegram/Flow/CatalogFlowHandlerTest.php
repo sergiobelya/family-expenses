@@ -8,6 +8,12 @@ use App\Catalog\Application\Query\InMemoryCatalogSearch;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Entity\Store;
+use App\Catalog\Domain\ValueObject\StoreName;
+use App\Core\Domain\ValueObject\{
+    CurrencyCode,
+    Timezone,
+    UserId
+};
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
@@ -17,10 +23,11 @@ use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Flow\CatalogFlowHandler;
+use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
+use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class CatalogFlowHandlerTest extends TestCase
@@ -29,9 +36,9 @@ final class CatalogFlowHandlerTest extends TestCase
     {
         $family = Family::create(
             'Smiths',
-            \App\Core\Domain\ValueObject\Timezone::fromString('UTC'),
-            \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD'),
-            \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD')
+            Timezone::fromString('UTC'),
+            CurrencyCode::fromString('USD'),
+            CurrencyCode::fromString('USD')
         );
         $user = new User(123456);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
@@ -77,13 +84,13 @@ final class CatalogFlowHandlerTest extends TestCase
     {
         $family = Family::create(
             'Smiths',
-            \App\Core\Domain\ValueObject\Timezone::fromString('UTC'),
-            \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD'),
-            \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD')
+            Timezone::fromString('UTC'),
+            CurrencyCode::fromString('USD'),
+            CurrencyCode::fromString('USD')
         );
         $user = new User(123456);
-        $userId = \App\Core\Domain\ValueObject\UserId::generate();
-        $store = Store::create($family->getId(), 'Market', $userId);
+        $userId = UserId::generate();
+        $store = Store::create($family->getId(), StoreName::fromString('Market'), $userId);
         $category = Category::create($family->getId(), 'Groceries', $userId);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
         $repository->expects(self::once())
@@ -153,9 +160,9 @@ final class CatalogFlowHandlerTest extends TestCase
     {
         $family = Family::create(
             'Smiths',
-            \App\Core\Domain\ValueObject\Timezone::fromString('UTC'),
-            \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD'),
-            \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD')
+            Timezone::fromString('UTC'),
+            CurrencyCode::fromString('USD'),
+            CurrencyCode::fromString('USD')
         );
         $user = new User(123456);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
@@ -202,17 +209,17 @@ final class CatalogFlowHandlerTest extends TestCase
     {
         $family = Family::create(
             'Smiths',
-            \App\Core\Domain\ValueObject\Timezone::fromString('UTC'),
-            \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD'),
-            \App\Core\Domain\ValueObject\CurrencyCode::fromString('USD')
+            Timezone::fromString('UTC'),
+            CurrencyCode::fromString('USD'),
+            CurrencyCode::fromString('USD')
         );
         $user = new User(123456);
         $translator = $this->createMock(TranslatorInterface::class);
         $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
         $members = $this->createMock(FamilyMemberRepositoryInterface::class);
-        $handler = new \App\Presentation\Telegram\Flow\MainMenuFlowHandler(
+        $handler = new MainMenuFlowHandler(
             $this->createMock(TelegramApiClientInterface::class),
-            new \App\Presentation\Telegram\Keyboard\MainMenuKeyboard($translator),
+            new MainMenuKeyboard($translator),
             $members,
             $translator
         );

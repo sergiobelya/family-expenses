@@ -130,7 +130,7 @@ class JoinFamilyFlowHandler implements UserContextFlowHandlerInterface
                 ]);
 
                 $kb = (new InlineKeyboardBuilder())
-                    ->button($this->translator->trans('family.join.switch_to_family', ['%{family_name}' => $family->getName()]), 'family:select:' . $family->getId()->toRfc4122())
+                    ->button($this->translator->trans('family.join.switch_to_family', ['%{family_name}' => (string) ($family->getName())]), 'family:select:' . $family->getId()->toRfc4122())
                     ->toArray();
 
                 $this->telegramClient->sendMessage(

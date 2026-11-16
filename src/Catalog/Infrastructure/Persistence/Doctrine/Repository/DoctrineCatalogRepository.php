@@ -23,14 +23,10 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface, FamilyCat
     /** @var EntityRepository<Category> */
     private EntityRepository $categories;
 
-    /** @var EntityRepository<StoreAlias> */
-    private EntityRepository $aliases;
-
     public function __construct(private EntityManagerInterface $entityManager)
     {
         $this->stores = $entityManager->getRepository(Store::class);
         $this->categories = $entityManager->getRepository(Category::class);
-        $this->aliases = $entityManager->getRepository(StoreAlias::class);
     }
 
     public function lockFamily(FamilyId $familyId): void
@@ -54,11 +50,6 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface, FamilyCat
         $this->entityManager->persist($category);
     }
 
-    public function saveStoreAlias(StoreAlias $alias): void
-    {
-        $this->entityManager->persist($alias);
-    }
-
     public function removeStore(Store $store): void
     {
         $this->entityManager->remove($store);
@@ -69,28 +60,29 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface, FamilyCat
         $this->entityManager->remove($category);
     }
 
-    public function removeStoreAlias(StoreAlias $alias): void
-    {
-        $this->entityManager->remove($alias);
-    }
-
     public function findStore(FamilyId $familyId, StoreId $storeId): ?Store
     {
         return $this->stores->findOneBy(['familyId' => $familyId, 'id' => $storeId]);
     }
 
+    public function findStoreWithAliases(FamilyId $familyId, StoreId $storeId): ?Store
+    {
+        return $this->entityManager->createQueryBuilder()
+            ->select('store')
+            ->from(Store::class, 'store')
+            ->leftJoin('store.aliases', 'aliases')
+            ->addSelect('aliases')
+            ->where('store.familyId = :familyId')
+            ->andWhere('store.id = :storeId')
+            ->setParameter('familyId', $familyId)
+            ->setParameter('storeId', $storeId)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function findCategory(FamilyId $familyId, CategoryId $categoryId): ?Category
     {
         return $this->categories->findOneBy(['familyId' => $familyId, 'id' => $categoryId]);
-    }
-
-    public function findStoreAlias(FamilyId $familyId, StoreId $storeId, StoreAliasId $aliasId): ?StoreAlias
-    {
-        return $this->aliases->findOneBy([
-            'familyId' => $familyId,
-            'storeId' => $storeId,
-            'id' => $aliasId,
-        ]);
     }
 
     public function findStoreByDedupeKey(FamilyId $familyId, string $dedupeKey, ?StoreId $excludeStoreId = null): ?Store
@@ -164,15 +156,32 @@ class DoctrineCatalogRepository implements CatalogRepositoryInterface, FamilyCat
 
     public function findStoreAliases(FamilyId $familyId, StoreId $storeId): array
     {
-        return $this->aliases->findBy(
-            ['familyId' => $familyId, 'storeId' => $storeId],
-            ['alias' => 'ASC', 'id' => 'ASC']
-        );
+        return $this->entityManager->createQueryBuilder()
+            ->select('alias')
+            ->from(StoreAlias::class, 'alias')
+            ->where('alias.familyId = :familyId')
+            ->andWhere('alias.store = :store')
+            ->setParameter('familyId', $familyId)
+            ->setParameter('store', $storeId)
+            ->orderBy('alias.alias', 'ASC')
+            ->addOrderBy('alias.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
-    public function findStoreAliasesInFamily(FamilyId $familyId): array
+    public function findStoreAlias(FamilyId $familyId, StoreId $storeId, StoreAliasId $aliasId): ?StoreAlias
     {
-        return $this->aliases->findBy(['familyId' => $familyId], ['alias' => 'ASC', 'id' => 'ASC']);
+        return $this->entityManager->createQueryBuilder()
+            ->select('alias')
+            ->from(StoreAlias::class, 'alias')
+            ->where('alias.familyId = :familyId')
+            ->andWhere('alias.store = :store')
+            ->andWhere('alias.id = :aliasId')
+            ->setParameter('familyId', $familyId)
+            ->setParameter('store', $storeId)
+            ->setParameter('aliasId', $aliasId)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     public function isCategoryUsedAsStoreDefault(FamilyId $familyId, CategoryId $categoryId): bool
