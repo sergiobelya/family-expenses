@@ -30,6 +30,15 @@ readonly class CatalogName
 
     public static function fromString(string $value): static
     {
+        $displayName = self::trimAndValidate($value);
+        $normalized = self::normalizeUnicode($displayName);
+        $dedupeKey = self::buildDedupeKey($normalized);
+
+        return new static($displayName, $dedupeKey);
+    }
+
+    private static function trimAndValidate(string $value): string
+    {
         $displayName = preg_replace('/^\s+|\s+$/u', '', $value);
         if (!is_string($displayName)) {
             throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
@@ -37,7 +46,11 @@ readonly class CatalogName
         if ($displayName === '' || mb_strlen($displayName) > 100) {
             throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
+        return $displayName;
+    }
 
+    private static function normalizeUnicode(string $displayName): string
+    {
         $apostrophes = ["'", '’', 'ʼ', '`', '´', '‘', 'ʹ'];
         $name = str_replace([...$apostrophes, '™', '℠'], '', $displayName);
         $name = Normalizer::normalize($name, Normalizer::FORM_KC);
@@ -59,6 +72,11 @@ readonly class CatalogName
             throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
+        return self::filterSpecialChars($name);
+    }
+
+    private static function filterSpecialChars(string $name): string
+    {
         $chars = preg_split('//u', $name, -1, PREG_SPLIT_NO_EMPTY);
         if ($chars === false) {
             throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
@@ -102,6 +120,11 @@ readonly class CatalogName
             $previousLetterWasLatin = $previousWasLetter && preg_match('/^\p{Latin}$/u', $char) === 1;
         }
 
+        return $normalized;
+    }
+
+    private static function buildDedupeKey(string $normalized): string
+    {
         $normalized = Normalizer::normalize($normalized, Normalizer::FORM_C);
         if (!is_string($normalized)) {
             throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
@@ -112,7 +135,7 @@ readonly class CatalogName
             throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
-        return new static($displayName, $key);
+        return $key;
     }
 
     private static function transliterateUkrainianCyrillic(string $value): string
