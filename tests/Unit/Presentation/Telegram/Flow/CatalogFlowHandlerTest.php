@@ -4,7 +4,6 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow;
 
 use App\Catalog\Application\CatalogAccess;
 use App\Catalog\Application\FamilyCatalogLockInterface;
-use App\Catalog\Application\Query\InMemoryCatalogSearch;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Entity\Store;
@@ -22,17 +21,52 @@ use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\Flow\Catalog\CatalogEntryScreen;
+use App\Presentation\Telegram\Flow\Catalog\CatalogFlowUtils;
+use App\Presentation\Telegram\Flow\Catalog\StoreAliasScreen;
+use App\Presentation\Telegram\Flow\Catalog\StoreDefaultCategoryScreen;
 use App\Presentation\Telegram\Flow\CatalogFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
+use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class CatalogFlowHandlerTest extends TestCase
 {
+    private function createHandler(
+        CatalogRepositoryInterface $repository,
+        FamilyMemberRepositoryInterface $members,
+        UserInteractionStateRepository $states,
+        TelegramApiClientInterface $telegram,
+        TranslatorInterface $translator
+    ): CatalogFlowHandler {
+        $lock = $this->createMock(FamilyCatalogLockInterface::class);
+        $access = new CatalogAccess($members, $lock);
+        $commandBus = $this->createMock(MessageBusInterface::class);
+        $exceptionMapper = new MapExceptionToTranslationKey();
+        $optionSelector = new InlineOptionSelector();
+
+        $utils = new CatalogFlowUtils($telegram, $states, $commandBus, $translator);
+        $storeScreen = $this->createMock(CatalogEntryScreen::class);
+        $categoryScreen = $this->createMock(CatalogEntryScreen::class);
+        $aliasScreen = new StoreAliasScreen($utils, $storeScreen, $repository, $exceptionMapper);
+        $defaultCategoryScreen = new StoreDefaultCategoryScreen($utils, $storeScreen, $repository, $optionSelector);
+
+        return new CatalogFlowHandler(
+            $utils,
+            $storeScreen,
+            $categoryScreen,
+            $aliasScreen,
+            $defaultCategoryScreen,
+            $access,
+            $states,
+            $telegram,
+        );
+    }
+
     public function testAliasConflictEditWithMissingStateDoesNotReferenceUndefinedStoreId(): void
     {
         $family = Family::create(
@@ -55,18 +89,7 @@ final class CatalogFlowHandlerTest extends TestCase
         $telegram->expects(self::never())->method('sendMessage');
         $translator = $this->createMock(TranslatorInterface::class);
         $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
-        $lock = $this->createMock(FamilyCatalogLockInterface::class);
-        $handler = new CatalogFlowHandler(
-            $telegram,
-            $states,
-            $repository,
-            new CatalogAccess($members, $lock),
-            new InMemoryCatalogSearch($repository),
-            new InlineOptionSelector(),
-            $this->createMock(MessageBusInterface::class),
-            $translator,
-            new MapExceptionToTranslationKey()
-        );
+        $handler = $this->createHandler($repository, $members, $states, $telegram, $translator);
         $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
             'update_id' => 4,
@@ -123,18 +146,7 @@ final class CatalogFlowHandlerTest extends TestCase
             });
         $translator = $this->createMock(TranslatorInterface::class);
         $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
-        $lock = $this->createMock(FamilyCatalogLockInterface::class);
-        $handler = new CatalogFlowHandler(
-            $telegram,
-            $states,
-            $repository,
-            new CatalogAccess($members, $lock),
-            new InMemoryCatalogSearch($repository),
-            new InlineOptionSelector(),
-            $this->createMock(MessageBusInterface::class),
-            $translator,
-            new MapExceptionToTranslationKey()
-        );
+        $handler = $this->createHandler($repository, $members, $states, $telegram, $translator);
         $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
             'update_id' => 3,
@@ -142,7 +154,7 @@ final class CatalogFlowHandlerTest extends TestCase
                 'id' => 'callback-id',
                 'from' => ['id' => 123456],
                 'message' => ['message_id' => 9, 'chat' => ['id' => 111]],
-                'data' => 'catalog:default:' . $store->getId(),
+                'data' => 'catalog:default-category:open:' . $store->getId(),
             ],
         ]);
 
@@ -154,9 +166,9 @@ final class CatalogFlowHandlerTest extends TestCase
             array_merge(...($markup['inline_keyboard'] ?? [])),
             'callback_data'
         );
-        self::assertContains('catdef:search', $callbackData);
-        self::assertContains('catdef:set:none', $callbackData);
-        self::assertContains('catdef:set:' . $category->getId(), $callbackData);
+        self::assertContains('catalog:default-category:search', $callbackData);
+        self::assertContains('catalog:default-category:set:none', $callbackData);
+        self::assertContains('catalog:default-category:set:' . $category->getId(), $callbackData);
     }
 
     public function testStoreMenuOpensFamilyScopedStoreList(): void
@@ -169,7 +181,6 @@ final class CatalogFlowHandlerTest extends TestCase
         );
         $user = new User(123456);
         $repository = $this->createMock(CatalogRepositoryInterface::class);
-        $repository->expects(self::exactly(2))->method('findStores')->with($family->getId())->willReturn([]);
 
         $members = $this->createMock(FamilyMemberRepositoryInterface::class);
         $members->expects(self::once())->method('isMember')->with(
@@ -177,27 +188,33 @@ final class CatalogFlowHandlerTest extends TestCase
             $user->getId()
         )->willReturn(true);
         $stateRepository = $this->createMock(UserInteractionStateRepository::class);
-        $stateRepository->expects(self::once())->method('set');
+        $stateRepository->method('get')->willReturn(null);
         $telegram = $this->createMock(TelegramApiClientInterface::class);
-        $telegram->expects(self::once())->method('sendMessage')->with(
-            111,
-            self::stringContains('catalog.stores_title'),
-            self::isType('array')
-        )->willReturn(['ok' => true, 'result' => ['message_id' => 10]]);
         $translator = $this->createMock(TranslatorInterface::class);
         $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
 
         $lock = $this->createMock(FamilyCatalogLockInterface::class);
+        $access = new CatalogAccess($members, $lock);
+        $commandBus = $this->createMock(MessageBusInterface::class);
+        $exceptionMapper = new MapExceptionToTranslationKey();
+        $optionSelector = new InlineOptionSelector();
+
+        $utils = new CatalogFlowUtils($telegram, $stateRepository, $commandBus, $translator);
+        $storeScreen = $this->createMock(CatalogEntryScreen::class);
+        $storeScreen->expects(self::once())->method('renderList')->with($this->isInstanceOf(TelegramFamilyMemberContext::class), 0);
+        $categoryScreen = $this->createMock(CatalogEntryScreen::class);
+        $aliasScreen = new StoreAliasScreen($utils, $storeScreen, $repository, $exceptionMapper);
+        $defaultCategoryScreen = new StoreDefaultCategoryScreen($utils, $storeScreen, $repository, $optionSelector);
+
         $handler = new CatalogFlowHandler(
-            $telegram,
+            $utils,
+            $storeScreen,
+            $categoryScreen,
+            $aliasScreen,
+            $defaultCategoryScreen,
+            $access,
             $stateRepository,
-            $repository,
-            new CatalogAccess($members, $lock),
-            new InMemoryCatalogSearch($repository),
-            new InlineOptionSelector(),
-            $this->createMock(MessageBusInterface::class),
-            $translator,
-            new MapExceptionToTranslationKey()
+            $telegram,
         );
         $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([

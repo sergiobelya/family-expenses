@@ -43,3 +43,8 @@ services:
 
     App\Catalog\Application\Query\CatalogSearchInterface:
         alias: App\Catalog\Infrastructure\Persistence\Doctrine\Search\PgTrgmCatalogSearch
+
+    App\Presentation\Telegram\Flow\CatalogFlowHandler:
+        arguments:
+            $storeScreen: '@App\Presentation\Telegram\Flow\Catalog\StoreEntryScreen'
+            $categoryScreen: '@App\Presentation\Telegram\Flow\Catalog\CategoryEntryScreen'

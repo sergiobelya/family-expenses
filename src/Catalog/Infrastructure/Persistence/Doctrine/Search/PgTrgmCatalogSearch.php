@@ -10,7 +10,6 @@ use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Domain\ValueObject\FamilyId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\ResultSetMapping;
-use InvalidArgumentException;
 
 /**
  * Catalog search implementation using PostgreSQL's pg_trgm extension for fuzzy matching.
