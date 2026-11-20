@@ -8,6 +8,7 @@ use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
 use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Family\Domain\ValueObject\FamilyName;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -41,11 +42,11 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             return true;
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'settings:family:')) {
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_FAMILY_PREFIX)) {
             return $context instanceof TelegramFamilyMemberContext;
         }
 
-        if ($update->callbackData === 'settings:main') {
+        if ($update->callbackData === CallbackActions::SETTINGS_MAIN) {
             return $context instanceof TelegramFamilyMemberContext;
         }
 
@@ -97,26 +98,26 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             return;
         }
 
-        if ($update->callbackData === 'settings:family:view') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_VIEW) {
             $this->clearTimezoneSelectorState($userId, $state);
             $this->renderFamilySettings($context);
             return;
         }
 
-        if ($update->callbackData === 'settings:main') {
+        if ($update->callbackData === CallbackActions::SETTINGS_MAIN) {
             $this->clearTimezoneSelectorState($userId, $state);
             $this->settingsMenuRenderer->render($context);
             return;
         }
 
-        if ($update->callbackData === 'settings:family:edit:name') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_EDIT_NAME) {
             $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'name', []));
 
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
                 text: $this->translator->trans('settings.prompt_enter_name'),
                 replyMarkup: (new InlineKeyboardBuilder())
-                    ->button($this->translator->trans('common.cancel'), 'settings:family:view')
+                    ->button($this->translator->trans('common.cancel'), CallbackActions::SETTINGS_FAMILY_VIEW)
                     ->toArray()
             );
             return;
@@ -154,12 +155,12 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             return;
         }
 
-        if ($update->callbackData === 'settings:family:edit:tz') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_EDIT_TZ) {
             $this->renderTimezoneSelector($context);
             return;
         }
 
-        if ($update->callbackData === 'settings:family:timezone:search') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_TIMEZONE_SEARCH) {
             $this->stateRepository->set(new UserInteractionState(
                 $userId,
                 'settings_timezone_selector',
@@ -170,13 +171,13 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
                 chatId: $context->chatId,
                 text: $this->translator->trans('selector.search_prompt'),
                 replyMarkup: (new InlineKeyboardBuilder())
-                    ->button($this->translator->trans('common.back'), 'settings:family:timezone:select')
+                    ->button($this->translator->trans('common.back'), CallbackActions::SETTINGS_FAMILY_TIMEZONE_SELECT)
                     ->toArray()
             );
             return;
         }
 
-        if ($update->callbackData === 'settings:family:timezone:select') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_TIMEZONE_SELECT) {
             $this->renderTimezoneSelector(
                 $context,
                 (string) ($state?->data['query'] ?? ''),
@@ -185,7 +186,7 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             return;
         }
 
-        if ($update->callbackData === 'settings:family:timezone:clear') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_TIMEZONE_CLEAR) {
             $this->renderTimezoneSelector($context);
             return;
         }
@@ -196,12 +197,12 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
         }
 
         if (
-            (str_starts_with($update->callbackData ?? '', 'settings:family:timezone:set:')
-                || str_starts_with($update->callbackData ?? '', 'settings:family:set:tz:'))
+            (str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_FAMILY_TIMEZONE_SET_PREFIX)
+                || str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_FAMILY_SET_TZ_PREFIX))
         ) {
-            $prefix = str_starts_with($update->callbackData, 'settings:family:timezone:set:')
-                ? 'settings:family:timezone:set:'
-                : 'settings:family:set:tz:';
+            $prefix = str_starts_with($update->callbackData, CallbackActions::SETTINGS_FAMILY_TIMEZONE_SET_PREFIX)
+                ? CallbackActions::SETTINGS_FAMILY_TIMEZONE_SET_PREFIX
+                : CallbackActions::SETTINGS_FAMILY_SET_TZ_PREFIX;
             $tz = substr($update->callbackData, strlen($prefix));
             if (!$this->timezoneSelector->contains($tz)) {
                 return;
@@ -223,15 +224,15 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
         }
 
         // 6. Family Settings Edit: Default Currency
-        if ($update->callbackData === 'settings:family:edit:def_curr') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_EDIT_DEF_CURR) {
             $kb = (new InlineKeyboardBuilder())
-                ->button('PLN', 'settings:family:set:def_curr:PLN')
-                ->button('UAH', 'settings:family:set:def_curr:UAH')
+                ->button('PLN', CallbackActions::SETTINGS_FAMILY_SET_DEF_CURR_PREFIX . 'PLN')
+                ->button('UAH', CallbackActions::SETTINGS_FAMILY_SET_DEF_CURR_PREFIX . 'UAH')
                 ->row()
-                ->button('EUR', 'settings:family:set:def_curr:EUR')
-                ->button('USD', 'settings:family:set:def_curr:USD')
+                ->button('EUR', CallbackActions::SETTINGS_FAMILY_SET_DEF_CURR_PREFIX . 'EUR')
+                ->button('USD', CallbackActions::SETTINGS_FAMILY_SET_DEF_CURR_PREFIX . 'USD')
                 ->row()
-                ->button($this->translator->trans('common.back'), 'settings:family:view')
+                ->button($this->translator->trans('common.back'), CallbackActions::SETTINGS_FAMILY_VIEW)
                 ->toArray();
 
             $this->telegramClient->sendMessage(
@@ -242,8 +243,8 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             return;
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'settings:family:set:def_curr:')) {
-            $curr = substr($update->callbackData, strlen('settings:family:set:def_curr:'));
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_FAMILY_SET_DEF_CURR_PREFIX)) {
+            $curr = substr($update->callbackData, strlen(CallbackActions::SETTINGS_FAMILY_SET_DEF_CURR_PREFIX));
             ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
                 familyId: $context->activeFamily->getId(),
                 userId: $context->user->getId(),
@@ -259,15 +260,15 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
         }
 
         // 7. Family Settings Edit: Reporting Currency
-        if ($update->callbackData === 'settings:family:edit:rep_curr') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_EDIT_REP_CURR) {
             $kb = (new InlineKeyboardBuilder())
-                ->button('PLN', 'settings:family:set:rep_curr:PLN')
-                ->button('UAH', 'settings:family:set:rep_curr:UAH')
+                ->button('PLN', CallbackActions::SETTINGS_FAMILY_SET_REP_CURR_PREFIX . 'PLN')
+                ->button('UAH', CallbackActions::SETTINGS_FAMILY_SET_REP_CURR_PREFIX . 'UAH')
                 ->row()
-                ->button('EUR', 'settings:family:set:rep_curr:EUR')
-                ->button('USD', 'settings:family:set:rep_curr:USD')
+                ->button('EUR', CallbackActions::SETTINGS_FAMILY_SET_REP_CURR_PREFIX . 'EUR')
+                ->button('USD', CallbackActions::SETTINGS_FAMILY_SET_REP_CURR_PREFIX . 'USD')
                 ->row()
-                ->button($this->translator->trans('common.back'), 'settings:family:view')
+                ->button($this->translator->trans('common.back'), CallbackActions::SETTINGS_FAMILY_VIEW)
                 ->toArray();
 
             $this->telegramClient->sendMessage(
@@ -278,8 +279,8 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             return;
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'settings:family:set:rep_curr:')) {
-            $curr = substr($update->callbackData, strlen('settings:family:set:rep_curr:'));
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_FAMILY_SET_REP_CURR_PREFIX)) {
+            $curr = substr($update->callbackData, strlen(CallbackActions::SETTINGS_FAMILY_SET_REP_CURR_PREFIX));
             ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
                 familyId: $context->activeFamily->getId(),
                 userId: $context->user->getId(),
@@ -295,16 +296,16 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
         }
 
         // 8. Family Settings Edit: Provider
-        if ($update->callbackData === 'settings:family:edit:provider') {
+        if ($update->callbackData === CallbackActions::SETTINGS_FAMILY_EDIT_PROVIDER) {
             $builder = new InlineKeyboardBuilder();
             foreach (array_chunk(ExchangeRateProviderOptions::ALL, 2, true) as $providers) {
                 foreach ($providers as $provider => $label) {
-                    $builder->button($label, 'settings:family:set:provider:' . $provider);
+                    $builder->button($label, CallbackActions::SETTINGS_FAMILY_SET_PROVIDER_PREFIX . $provider);
                 }
                 $builder->row();
             }
             $kb = $builder
-                ->button($this->translator->trans('common.back'), 'settings:family:view')
+                ->button($this->translator->trans('common.back'), CallbackActions::SETTINGS_FAMILY_VIEW)
                 ->toArray();
 
             $this->telegramClient->sendMessage(
@@ -315,8 +316,8 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             return;
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'settings:family:set:provider:')) {
-            $prov = substr($update->callbackData, strlen('settings:family:set:provider:'));
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_FAMILY_SET_PROVIDER_PREFIX)) {
+            $prov = substr($update->callbackData, strlen(CallbackActions::SETTINGS_FAMILY_SET_PROVIDER_PREFIX));
             if (!ExchangeRateProviderOptions::contains($prov)) {
                 $this->telegramClient->sendMessage(
                     chatId: $context->chatId,
@@ -353,7 +354,7 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             query: $query,
             page: $page,
             backLabel: $this->translator->trans('common.back'),
-            backCallback: 'settings:family:view',
+            backCallback: CallbackActions::SETTINGS_FAMILY_VIEW,
             preferredTimezone: (string) $context->activeFamily->getTimezone()
         );
         $page = $selection['page'];
@@ -398,15 +399,15 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
         ];
 
         $kb = (new InlineKeyboardBuilder())
-            ->button($this->translator->trans('settings.edit_name_btn'), 'settings:family:edit:name')
-            ->button($this->translator->trans('settings.edit_timezone_btn'), 'settings:family:edit:tz')
+            ->button($this->translator->trans('settings.edit_name_btn'), CallbackActions::SETTINGS_FAMILY_EDIT_NAME)
+            ->button($this->translator->trans('settings.edit_timezone_btn'), CallbackActions::SETTINGS_FAMILY_EDIT_TZ)
             ->row()
-            ->button($this->translator->trans('settings.edit_default_currency_btn'), 'settings:family:edit:def_curr')
-            ->button($this->translator->trans('settings.edit_reporting_currency_btn'), 'settings:family:edit:rep_curr')
+            ->button($this->translator->trans('settings.edit_default_currency_btn'), CallbackActions::SETTINGS_FAMILY_EDIT_DEF_CURR)
+            ->button($this->translator->trans('settings.edit_reporting_currency_btn'), CallbackActions::SETTINGS_FAMILY_EDIT_REP_CURR)
             ->row()
-            ->button($this->translator->trans('settings.edit_provider_btn'), 'settings:family:edit:provider')
+            ->button($this->translator->trans('settings.edit_provider_btn'), CallbackActions::SETTINGS_FAMILY_EDIT_PROVIDER)
             ->row()
-            ->button($this->translator->trans('common.back'), 'settings:main')
+            ->button($this->translator->trans('common.back'), CallbackActions::SETTINGS_MAIN)
             ->toArray();
 
         $this->telegramClient->sendMessage(

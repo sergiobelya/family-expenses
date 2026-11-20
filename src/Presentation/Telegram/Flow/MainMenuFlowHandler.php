@@ -3,6 +3,7 @@
 namespace App\Presentation\Telegram\Flow;
 
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
@@ -25,7 +26,7 @@ class MainMenuFlowHandler implements FamilyContextFlowHandlerInterface
             return true;
         }
 
-        if ($update->callbackData === 'nav:main_menu') {
+        if ($update->callbackData === CallbackActions::NAV_MAIN_MENU) {
             return true;
         }
 

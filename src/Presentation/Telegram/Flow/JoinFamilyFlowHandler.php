@@ -14,6 +14,7 @@ use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Family\Infrastructure\Security\InvitationTokenGenerator;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
@@ -41,7 +42,7 @@ class JoinFamilyFlowHandler implements UserContextFlowHandlerInterface
             return true;
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'family:join:confirm:')) {
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_JOIN_CONFIRM_PREFIX)) {
             return true;
         }
 
@@ -54,8 +55,8 @@ class JoinFamilyFlowHandler implements UserContextFlowHandlerInterface
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'family:join:confirm:')) {
-            $plainToken = substr($update->callbackData, strlen('family:join:confirm:'));
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_JOIN_CONFIRM_PREFIX)) {
+            $plainToken = substr($update->callbackData, strlen(CallbackActions::FAMILY_JOIN_CONFIRM_PREFIX));
 
             try {
                 $result = ($this->joinFamilyByInvitationHandler)(new JoinFamilyByInvitationCommand(
@@ -130,7 +131,7 @@ class JoinFamilyFlowHandler implements UserContextFlowHandlerInterface
                 ]);
 
                 $kb = (new InlineKeyboardBuilder())
-                    ->button($this->translator->trans('family.join.switch_to_family', ['%{family_name}' => (string) ($family->getName())]), 'family:select:' . $family->getId()->toRfc4122())
+                    ->button($this->translator->trans('family.join.switch_to_family', ['%{family_name}' => (string) ($family->getName())]), CallbackActions::FAMILY_SELECT_PREFIX . $family->getId()->toRfc4122())
                     ->toArray();
 
                 $this->telegramClient->sendMessage(
@@ -146,8 +147,8 @@ class JoinFamilyFlowHandler implements UserContextFlowHandlerInterface
             ]);
 
             $kb = (new InlineKeyboardBuilder())
-                ->button($this->translator->trans('family.join.join_btn'), 'family:join:confirm:' . $plainToken)
-                ->button($this->translator->trans('common.cancel'), 'nav:main_menu')
+                ->button($this->translator->trans('family.join.join_btn'), CallbackActions::FAMILY_JOIN_CONFIRM_PREFIX . $plainToken)
+                ->button($this->translator->trans('common.cancel'), CallbackActions::NAV_MAIN_MENU)
                 ->toArray();
 
             $this->telegramClient->sendMessage(

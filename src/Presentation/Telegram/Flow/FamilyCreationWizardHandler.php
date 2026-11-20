@@ -8,6 +8,7 @@ use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\CreateFamilyCommand;
 use App\Family\Application\Command\CreateFamilyHandler;
 use App\Family\Domain\ValueObject\FamilyName;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -35,11 +36,11 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
-        if ($update->callbackData === 'family:create:start' || $update->callbackData === 'family:create:cancel') {
+        if ($update->callbackData === CallbackActions::FAMILY_CREATE_START || $update->callbackData === CallbackActions::FAMILY_CREATE_CANCEL) {
             return true;
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'family:create:')) {
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_CREATE_PREFIX)) {
             return true;
         }
 
@@ -59,7 +60,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
-        if ($update->callbackData === 'family:create:cancel') {
+        if ($update->callbackData === CallbackActions::FAMILY_CREATE_CANCEL) {
             $this->stateRepository->clear($userId);
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
@@ -68,7 +69,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             return;
         }
 
-        if ($update->callbackData === 'family:create:start') {
+        if ($update->callbackData === CallbackActions::FAMILY_CREATE_START) {
             $state = new UserInteractionState($userId, self::FLOW_NAME, 'name', []);
             $this->stateRepository->set($state);
 
@@ -76,7 +77,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
                 chatId: $context->chatId,
                 text: $this->translator->trans('family.create.step_name'),
                 replyMarkup: (new InlineKeyboardBuilder())
-                    ->button($this->translator->trans('common.cancel'), 'family:create:cancel')
+                    ->button($this->translator->trans('common.cancel'), CallbackActions::FAMILY_CREATE_CANCEL)
                     ->toArray()
             );
             return;
@@ -111,7 +112,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             return;
         }
 
-        if ($step === 'timezone' && $update->callbackData === 'family:create:timezone:search') {
+        if ($step === 'timezone' && $update->callbackData === CallbackActions::FAMILY_CREATE_TIMEZONE_SEARCH) {
             $this->stateRepository->set(new UserInteractionState(
                 $userId,
                 self::FLOW_NAME,
@@ -122,7 +123,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
                 chatId: $context->chatId,
                 text: $this->translator->trans('selector.search_prompt'),
                 replyMarkup: (new InlineKeyboardBuilder())
-                    ->button($this->translator->trans('common.back'), 'family:create:timezone:select')
+                    ->button($this->translator->trans('common.back'), CallbackActions::FAMILY_CREATE_TIMEZONE_SELECT)
                     ->toArray()
             );
             return;
@@ -130,7 +131,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
 
         if (
             in_array($step, ['timezone', 'timezone_search'], true)
-            && $update->callbackData === 'family:create:timezone:select'
+            && $update->callbackData === CallbackActions::FAMILY_CREATE_TIMEZONE_SELECT
         ) {
             $this->renderTimezoneSelector(
                 $context,
@@ -143,7 +144,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
 
         if (
             in_array($step, ['timezone', 'timezone_search'], true)
-            && $update->callbackData === 'family:create:timezone:clear'
+            && $update->callbackData === CallbackActions::FAMILY_CREATE_TIMEZONE_CLEAR
         ) {
             $this->renderTimezoneSelector($context, $data);
             return;
@@ -159,12 +160,12 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
 
         if (
             in_array($step, ['timezone', 'timezone_search'], true)
-            && (str_starts_with($update->callbackData ?? '', 'family:create:timezone:set:')
-                || str_starts_with($update->callbackData ?? '', 'family:create:tz:'))
+            && (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_CREATE_TIMEZONE_SET_PREFIX)
+                || str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_CREATE_TZ_PREFIX))
         ) {
-            $prefix = str_starts_with($update->callbackData, 'family:create:timezone:set:')
-                ? 'family:create:timezone:set:'
-                : 'family:create:tz:';
+            $prefix = str_starts_with($update->callbackData, CallbackActions::FAMILY_CREATE_TIMEZONE_SET_PREFIX)
+                ? CallbackActions::FAMILY_CREATE_TIMEZONE_SET_PREFIX
+                : CallbackActions::FAMILY_CREATE_TZ_PREFIX;
             $tz = substr($update->callbackData, strlen($prefix));
             if (!$this->timezoneSelector->contains($tz)) {
                 return;
@@ -174,13 +175,13 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'default_currency', $data));
 
             $kb = (new InlineKeyboardBuilder())
-                ->button('PLN', 'family:create:def_curr:PLN')
-                ->button('UAH', 'family:create:def_curr:UAH')
+                ->button('PLN', CallbackActions::FAMILY_CREATE_DEF_CURR_PREFIX . 'PLN')
+                ->button('UAH', CallbackActions::FAMILY_CREATE_DEF_CURR_PREFIX . 'UAH')
                 ->row()
-                ->button('EUR', 'family:create:def_curr:EUR')
-                ->button('USD', 'family:create:def_curr:USD')
+                ->button('EUR', CallbackActions::FAMILY_CREATE_DEF_CURR_PREFIX . 'EUR')
+                ->button('USD', CallbackActions::FAMILY_CREATE_DEF_CURR_PREFIX . 'USD')
                 ->row()
-                ->button($this->translator->trans('common.cancel'), 'family:create:cancel')
+                ->button($this->translator->trans('common.cancel'), CallbackActions::FAMILY_CREATE_CANCEL)
                 ->toArray();
 
             $this->telegramClient->sendMessage(
@@ -191,19 +192,19 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             return;
         }
 
-        if ($step === 'default_currency' && str_starts_with($update->callbackData ?? '', 'family:create:def_curr:')) {
-            $curr = substr($update->callbackData, strlen('family:create:def_curr:'));
+        if ($step === 'default_currency' && str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_CREATE_DEF_CURR_PREFIX)) {
+            $curr = substr($update->callbackData, strlen(CallbackActions::FAMILY_CREATE_DEF_CURR_PREFIX));
             $data['default_currency'] = $curr;
             $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'reporting_currency', $data));
 
             $kb = (new InlineKeyboardBuilder())
-                ->button('PLN', 'family:create:rep_curr:PLN')
-                ->button('UAH', 'family:create:rep_curr:UAH')
+                ->button('PLN', CallbackActions::FAMILY_CREATE_REP_CURR_PREFIX . 'PLN')
+                ->button('UAH', CallbackActions::FAMILY_CREATE_REP_CURR_PREFIX . 'UAH')
                 ->row()
-                ->button('EUR', 'family:create:rep_curr:EUR')
-                ->button('USD', 'family:create:rep_curr:USD')
+                ->button('EUR', CallbackActions::FAMILY_CREATE_REP_CURR_PREFIX . 'EUR')
+                ->button('USD', CallbackActions::FAMILY_CREATE_REP_CURR_PREFIX . 'USD')
                 ->row()
-                ->button($this->translator->trans('common.cancel'), 'family:create:cancel')
+                ->button($this->translator->trans('common.cancel'), CallbackActions::FAMILY_CREATE_CANCEL)
                 ->toArray();
 
             $this->telegramClient->sendMessage(
@@ -214,20 +215,20 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             return;
         }
 
-        if ($step === 'reporting_currency' && str_starts_with($update->callbackData ?? '', 'family:create:rep_curr:')) {
-            $curr = substr($update->callbackData, strlen('family:create:rep_curr:'));
+        if ($step === 'reporting_currency' && str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_CREATE_REP_CURR_PREFIX)) {
+            $curr = substr($update->callbackData, strlen(CallbackActions::FAMILY_CREATE_REP_CURR_PREFIX));
             $data['reporting_currency'] = $curr;
             $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'provider', $data));
 
             $builder = new InlineKeyboardBuilder();
             foreach (array_chunk(ExchangeRateProviderOptions::ALL, 2, true) as $providers) {
                 foreach ($providers as $provider => $label) {
-                    $builder->button($label, 'family:create:provider:' . $provider);
+                    $builder->button($label, CallbackActions::FAMILY_CREATE_PROVIDER_PREFIX . $provider);
                 }
                 $builder->row();
             }
             $kb = $builder
-                ->button($this->translator->trans('common.cancel'), 'family:create:cancel')
+                ->button($this->translator->trans('common.cancel'), CallbackActions::FAMILY_CREATE_CANCEL)
                 ->toArray();
 
             $this->telegramClient->sendMessage(
@@ -238,8 +239,8 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             return;
         }
 
-        if ($step === 'provider' && str_starts_with($update->callbackData ?? '', 'family:create:provider:')) {
-            $provider = substr($update->callbackData, strlen('family:create:provider:'));
+        if ($step === 'provider' && str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_CREATE_PROVIDER_PREFIX)) {
+            $provider = substr($update->callbackData, strlen(CallbackActions::FAMILY_CREATE_PROVIDER_PREFIX));
             if (!ExchangeRateProviderOptions::contains($provider)) {
                 $this->telegramClient->sendMessage(
                     chatId: $context->chatId,
@@ -252,8 +253,8 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'confirm', $data));
 
             $kb = (new InlineKeyboardBuilder())
-                ->button($this->translator->trans('common.confirm'), 'family:create:submit')
-                ->button($this->translator->trans('common.cancel'), 'family:create:cancel')
+                ->button($this->translator->trans('common.confirm'), CallbackActions::FAMILY_CREATE_SUBMIT)
+                ->button($this->translator->trans('common.cancel'), CallbackActions::FAMILY_CREATE_CANCEL)
                 ->toArray();
 
             $confirmText = $this->translator->trans('family.create.step_confirm', [
@@ -272,7 +273,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             return;
         }
 
-        if ($step === 'confirm' && $update->callbackData === 'family:create:submit') {
+        if ($step === 'confirm' && $update->callbackData === CallbackActions::FAMILY_CREATE_SUBMIT) {
             try {
                 $family = ($this->createFamilyHandler)(new CreateFamilyCommand(
                     userId: $context->user->getId(),
@@ -322,7 +323,7 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
             query: $query,
             page: $page,
             backLabel: $this->translator->trans('common.cancel'),
-            backCallback: 'family:create:cancel',
+            backCallback: CallbackActions::FAMILY_CREATE_CANCEL,
             preferredTimezone: $suggestedTimezone
         );
         $page = $selection['page'];

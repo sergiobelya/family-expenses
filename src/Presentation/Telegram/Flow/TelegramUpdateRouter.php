@@ -3,6 +3,7 @@
 namespace App\Presentation\Telegram\Flow;
 
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramUserContextResolver;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
@@ -60,7 +61,7 @@ class TelegramUpdateRouter
 
     private function isMainMenuNavigation(TelegramUpdate $update): bool
     {
-        if ($update->callbackData === 'nav:main_menu') {
+        if ($update->callbackData === CallbackActions::NAV_MAIN_MENU) {
             return true;
         }
 

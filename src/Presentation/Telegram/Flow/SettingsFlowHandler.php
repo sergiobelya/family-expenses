@@ -7,6 +7,7 @@ use App\Family\Application\Query\GetUserFamiliesHandler;
 use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Identity\Application\Command\ChangeUserLanguageCommand;
 use App\Identity\Application\Command\ChangeUserLanguageHandler;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
@@ -36,11 +37,11 @@ class SettingsFlowHandler implements UserContextFlowHandlerInterface
             return !($context instanceof TelegramFamilyMemberContext);
         }
 
-        if ($update->callbackData === 'settings:main') {
+        if ($update->callbackData === CallbackActions::SETTINGS_MAIN) {
             return !($context instanceof TelegramFamilyMemberContext);
         }
 
-        return str_starts_with($update->callbackData ?? '', 'settings:lang:');
+        return str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_LANG_SET_PREFIX);
     }
 
     public function handle(TelegramUpdate $update, TelegramUserContext $context): void
@@ -52,22 +53,22 @@ class SettingsFlowHandler implements UserContextFlowHandlerInterface
         if (
             $update->text === $this->translator->trans('main_menu.settings')
             || $update->text === '/settings'
-            || $update->callbackData === 'settings:main'
+            || $update->callbackData === CallbackActions::SETTINGS_MAIN
         ) {
             $this->settingsMenuRenderer->render($context);
             return;
         }
 
-        if ($update->callbackData === 'settings:lang:select') {
+        if ($update->callbackData === CallbackActions::SETTINGS_LANG_SELECT) {
             $this->renderLanguageSelector($context);
             return;
         }
 
-        if (!str_starts_with($update->callbackData ?? '', 'settings:lang:set:')) {
+        if (!str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_LANG_SET_PREFIX)) {
             return;
         }
 
-        $language = substr($update->callbackData, strlen('settings:lang:set:'));
+        $language = substr($update->callbackData, strlen(CallbackActions::SETTINGS_LANG_SET_PREFIX));
         if (!SupportedLanguages::isSupported($language)) {
             return;
         }
@@ -93,9 +94,9 @@ class SettingsFlowHandler implements UserContextFlowHandlerInterface
         $builder = new InlineKeyboardBuilder();
         foreach (SupportedLanguages::localNames() as $code => $name) {
             $badge = $context->user->getLanguage() === $code ? ' ✅' : '';
-            $builder->button($name . $badge, 'settings:lang:set:' . $code)->row();
+            $builder->button($name . $badge, CallbackActions::SETTINGS_LANG_SET_PREFIX . $code)->row();
         }
-        $builder->button($this->translator->trans('common.back'), 'settings:main')->row();
+        $builder->button($this->translator->trans('common.back'), CallbackActions::SETTINGS_MAIN)->row();
 
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,

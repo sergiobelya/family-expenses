@@ -7,6 +7,7 @@ use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Identity\Application\Command\SwitchActiveFamilyCommand;
 use App\Identity\Application\Command\SwitchActiveFamilyHandler;
 use App\Core\Domain\ValueObject\FamilyId;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
@@ -31,7 +32,7 @@ class FamilySelectorFlowHandler implements UserContextFlowHandlerInterface
             return true;
         }
 
-        if ($update->callbackData === 'family:selector' || str_starts_with($update->callbackData ?? '', 'family:select:')) {
+        if ($update->callbackData === CallbackActions::FAMILY_SELECTOR || str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_SELECT_PREFIX)) {
             return true;
         }
 
@@ -52,8 +53,8 @@ class FamilySelectorFlowHandler implements UserContextFlowHandlerInterface
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'family:select:')) {
-            $familyId = FamilyId::fromString(substr($update->callbackData, strlen('family:select:')));
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_SELECT_PREFIX)) {
+            $familyId = FamilyId::fromString(substr($update->callbackData, strlen(CallbackActions::FAMILY_SELECT_PREFIX)));
 
             ($this->switchActiveFamilyHandler)(new SwitchActiveFamilyCommand(
                 userId: $context->user->getId(),
@@ -91,11 +92,11 @@ class FamilySelectorFlowHandler implements UserContextFlowHandlerInterface
             $badge = $isActive ? $this->translator->trans('family.selector.current_badge') : '';
             $label = (string) $family->getName() . $badge;
 
-            $builder->button($label, 'family:select:' . $family->getId()->toRfc4122())->row();
+            $builder->button($label, CallbackActions::FAMILY_SELECT_PREFIX . $family->getId()->toRfc4122())->row();
         }
 
-        $builder->button($this->translator->trans('family.selector.create_new'), 'family:create:start')->row();
-        $builder->button($this->translator->trans('common.main_menu'), 'nav:main_menu')->row();
+        $builder->button($this->translator->trans('family.selector.create_new'), CallbackActions::FAMILY_CREATE_START)->row();
+        $builder->button($this->translator->trans('common.main_menu'), CallbackActions::NAV_MAIN_MENU)->row();
 
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,

@@ -4,6 +4,7 @@ namespace App\Presentation\Telegram\Flow;
 
 use App\Family\Application\Query\GetFamilyMembersHandler;
 use App\Family\Application\Query\GetFamilyMembersQuery;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
@@ -25,7 +26,7 @@ class FamilyMembersFlowHandler implements FamilyContextFlowHandlerInterface
             return true;
         }
 
-        if ($update->callbackData === 'family:members') {
+        if ($update->callbackData === CallbackActions::FAMILY_MEMBERS) {
             return true;
         }
 
@@ -64,10 +65,10 @@ class FamilyMembersFlowHandler implements FamilyContextFlowHandlerInterface
         }
 
         $kb = (new InlineKeyboardBuilder())
-            ->button($this->translator->trans('family.members.invite_btn'), 'family:invite:create')
-            ->button($this->translator->trans('family.members.invitations_btn'), 'family:invitations:list')
+            ->button($this->translator->trans('family.members.invite_btn'), CallbackActions::FAMILY_INVITE_CREATE)
+            ->button($this->translator->trans('family.members.invitations_btn'), CallbackActions::FAMILY_INVITATIONS_LIST)
             ->row()
-            ->button($this->translator->trans('common.main_menu'), 'nav:main_menu')
+            ->button($this->translator->trans('common.main_menu'), CallbackActions::NAV_MAIN_MENU)
             ->toArray();
 
         $this->telegramClient->sendMessage(

@@ -28,6 +28,7 @@ use App\Core\Domain\ValueObject\StoreAliasId;
 use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
@@ -61,8 +62,8 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
-        if (str_starts_with($update->callbackData ?? '', 'catalog:')
-            || str_starts_with($update->callbackData ?? '', 'catdef:')) {
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::CATALOG_PREFIX)
+            || str_starts_with($update->callbackData ?? '', CallbackActions::CATDEF_PREFIX)) {
             return true;
         }
 
@@ -120,7 +121,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                 $this->render(
                     $context,
                     $this->trans('selector.search_prompt'),
-                    $this->formKeyboard('catalog:default:' . $storeId)
+                    $this->formKeyboard(CallbackActions::CATALOG_DEFAULT_PREFIX . $storeId)
                 );
                 return;
             }
@@ -193,7 +194,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             }
             return;
         }
-        if ($data === 'catalog:set-default:none') {
+        if ($data === CallbackActions::CATALOG_SET_DEFAULT_NONE) {
             $state = $this->stateRepository->get($context->telegramUserId);
             $storeId = $this->stateUuid($state, 'store_id');
             if ($storeId !== null) {
@@ -254,7 +255,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                     $this->trans('catalog.prompt_alias_current', [
                         '%{name}' => $this->escape((string) $alias->getName()),
                     ]),
-                    $this->formKeyboard('catalog:aliases:' . $storeId)
+                    $this->formKeyboard(CallbackActions::CATALOG_ALIASES_PREFIX . $storeId)
                 );
             } elseif ($storeId !== null) {
                 $this->renderAliases($context, $storeId, 'catalog.unavailable');
@@ -294,14 +295,14 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             }
             return;
         }
-        if ($data === 'catalog:warning:confirm') {
+        if ($data === CallbackActions::CATALOG_WARNING_CONFIRM) {
             $state = $this->stateRepository->get($context->telegramUserId);
             if ($state !== null && $state->flow === self::FLOW_NAME) {
                 $this->saveNameOperation($context, $state->data);
             }
             return;
         }
-        if ($data === 'catalog:create-search') {
+        if ($data === CallbackActions::CATALOG_CREATE_SEARCH) {
             $state = $this->stateRepository->get($context->telegramUserId);
             if ($state !== null && $state->flow === self::FLOW_NAME) {
                 $this->startNameInput(
@@ -315,7 +316,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             }
             return;
         }
-        if ($data === 'catalog:warning:edit') {
+        if ($data === CallbackActions::CATALOG_WARNING_EDIT) {
             $state = $this->stateRepository->get($context->telegramUserId);
             if ($state !== null && $state->flow === self::FLOW_NAME) {
                 $type = (string) ($state->data['type'] ?? 'store');
@@ -324,7 +325,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             }
             return;
         }
-        if ($data === 'catalog:alias:conflict:edit') {
+        if ($data === CallbackActions::CATALOG_ALIAS_CONFLICT_EDIT) {
             $state = $this->stateRepository->get($context->telegramUserId);
             $storeId = $this->stateUuid($state, 'store_id');
             if ($state !== null && $state->flow === self::FLOW_NAME && $storeId !== null) {
@@ -334,14 +335,14 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                     $this->trans('catalog.prompt_alias_current', [
                         '%{name}' => $this->escape((string) ($state->data['value'] ?? '')),
                     ]),
-                    $this->formKeyboard('catalog:aliases:' . $storeId)
+                    $this->formKeyboard(CallbackActions::CATALOG_ALIASES_PREFIX . $storeId)
                 );
             } elseif ($storeId !== null) {
                 $this->renderAliases($context, $storeId, 'catalog.unavailable');
             }
             return;
         }
-        if ($data === 'catalog:cancel') {
+        if ($data === CallbackActions::CATALOG_CANCEL) {
             $state = $this->stateRepository->get($context->telegramUserId);
             $step = $state?->step;
             if ($step === 'alias_name' || $step === 'alias_conflict') {
@@ -355,7 +356,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             }
             return;
         }
-        if ($data === 'catalog:warning:cancel') {
+        if ($data === CallbackActions::CATALOG_WARNING_CANCEL) {
             $state = $this->stateRepository->get($context->telegramUserId);
             $type = (string) ($state?->data['type'] ?? 'store');
             $id = isset($state?->data['id']) ? $this->parseUuid((string) $state->data['id']) : null;
@@ -483,25 +484,25 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         $builder = new InlineKeyboardBuilder();
         $builder->button(
             $this->trans('catalog.add'),
-            'catalog:add:' . $type
-        )->button($this->trans('catalog.search'), 'catalog:search:' . $type)->row();
+            CallbackActions::CATALOG_PREFIX . 'add:' . $type
+        )->button($this->trans('catalog.search'), CallbackActions::CATALOG_SEARCH_PREFIX . $type)->row();
         foreach (array_chunk($entries, 2) as $row) {
             foreach ($row as $entry) {
                 $builder->button(
                     $this->escapeButton((string) $entry->getName()),
-                    'catalog:select:' . $type . ':' . $entry->getId()
+                    CallbackActions::CATALOG_PREFIX . 'select:' . $type . ':' . $entry->getId()
                 );
             }
             $builder->row();
         }
         if ($page > 0) {
-            $builder->button($this->trans('selector.previous'), sprintf('catalog:page:%s:%d', $type, $page - 1));
+            $builder->button($this->trans('selector.previous'), sprintf('%s%s:%d', CallbackActions::CATALOG_PAGE_PREFIX, $type, $page - 1));
         }
         $total = $type === 'store'
             ? count($this->catalog->findStores($familyId))
             : count($this->catalog->findCategories($familyId));
         if ($start + self::PAGE_SIZE < $total) {
-            $builder->button($this->trans('selector.next'), sprintf('catalog:page:%s:%d', $type, $page + 1));
+            $builder->button($this->trans('selector.next'), sprintf('%s%s:%d', CallbackActions::CATALOG_PAGE_PREFIX, $type, $page + 1));
         }
         if ($page > 0 || $start + self::PAGE_SIZE < $total) {
             $builder->row();
@@ -526,7 +527,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                 'value' => $query,
             ]));
             $builder = new InlineKeyboardBuilder()
-                ->button($this->trans('catalog.create_from_search', ['%{name}' => $this->escape($query)]), 'catalog:create-search')
+                ->button($this->trans('catalog.create_from_search', ['%{name}' => $this->escape($query)]), CallbackActions::CATALOG_CREATE_SEARCH)
                 ->row()
                 ->button($this->trans('common.back'), $this->listCallback($type));
             $this->render(
@@ -541,7 +542,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         foreach ($results as $entry) {
             $builder->button(
                 $this->escapeButton((string) $entry->getName()),
-                'catalog:select:' . $type . ':' . $entry->getId()
+                CallbackActions::CATALOG_PREFIX . 'select:' . $type . ':' . $entry->getId()
             )->row();
         }
         $builder->button($this->trans('common.back'), $this->listCallback($type));
@@ -581,11 +582,11 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                 . $this->trans('catalog.default_category') . ': ' . $default . "\n"
                 . $this->trans('catalog.aliases') . ': ' . ($aliases === [] ? $this->trans('catalog.none') : implode(', ', $aliases));
             $builder = new InlineKeyboardBuilder()
-                ->button($this->trans('catalog.rename'), 'catalog:rename:store:' . $id)->row()
-                ->button($this->trans('catalog.default_category'), 'catalog:default:' . $id)->row()
-                ->button($this->trans('catalog.aliases'), 'catalog:aliases:' . $id)->row()
-                ->button($this->trans('catalog.delete'), 'catalog:confirm:store:' . $id)->row()
-                ->button($this->trans('common.back'), 'catalog:list:store');
+                ->button($this->trans('catalog.rename'), CallbackActions::CATALOG_RENAME_PREFIX . 'store:' . $id)->row()
+                ->button($this->trans('catalog.default_category'), CallbackActions::CATALOG_DEFAULT_PREFIX . $id)->row()
+                ->button($this->trans('catalog.aliases'), CallbackActions::CATALOG_ALIASES_PREFIX . $id)->row()
+                ->button($this->trans('catalog.delete'), CallbackActions::CATALOG_PREFIX . 'confirm:store:' . $id)->row()
+                ->button($this->trans('common.back'), CallbackActions::CATALOG_PREFIX . 'list:store');
             $this->stateRepository->set($this->state($context, 'store_details', ['store_id' => (string) $id]));
         } else {
             $entry = $this->catalog->findCategory($familyId, new CategoryId($id));
@@ -595,9 +596,9 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             }
             $text = '<b>' . $this->escape((string) $entry->getName()) . '</b>';
             $builder = new InlineKeyboardBuilder()
-                ->button($this->trans('catalog.rename'), 'catalog:rename:category:' . $id)->row()
-                ->button($this->trans('catalog.delete'), 'catalog:confirm:category:' . $id)->row()
-                ->button($this->trans('common.back'), 'catalog:list:category');
+                ->button($this->trans('catalog.rename'), CallbackActions::CATALOG_RENAME_PREFIX . 'category:' . $id)->row()
+                ->button($this->trans('catalog.delete'), CallbackActions::CATALOG_PREFIX . 'confirm:category:' . $id)->row()
+                ->button($this->trans('common.back'), CallbackActions::CATALOG_PREFIX . 'list:category');
             $this->stateRepository->set($this->state($context, 'category_details', ['category_id' => (string) $id]));
         }
         if ($notice !== null) {
@@ -639,7 +640,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             previousLabel: $this->trans('selector.previous'),
             nextLabel: $this->trans('selector.next'),
             backLabel: $this->trans('common.back'),
-            backCallback: 'catalog:select:store:' . $storeId
+            backCallback: CallbackActions::CATALOG_PREFIX . 'select:store:' . $storeId
         );
         array_splice(
             $keyboard['inline_keyboard'],
@@ -647,7 +648,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             0,
             [[[
                 'text' => $this->trans('catalog.create_category'),
-                'callback_data' => 'catalog:def:new:' . $storeId,
+                'callback_data' => CallbackActions::CATALOG_PREFIX . 'def:new:' . $storeId,
             ]]]
         );
         $this->stateRepository->set($this->state($context, 'default_category', [
@@ -703,11 +704,11 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         if ($aliases === []) {
             $text .= "\n\n" . $this->trans('catalog.aliases_empty');
         }
-        $builder = new InlineKeyboardBuilder()->button($this->trans('catalog.add_alias'), 'catalog:alias:add:' . $storeId)->row();
+        $builder = new InlineKeyboardBuilder()->button($this->trans('catalog.add_alias'), CallbackActions::CATALOG_ALIAS_PREFIX . 'add:' . $storeId)->row();
         foreach ($aliases as $alias) {
-            $builder->button($this->escapeButton((string) $alias->getName()), 'catalog:alias:select:' . $alias->getId())->row();
+            $builder->button($this->escapeButton((string) $alias->getName()), CallbackActions::CATALOG_ALIAS_PREFIX . 'select:' . $alias->getId())->row();
         }
-        $builder->button($this->trans('common.back'), 'catalog:select:store:' . $storeId);
+        $builder->button($this->trans('common.back'), CallbackActions::CATALOG_PREFIX . 'select:store:' . $storeId);
         $this->stateRepository->set($this->state($context, 'aliases', ['store_id' => (string) $storeId]));
         $this->render($context, $text, $builder->toArray());
     }
@@ -723,9 +724,9 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             'alias_id' => (string) $aliasId,
         ]));
         $builder = new InlineKeyboardBuilder()
-            ->button($this->trans('catalog.rename'), 'catalog:alias:rename:' . $aliasId)->row()
-            ->button($this->trans('catalog.remove_alias'), 'catalog:alias:remove:' . $aliasId)->row()
-            ->button($this->trans('common.back'), 'catalog:aliases:' . $storeId);
+            ->button($this->trans('catalog.rename'), CallbackActions::CATALOG_ALIAS_PREFIX . 'rename:' . $aliasId)->row()
+            ->button($this->trans('catalog.remove_alias'), CallbackActions::CATALOG_ALIAS_PREFIX . 'remove:' . $aliasId)->row()
+            ->button($this->trans('common.back'), CallbackActions::CATALOG_ALIASES_PREFIX . $storeId);
         $this->render($context, '<b>' . $this->escape($name) . '</b>', $builder->toArray());
     }
 
@@ -743,8 +744,8 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             'id' => (string) $id,
         ]));
         $builder = new InlineKeyboardBuilder()
-            ->button($this->trans('catalog.confirm_delete'), 'catalog:delete:' . $type . ':' . $id)->row()
-            ->button($this->trans('catalog.keep'), $type === 'store' ? 'catalog:select:store:' . $id : 'catalog:select:category:' . $id);
+            ->button($this->trans('catalog.confirm_delete'), CallbackActions::CATALOG_DELETE_PREFIX . $type . ':' . $id)->row()
+            ->button($this->trans('catalog.keep'), $type === 'store' ? CallbackActions::CATALOG_PREFIX . 'select:store:' . $id : CallbackActions::CATALOG_PREFIX . 'select:category:' . $id);
         $this->render(
             $context,
             $this->trans('catalog.delete_confirmation', ['%{name}' => $this->escape((string) $entry->getName())]),
@@ -803,7 +804,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             'operation' => 'create',
             'value' => '',
         ]));
-        $this->render($context, 'catalog.prompt_alias', $this->formKeyboard('catalog:aliases:' . $storeId));
+        $this->render($context, 'catalog.prompt_alias', $this->formKeyboard(CallbackActions::CATALOG_ALIASES_PREFIX . $storeId));
     }
 
     /**
@@ -870,18 +871,18 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             $builder = new InlineKeyboardBuilder()
                 ->button(
                     $this->trans('catalog.confirm_' . $type . '_' . $operation),
-                    'catalog:warning:confirm'
+                    CallbackActions::CATALOG_WARNING_CONFIRM
                 )->row();
             foreach (array_slice($matches, 0, 5) as $match) {
                 $builder->button(
                     $this->escapeButton((string) $match->getName()),
                     $type === 'store'
-                        ? 'catalog:warning:open:' . $match->getId()
-                        : 'catalog:warning:open-c:' . $match->getId()
+                        ? CallbackActions::CATALOG_WARNING_OPEN_PREFIX . $match->getId()
+                        : CallbackActions::CATALOG_WARNING_OPEN_C_PREFIX . $match->getId()
                 )->row();
             }
-            $builder->button($this->trans('catalog.edit_name'), 'catalog:warning:edit')->row()
-                ->button($this->trans('common.cancel'), 'catalog:warning:cancel');
+            $builder->button($this->trans('catalog.edit_name'), CallbackActions::CATALOG_WARNING_EDIT)->row()
+                ->button($this->trans('common.cancel'), CallbackActions::CATALOG_WARNING_CANCEL);
             $this->render(
                 $context,
                 $this->trans(
@@ -912,10 +913,10 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             ->button(
                 $this->trans('catalog.open_conflict'),
                 $type === 'store'
-                    ? 'catalog:warning:open:' . $existingStoreId
-                    : 'catalog:warning:open-c:' . $existingStoreId
+                    ? CallbackActions::CATALOG_WARNING_OPEN_PREFIX . $existingStoreId
+                    : CallbackActions::CATALOG_WARNING_OPEN_C_PREFIX . $existingStoreId
             )->row()
-            ->button($this->trans('catalog.edit_name'), 'catalog:warning:edit')->row()
+            ->button($this->trans('catalog.edit_name'), CallbackActions::CATALOG_WARNING_EDIT)->row()
             ->button($this->trans('common.back'), $this->listCallback($type));
         $this->render(
             $context,
@@ -975,8 +976,8 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
                 'category_id' => (string) $created->getId(),
             ]));
             $builder = new InlineKeyboardBuilder()
-                ->button($this->trans('catalog.set_as_default'), 'catalog:return:' . $created->getId())->row()
-                ->button($this->trans('common.back'), 'catalog:default:' . $returnStoreId);
+                ->button($this->trans('catalog.set_as_default'), CallbackActions::CATALOG_RETURN_PREFIX . $created->getId())->row()
+                ->button($this->trans('common.back'), CallbackActions::CATALOG_DEFAULT_PREFIX . $returnStoreId);
             $this->render($context, $this->trans('catalog.category_created'), $builder->toArray());
             return;
         }
@@ -991,7 +992,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         try {
             $name = CatalogName::fromString($value);
         } catch (InvalidValueException $e) {
-            $this->render($context, ($this->exceptionToTranslation)($e), $this->backKeyboard('catalog:aliases:' . ($data['store_id'] ?? '')));
+            $this->render($context, ($this->exceptionToTranslation)($e), $this->backKeyboard(CallbackActions::CATALOG_ALIASES_PREFIX . ($data['store_id'] ?? '')));
             return;
         }
         $familyId = $context->activeFamily->getId();
@@ -1014,9 +1015,9 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             $data['value'] = $name->getValue();
             $this->stateRepository->set($this->state($context, 'alias_conflict', $data));
             $builder = new InlineKeyboardBuilder()
-                ->button($this->trans('catalog.open_conflict'), 'catalog:warning:open:' . $conflictingStoreId)->row()
-                ->button($this->trans('catalog.edit_name'), 'catalog:alias:conflict:edit')->row()
-                ->button($this->trans('common.back'), 'catalog:aliases:' . $storeId);
+                ->button($this->trans('catalog.open_conflict'), CallbackActions::CATALOG_PREFIX . 'warning:open:' . $conflictingStoreId)->row()
+                ->button($this->trans('catalog.edit_name'), CallbackActions::CATALOG_ALIAS_CONFLICT_EDIT)->row()
+                ->button($this->trans('common.back'), CallbackActions::CATALOG_ALIASES_PREFIX . $storeId);
             $this->render(
                 $context,
                 $this->trans('catalog.alias_conflict', ['%{name}' => $this->escape($existingName)]),
@@ -1049,7 +1050,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             $this->render(
                 $context,
                 $this->trans('catalog.alias_conflict', ['%{name}' => $this->escape($exception->conflictingName)]),
-                $this->backKeyboard('catalog:aliases:' . $storeId)
+                $this->backKeyboard(CallbackActions::CATALOG_ALIASES_PREFIX . $storeId)
             );
             return;
         }
@@ -1069,7 +1070,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
             $this->render(
                 $context,
                 $this->trans('catalog.referenced'),
-                $this->backKeyboard('catalog:select:' . $type . ':' . $id)
+                $this->backKeyboard(CallbackActions::CATALOG_PREFIX . 'select:' . $type . ':' . $id)
             );
             return;
         } catch (CatalogEntryNotFoundException) {
@@ -1170,7 +1171,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
     {
         return (new InlineKeyboardBuilder())
             ->button($this->trans('common.back'), $callback)
-            ->button($this->trans('common.cancel'), 'catalog:cancel')
+            ->button($this->trans('common.cancel'), CallbackActions::CATALOG_CANCEL)
             ->toArray();
     }
 
@@ -1183,7 +1184,7 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
 
     private function listCallback(string $type): string
     {
-        return 'catalog:list:' . $type;
+        return CallbackActions::CATALOG_PREFIX . 'list:' . $type;
     }
 
     private function stateUuid(?UserInteractionState $state, string $key): ?Uuid

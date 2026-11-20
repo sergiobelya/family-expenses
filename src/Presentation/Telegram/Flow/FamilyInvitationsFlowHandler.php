@@ -13,6 +13,7 @@ use App\Family\Domain\Entity\Family;
 use App\Core\Domain\ValueObject\InvitationId;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
@@ -37,11 +38,13 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
-        if ($update->callbackData === 'family:invite:create' || $update->callbackData === 'family:invitations:list') {
+        if ($update->callbackData === CallbackActions::FAMILY_INVITE_CREATE || $update->callbackData === CallbackActions::FAMILY_INVITATIONS_LIST) {
             return true;
         }
 
-        if (str_starts_with($update->callbackData ?? '', 'family:invitation:')) {
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX)
+            || str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_INVITATION_VIEW_PREFIX)
+        ) {
             return true;
         }
 
@@ -57,7 +60,7 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
         $activeFamily = $context->activeFamily;
 
         // 1. Create Invitation
-        if ($update->callbackData === 'family:invite:create') {
+        if ($update->callbackData === CallbackActions::FAMILY_INVITE_CREATE) {
             $result = ($this->createInvitationHandler)(new CreateInvitationCommand(
                 familyId: $activeFamily->getId(),
                 userId: $context->user->getId(),
@@ -78,8 +81,8 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
             ]);
 
             $kb = (new InlineKeyboardBuilder())
-                ->button($this->translator->trans('family.members.invitations_btn'), 'family:invitations:list')
-                ->button($this->translator->trans('common.main_menu'), 'nav:main_menu')
+                ->button($this->translator->trans('family.members.invitations_btn'), CallbackActions::FAMILY_INVITATIONS_LIST)
+                ->button($this->translator->trans('common.main_menu'), CallbackActions::NAV_MAIN_MENU)
                 ->toArray();
 
             $this->telegramClient->sendMessage(
@@ -91,8 +94,8 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
         }
 
         // 2. Revoke Invitation
-        if (str_starts_with($update->callbackData ?? '', 'family:invitation:revoke:')) {
-            $invitationId = InvitationId::fromString(substr($update->callbackData, strlen('family:invitation:revoke:')));
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX)) {
+            $invitationId = InvitationId::fromString(substr($update->callbackData, strlen(CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX)));
 
             ($this->revokeInvitationHandler)(new RevokeInvitationCommand(
                 familyId: $activeFamily->getId(),
@@ -111,8 +114,8 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
         }
 
         // 3. View Invitation Details
-        if (str_starts_with($update->callbackData ?? '', 'family:invitation:view:')) {
-            $invitationId = InvitationId::fromString(substr($update->callbackData, strlen('family:invitation:view:')));
+        if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_INVITATION_VIEW_PREFIX)) {
+            $invitationId = InvitationId::fromString(substr($update->callbackData, strlen(CallbackActions::FAMILY_INVITATION_VIEW_PREFIX)));
             $invitation = $this->invitationRepository->findById($activeFamily->getId(), $invitationId);
 
             if ($invitation === null || !$invitation->getFamilyId()->equals($activeFamily->getId())) {
@@ -132,9 +135,9 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
 
             $builder = new InlineKeyboardBuilder();
             if ($invitation->isActive() && ($invitation->getMaxUses() === null || $usesCount < $invitation->getMaxUses())) {
-                $builder->button($this->translator->trans('family.invite.revoke_btn'), 'family:invitation:revoke:' . $invitation->getId()->toRfc4122())->row();
+                $builder->button($this->translator->trans('family.invite.revoke_btn'), CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX . $invitation->getId()->toRfc4122())->row();
             }
-            $builder->button($this->translator->trans('common.back'), 'family:invitations:list')->row();
+            $builder->button($this->translator->trans('common.back'), CallbackActions::FAMILY_INVITATIONS_LIST)->row();
 
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
@@ -145,7 +148,7 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
         }
 
         // 4. List Invitations
-        if ($update->callbackData === 'family:invitations:list') {
+        if ($update->callbackData === CallbackActions::FAMILY_INVITATIONS_LIST) {
             $this->renderList($context, $activeFamily);
         }
     }
@@ -158,10 +161,10 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
         ));
 
         $builder = new InlineKeyboardBuilder();
-        $builder->button($this->translator->trans('family.members.invite_btn'), 'family:invite:create')->row();
+        $builder->button($this->translator->trans('family.members.invite_btn'), CallbackActions::FAMILY_INVITE_CREATE)->row();
 
         if (empty($invitations)) {
-            $builder->button($this->translator->trans('common.back'), 'family:members')->row();
+            $builder->button($this->translator->trans('common.back'), CallbackActions::FAMILY_MEMBERS)->row();
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
                 text: $this->translator->trans('family.invite.empty_list'),
@@ -190,10 +193,10 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
                 '%{expires_at}' => $inv->getExpiresAt()->format('m-d H:i'),
             ]);
 
-            $builder->button(sprintf('#%s (%s)', $idShort, $status), 'family:invitation:view:' . $inv->getId()->toRfc4122())->row();
+            $builder->button(sprintf('#%s (%s)', $idShort, $status), CallbackActions::FAMILY_INVITATION_VIEW_PREFIX . $inv->getId()->toRfc4122())->row();
         }
 
-        $builder->button($this->translator->trans('common.back'), 'family:members')->row();
+        $builder->button($this->translator->trans('common.back'), CallbackActions::FAMILY_MEMBERS)->row();
 
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,

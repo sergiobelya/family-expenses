@@ -2,6 +2,7 @@
 
 namespace App\Presentation\Telegram\Flow;
 
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
@@ -26,7 +27,7 @@ class SettingsMenuRenderer
         ];
 
         $builder = new InlineKeyboardBuilder();
-        $builder->button($this->translator->trans('settings.change_lang_btn'), 'settings:lang:select')->row();
+        $builder->button($this->translator->trans('settings.change_lang_btn'), CallbackActions::SETTINGS_LANG_SELECT)->row();
 
         if ($context instanceof TelegramFamilyMemberContext) {
             $family = $context->activeFamily;
@@ -39,10 +40,10 @@ class SettingsMenuRenderer
                 '%{provider}' => $family->getDefaultExchangeRateProvider(),
             ]);
 
-            $builder->button($this->translator->trans('settings.family_settings_btn'), 'settings:family:view')->row();
+            $builder->button($this->translator->trans('settings.family_settings_btn'), CallbackActions::SETTINGS_FAMILY_VIEW)->row();
         }
 
-        $builder->button($this->translator->trans('common.main_menu'), 'nav:main_menu')->row();
+        $builder->button($this->translator->trans('common.main_menu'), CallbackActions::NAV_MAIN_MENU)->row();
 
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,
