@@ -39,6 +39,7 @@ use App\Presentation\Telegram\Flow\FamilySelectorFlowHandler;
 use App\Presentation\Telegram\Flow\JoinFamilyFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Flow\SettingsMenuRenderer;
+use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use App\Presentation\Telegram\Flow\SettingsFlowHandler;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
@@ -139,13 +140,15 @@ class TelegramFlowHandlersTest extends TestCase
         $translator = $this->createTranslator();
         $mainMenuKb = new MainMenuKeyboard($translator);
 
+        $exceptionMapper = new MapExceptionToTranslationKey();
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
             $createFamilyHandler,
             $mainMenuKb,
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
-            $translator
+            $translator,
+            $exceptionMapper
         );
 
         $user = new User(123456);
@@ -370,13 +373,15 @@ class TelegramFlowHandlersTest extends TestCase
         $stateRepo = $this->createMock(UserInteractionStateRepository::class);
         $translator = $this->createTranslator();
 
+        $exceptionMapper = new MapExceptionToTranslationKey();
         $handler = new FamilySettingsFlowHandler(
             $telegramClient,
             $updateFamilySettingsHandler,
             $stateRepo,
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
-            new SettingsMenuRenderer($telegramClient, $translator)
+            new SettingsMenuRenderer($telegramClient, $translator),
+            $exceptionMapper
         );
 
         $user = new User(123456);
@@ -407,13 +412,15 @@ class TelegramFlowHandlersTest extends TestCase
             });
 
         $translator = $this->createTranslator();
+        $exceptionMapper = new MapExceptionToTranslationKey();
         $handler = new FamilySettingsFlowHandler(
             $telegramClient,
             $this->createMock(UpdateFamilySettingsHandler::class),
             $this->createMock(UserInteractionStateRepository::class),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
-            new SettingsMenuRenderer($telegramClient, $translator)
+            new SettingsMenuRenderer($telegramClient, $translator),
+            $exceptionMapper
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
@@ -454,13 +461,15 @@ class TelegramFlowHandlersTest extends TestCase
         $updateFamilySettingsHandler->expects($this->never())->method('__invoke');
 
         $translator = $this->createTranslator();
+        $exceptionMapper = new MapExceptionToTranslationKey();
         $handler = new FamilySettingsFlowHandler(
             $telegramClient,
             $updateFamilySettingsHandler,
             $this->createMock(UserInteractionStateRepository::class),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
-            new SettingsMenuRenderer($telegramClient, $translator)
+            new SettingsMenuRenderer($telegramClient, $translator),
+            $exceptionMapper
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
@@ -494,13 +503,15 @@ class TelegramFlowHandlersTest extends TestCase
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
         $translator = $this->createTranslator();
+        $exceptionMapper = new MapExceptionToTranslationKey();
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
             $createFamilyHandler,
             new MainMenuKeyboard($translator),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
-            $translator
+            $translator,
+            $exceptionMapper
         );
 
         $context = new TelegramUserContext(new User(123456), 'en', 123456, 111);
@@ -638,13 +649,15 @@ class TelegramFlowHandlersTest extends TestCase
         $stateRepo->expects($this->exactly(2))->method('set');
 
         $translator = $this->createTranslator();
+        $exceptionMapper = new MapExceptionToTranslationKey();
         $handler = new FamilySettingsFlowHandler(
             $telegramClient,
             $this->createMock(UpdateFamilySettingsHandler::class),
             $stateRepo,
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
-            new SettingsMenuRenderer($telegramClient, $translator)
+            new SettingsMenuRenderer($telegramClient, $translator),
+            $exceptionMapper
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
@@ -690,13 +703,15 @@ class TelegramFlowHandlersTest extends TestCase
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
         $translator = $this->createTranslator();
+        $exceptionMapper = new MapExceptionToTranslationKey();
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
             $createFamilyHandler,
             new MainMenuKeyboard($translator),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
-            $translator
+            $translator,
+            $exceptionMapper
         );
 
         $context = new TelegramUserContext(new User(123456), 'en', 123456, 111);

@@ -2,7 +2,8 @@
 
 namespace App\Core\Domain\ValueObject;
 
-use InvalidArgumentException;
+use App\Core\Domain\Exception\ErrorType;
+use App\Core\Domain\Exception\InvalidValueException;
 
 final readonly class CurrencyCode
 {
@@ -17,7 +18,7 @@ final readonly class CurrencyCode
     {
         $normalized = strtoupper(trim($value));
         if (!in_array($normalized, self::SUPPORTED, true)) {
-            throw new InvalidArgumentException('Unsupported currency code: ' . $normalized . '.');
+            throw new InvalidValueException(ErrorType::CURRENCY_CODE_UNSUPPORTED);
         }
 
         $this->value = $normalized;

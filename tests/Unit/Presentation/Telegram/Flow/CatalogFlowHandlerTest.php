@@ -22,6 +22,7 @@ use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
+use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use App\Presentation\Telegram\Flow\CatalogFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
@@ -63,7 +64,8 @@ final class CatalogFlowHandlerTest extends TestCase
             new InMemoryCatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
-            $translator
+            $translator,
+            new MapExceptionToTranslationKey()
         );
         $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
@@ -130,7 +132,8 @@ final class CatalogFlowHandlerTest extends TestCase
             new InMemoryCatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
-            $translator
+            $translator,
+            new MapExceptionToTranslationKey()
         );
         $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([
@@ -193,7 +196,8 @@ final class CatalogFlowHandlerTest extends TestCase
             new InMemoryCatalogSearch($repository),
             new InlineOptionSelector(),
             $this->createMock(MessageBusInterface::class),
-            $translator
+            $translator,
+            new MapExceptionToTranslationKey()
         );
         $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([

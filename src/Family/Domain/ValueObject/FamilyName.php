@@ -2,7 +2,8 @@
 
 namespace App\Family\Domain\ValueObject;
 
-use InvalidArgumentException;
+use App\Core\Domain\Exception\ErrorType;
+use App\Core\Domain\Exception\InvalidValueException;
 use Stringable;
 
 final readonly class FamilyName implements Stringable
@@ -14,8 +15,11 @@ final readonly class FamilyName implements Stringable
     public static function fromString(string $value): self
     {
         $normalized = trim($value);
-        if ($normalized === '' || mb_strlen($normalized) > 100) {
-            throw new InvalidArgumentException('Family name must not be empty and must be at most 100 characters.');
+        if (mb_strlen($normalized) < 2) {
+            throw new InvalidValueException(ErrorType::FAMILY_NAME_TOO_SHORT);
+        }
+        if (mb_strlen($normalized) > 100) {
+            throw new InvalidValueException(ErrorType::FAMILY_NAME_TOO_LONG);
         }
 
         return new self($normalized);

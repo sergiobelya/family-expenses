@@ -6,6 +6,7 @@ use App\Catalog\Application\Query\CatalogSearchInterface;
 use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\ValueObject\CatalogName;
+use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Domain\ValueObject\FamilyId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\ResultSetMapping;
@@ -130,7 +131,7 @@ final class PgTrgmCatalogSearch implements CatalogSearchInterface
     {
         try {
             return CatalogName::fromString($query)->getDedupeKey();
-        } catch (InvalidArgumentException) {
+        } catch (InvalidValueException) {
             return null;
         }
     }

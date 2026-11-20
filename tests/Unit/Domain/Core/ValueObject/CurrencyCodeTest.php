@@ -3,7 +3,7 @@
 namespace App\Tests\Unit\Domain\Core\ValueObject;
 
 use App\Core\Domain\ValueObject\CurrencyCode;
-use InvalidArgumentException;
+use App\Core\Domain\Exception\InvalidValueException;
 use PHPUnit\Framework\TestCase;
 
 class CurrencyCodeTest extends TestCase
@@ -23,13 +23,13 @@ class CurrencyCodeTest extends TestCase
 
     public function testInvalidCurrencyCodeThrowsException(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidValueException::class);
         new CurrencyCode('INVALID');
     }
 
     public function testEmptyCurrencyCodeThrowsException(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidValueException::class);
         new CurrencyCode('');
     }
 }

@@ -2,11 +2,14 @@
 
 namespace App\Presentation\Telegram\Flow;
 
+use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
 use App\Family\Application\Command\UpdateFamilySettingsHandler;
+use App\Family\Domain\ValueObject\FamilyName;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
@@ -25,7 +28,8 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
         private UserInteractionStateRepository $stateRepository,
         private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator,
-        private SettingsMenuRenderer $settingsMenuRenderer
+        private SettingsMenuRenderer $settingsMenuRenderer,
+        private MapExceptionToTranslationKey $exceptionToTranslation
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
@@ -124,18 +128,27 @@ class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
             $newName = trim($update->text);
             $this->stateRepository->clear($userId);
 
-            if (mb_strlen($newName) >= 2) {
-                ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
-                    familyId: $context->activeFamily->getId(),
-                    userId: $context->user->getId(),
-                    name: $newName
-                ));
-
+            try {
+                $familyName = FamilyName::fromString($newName);
+            } catch (InvalidValueException $e) {
                 $this->telegramClient->sendMessage(
                     chatId: $context->chatId,
-                    text: $this->translator->trans('settings.saved')
+                    text: $this->translator->trans(($this->exceptionToTranslation)($e))
                 );
+                $this->renderFamilySettings($context);
+                return;
             }
+
+            ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
+                familyId: $context->activeFamily->getId(),
+                userId: $context->user->getId(),
+                name: (string) $familyName
+            ));
+
+            $this->telegramClient->sendMessage(
+                chatId: $context->chatId,
+                text: $this->translator->trans('settings.saved')
+            );
 
             $this->renderFamilySettings($context);
             return;

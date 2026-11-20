@@ -2,8 +2,9 @@
 
 namespace App\Core\Domain\ValueObject;
 
+use App\Core\Domain\Exception\ErrorType;
+use App\Core\Domain\Exception\InvalidValueException;
 use DateTimeZone;
-use InvalidArgumentException;
 
 final readonly class Timezone
 {
@@ -13,7 +14,7 @@ final readonly class Timezone
     {
         $normalized = trim($value);
         if ($normalized === '' || !in_array($normalized, DateTimeZone::listIdentifiers(), true)) {
-            throw new InvalidArgumentException('Timezone must be a valid IANA identifier.');
+            throw new InvalidValueException(ErrorType::TIMEZONE_INVALID);
         }
 
         $this->value = $normalized;

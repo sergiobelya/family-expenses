@@ -5,7 +5,7 @@ namespace App\Tests\Unit\Domain\Family\Entity;
 use App\Family\Domain\Entity\Family;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
-use InvalidArgumentException;
+use App\Core\Domain\Exception\InvalidValueException;
 use PHPUnit\Framework\TestCase;
 
 class FamilyTest extends TestCase
@@ -28,7 +28,8 @@ class FamilyTest extends TestCase
 
     public function testEmptyNameThrowsException(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: family_name_too_short');
         Family::create(
             name: '   ',
             timezone: new Timezone('Europe/Warsaw'),

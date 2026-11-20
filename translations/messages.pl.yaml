@@ -97,6 +97,8 @@ settings:
     prompt_select_provider: "Wybierz dostawcę kursów:"
     unsupported_provider: "Ten dostawca kursów walut nie jest obsługiwany. Wybierz jednego z dostępnych dostawców."
     saved: "Ustawienia zostały zapisane."
+    name_too_short: "Nazwa rodziny musi mieć co najmniej 2 znaki."
+    name_too_long: "Nazwa rodziny nie może przekraczać 100 znaków."
 
 catalog:
     stores_title: "🏪 Sklepy"

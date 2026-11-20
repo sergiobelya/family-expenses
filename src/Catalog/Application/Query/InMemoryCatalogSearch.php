@@ -7,7 +7,7 @@ use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Catalog\Domain\ValueObject\CatalogName;
 use App\Core\Domain\ValueObject\FamilyId;
-use InvalidArgumentException;
+use App\Core\Domain\Exception\InvalidValueException;
 
 /**
  * @deprecated Use PgTrgmCatalogSearch instead, which uses PostgreSQL's pg_trgm extension for better performance.
@@ -26,7 +26,7 @@ final class InMemoryCatalogSearch implements CatalogSearchInterface
     {
         try {
             $queryKey = CatalogName::fromString($query)->getDedupeKey();
-        } catch (InvalidArgumentException) {
+        } catch (InvalidValueException) {
             return [];
         }
 
@@ -66,7 +66,7 @@ final class InMemoryCatalogSearch implements CatalogSearchInterface
     {
         try {
             $queryKey = CatalogName::fromString($query)->getDedupeKey();
-        } catch (InvalidArgumentException) {
+        } catch (InvalidValueException) {
             return [];
         }
 

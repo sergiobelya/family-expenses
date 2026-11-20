@@ -2,11 +2,14 @@
 
 namespace App\Presentation\Telegram\Flow;
 
+use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\CreateFamilyCommand;
 use App\Family\Application\Command\CreateFamilyHandler;
+use App\Family\Domain\ValueObject\FamilyName;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
@@ -26,7 +29,8 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
         private CreateFamilyHandler $createFamilyHandler,
         private MainMenuKeyboard $mainMenuKeyboard,
         private TimezoneSelector $timezoneSelector,
-        private TranslatorInterface $translator
+        private TranslatorInterface $translator,
+        private MapExceptionToTranslationKey $exceptionToTranslation
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
@@ -93,15 +97,16 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
 
         if ($step === 'name' && $update->text !== null) {
             $name = trim($update->text);
-            if (mb_strlen($name) < 2) {
+            try {
+                $familyName = FamilyName::fromString($name);
+            } catch (InvalidValueException $e) {
                 $this->telegramClient->sendMessage(
                     chatId: $context->chatId,
-                    text: $this->translator->trans('family.create.step_name')
+                    text: $this->translator->trans(($this->exceptionToTranslation)($e))
                 );
                 return;
             }
-
-            $data['name'] = $name;
+            $data['name'] = (string) $familyName;
             $this->renderTimezoneSelector($context, $data);
             return;
         }
@@ -268,26 +273,34 @@ class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
         }
 
         if ($step === 'confirm' && $update->callbackData === 'family:create:submit') {
-            $family = ($this->createFamilyHandler)(new CreateFamilyCommand(
-                userId: $context->user->getId(),
-                name: (string) $data['name'],
-                timezone: (string) $data['timezone'],
-                defaultExpenseCurrency: (string) $data['default_currency'],
-                reportingCurrency: (string) $data['reporting_currency'],
-                defaultExchangeRateProvider: (string) ($data['provider'] ?? 'nbp')
-            ));
+            try {
+                $family = ($this->createFamilyHandler)(new CreateFamilyCommand(
+                    userId: $context->user->getId(),
+                    name: (string) $data['name'],
+                    timezone: (string) $data['timezone'],
+                    defaultExpenseCurrency: (string) $data['default_currency'],
+                    reportingCurrency: (string) $data['reporting_currency'],
+                    defaultExchangeRateProvider: (string) ($data['provider'] ?? 'nbp')
+                ));
 
-            $this->stateRepository->clear($userId);
+                $this->stateRepository->clear($userId);
 
-            $successMsg = $this->translator->trans('family.create.created_success', [
-                '%{name}' => htmlspecialchars($family->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            ]);
+                $successMsg = $this->translator->trans('family.create.created_success', [
+                    '%{name}' => htmlspecialchars($family->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                ]);
 
-            $this->telegramClient->sendMessage(
-                chatId: $context->chatId,
-                text: $successMsg,
-                replyMarkup: $this->mainMenuKeyboard->build(false)
-            );
+                $this->telegramClient->sendMessage(
+                    chatId: $context->chatId,
+                    text: $successMsg,
+                    replyMarkup: $this->mainMenuKeyboard->build(false)
+                );
+            } catch (InvalidValueException $e) {
+                $this->stateRepository->set(new UserInteractionState($userId, self::FLOW_NAME, 'name', $data));
+                $this->telegramClient->sendMessage(
+                    chatId: $context->chatId,
+                    text: $this->translator->trans(($this->exceptionToTranslation)($e))
+                );
+            }
         }
     }
 

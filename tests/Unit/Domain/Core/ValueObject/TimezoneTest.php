@@ -3,7 +3,7 @@
 namespace App\Tests\Unit\Domain\Core\ValueObject;
 
 use App\Core\Domain\ValueObject\Timezone;
-use InvalidArgumentException;
+use App\Core\Domain\Exception\InvalidValueException;
 use PHPUnit\Framework\TestCase;
 
 class TimezoneTest extends TestCase
@@ -20,7 +20,7 @@ class TimezoneTest extends TestCase
 
     public function testInvalidTimezoneThrowsException(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidValueException::class);
         new Timezone('Invalid/Timezone');
     }
 

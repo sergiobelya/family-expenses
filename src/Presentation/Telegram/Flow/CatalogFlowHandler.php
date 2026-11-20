@@ -19,6 +19,7 @@ use App\Catalog\Domain\Entity\Store;
 use App\Catalog\Domain\Exception\CatalogEntryNotFoundException;
 use App\Catalog\Domain\Exception\CatalogEntryReferencedException;
 use App\Catalog\Domain\Exception\CatalogNameConflictException;
+use App\Core\Domain\Exception\InvalidValueException;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Catalog\Domain\ValueObject\CatalogName;
 use App\Core\Domain\ValueObject\CategoryId;
@@ -33,7 +34,7 @@ use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
-use InvalidArgumentException;
+use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use RuntimeException;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -53,7 +54,8 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         private CatalogSearchInterface $search,
         private InlineOptionSelector $optionSelector,
         private MessageBusInterface $commandBus,
-        private TranslatorInterface $translator
+        private TranslatorInterface $translator,
+        private MapExceptionToTranslationKey $exceptionToTranslation
     ) {
     }
 
@@ -812,10 +814,10 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
         $type = (string) ($data['type'] ?? 'store');
         try {
             $name = CatalogName::fromString($value);
-        } catch (InvalidArgumentException) {
+        } catch (InvalidValueException $e) {
             $this->render(
                 $context,
-                'catalog.invalid_name',
+                ($this->exceptionToTranslation)($e),
                 $this->backKeyboard($this->listCallback($type))
             );
             return;
@@ -988,8 +990,8 @@ final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
     {
         try {
             $name = CatalogName::fromString($value);
-        } catch (InvalidArgumentException) {
-            $this->render($context, 'catalog.invalid_name', $this->backKeyboard('catalog:aliases:' . ($data['store_id'] ?? '')));
+        } catch (InvalidValueException $e) {
+            $this->render($context, ($this->exceptionToTranslation)($e), $this->backKeyboard('catalog:aliases:' . ($data['store_id'] ?? '')));
             return;
         }
         $familyId = $context->activeFamily->getId();

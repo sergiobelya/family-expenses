@@ -2,7 +2,8 @@
 
 namespace App\Catalog\Domain\ValueObject;
 
-use InvalidArgumentException;
+use App\Core\Domain\Exception\ErrorType;
+use App\Core\Domain\Exception\InvalidValueException;
 use Normalizer;
 
 readonly class CatalogName
@@ -31,17 +32,17 @@ readonly class CatalogName
     {
         $displayName = preg_replace('/^\s+|\s+$/u', '', $value);
         if (!is_string($displayName)) {
-            throw new InvalidArgumentException('Catalog name must be valid UTF-8.');
+            throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
         if ($displayName === '' || mb_strlen($displayName) > 100) {
-            throw new InvalidArgumentException('Catalog name must contain 1 to 100 characters.');
+            throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
         $apostrophes = ["'", '’', 'ʼ', '`', '´', '‘', 'ʹ'];
         $name = str_replace([...$apostrophes, '™', '℠'], '', $displayName);
         $name = Normalizer::normalize($name, Normalizer::FORM_KC);
         if (!is_string($name)) {
-            throw new InvalidArgumentException('Catalog name cannot be normalized.');
+            throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
         $name = mb_strtolower(str_replace($apostrophes, '', $name), 'UTF-8');
@@ -55,12 +56,12 @@ readonly class CatalogName
         ]);
         $name = Normalizer::normalize($name, Normalizer::FORM_D);
         if (!is_string($name)) {
-            throw new InvalidArgumentException('Catalog name cannot be normalized.');
+            throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
         $chars = preg_split('//u', $name, -1, PREG_SPLIT_NO_EMPTY);
         if ($chars === false) {
-            throw new InvalidArgumentException('Catalog name must be valid UTF-8.');
+            throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
         $normalized = '';
@@ -103,12 +104,12 @@ readonly class CatalogName
 
         $normalized = Normalizer::normalize($normalized, Normalizer::FORM_C);
         if (!is_string($normalized)) {
-            throw new InvalidArgumentException('Catalog name cannot be normalized.');
+            throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
         $key = preg_replace('/\s+/u', ' ', trim($normalized));
         if (!is_string($key) || preg_match('/[\p{L}\p{N}]/u', $key) !== 1) {
-            throw new InvalidArgumentException('Catalog name must contain at least one letter or digit.');
+            throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
         return new static($displayName, $key);
@@ -118,7 +119,7 @@ readonly class CatalogName
     {
         $chars = preg_split('//u', $value, -1, PREG_SPLIT_NO_EMPTY);
         if ($chars === false) {
-            throw new InvalidArgumentException('Catalog name must be valid UTF-8.');
+            throw new InvalidValueException(ErrorType::CATALOG_NAME_INVALID);
         }
 
         $map = [

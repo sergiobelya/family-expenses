@@ -3,7 +3,7 @@
 namespace App\Tests\Unit\Core\Domain\ValueObject;
 
 use App\Core\Domain\ValueObject\CountryCode;
-use InvalidArgumentException;
+use App\Core\Domain\Exception\InvalidValueException;
 use PHPUnit\Framework\TestCase;
 
 final class CountryCodeTest extends TestCase
@@ -15,7 +15,7 @@ final class CountryCodeTest extends TestCase
 
     public function testRejectsInvalidCountryCode(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidValueException::class);
         CountryCode::fromString('POL');
     }
 }

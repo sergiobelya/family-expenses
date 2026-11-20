@@ -2,7 +2,8 @@
 
 namespace App\Core\Domain\ValueObject;
 
-use InvalidArgumentException;
+use App\Core\Domain\Exception\ErrorType;
+use App\Core\Domain\Exception\InvalidValueException;
 use Stringable;
 
 final readonly class CountryCode implements Stringable
@@ -15,7 +16,7 @@ final readonly class CountryCode implements Stringable
     {
         $normalized = strtoupper(trim($value));
         if (preg_match('/^[A-Z]{2}$/', $normalized) !== 1) {
-            throw new InvalidArgumentException('Country code must be a two-letter ISO code.');
+            throw new InvalidValueException(ErrorType::COUNTRY_CODE_INVALID);
         }
 
         return new self($normalized);

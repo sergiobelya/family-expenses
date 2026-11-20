@@ -5,7 +5,7 @@ namespace App\Tests\Unit\Catalog\Domain\ValueObject;
 use App\Catalog\Domain\ValueObject\CatalogName;
 use App\Catalog\Domain\ValueObject\CategoryName;
 use App\Catalog\Domain\ValueObject\StoreName;
-use InvalidArgumentException;
+use App\Core\Domain\Exception\InvalidValueException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -81,19 +81,19 @@ final class CatalogNameTest extends TestCase
 
     public function testRejectsNamesWithoutLettersOrDigits(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidValueException::class);
         CatalogName::fromString('🍎 !!!');
     }
 
     public function testRejectsPunctuationOnlyName(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidValueException::class);
         CatalogName::fromString('!!!');
     }
 
     public function testRejectsNamesLongerThanOneHundredCharacters(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidValueException::class);
         CatalogName::fromString(str_repeat('a', 101));
     }
 }

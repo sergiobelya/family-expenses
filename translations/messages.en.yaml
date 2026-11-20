@@ -97,6 +97,8 @@ settings:
     prompt_select_provider: "Select default rate provider:"
     unsupported_provider: "That exchange-rate provider is not supported. Please choose one of the listed providers."
     saved: "Settings updated successfully."
+    name_too_short: "Family name must be at least 2 characters."
+    name_too_long: "Family name must not exceed 100 characters."
 
 catalog:
     stores_title: "🏪 Stores"
