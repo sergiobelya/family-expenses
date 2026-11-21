@@ -88,9 +88,7 @@ Before saving, move the draft to `Saving` and persist its idempotency key and im
 
 Keep family-scoped uniqueness in PostgreSQL using the canonical `dedupe_key` and unique constraints described in Business Requirements §6.3. Search matching may be broader than hard-key uniqueness, but fuzzy/transliterated results are suggestions only. Re-fetch selected candidates from the database, scoped to the current family. Keep the search engine behind a port; evaluate PostgreSQL `pg_trgm` against the required transliteration and edit-distance behavior before choosing an index or external service. Database constraints remain authoritative when search is unavailable.
 
-Serialize family-scoped Catalog mutations by locking the owning family row inside the command transaction. PostgreSQL releases this lock when that transaction commits or rolls back; do not rely on the lock after the command handler returns. The current model persists `StoreAlias` as a separate entity. Prefer treating it as a child entity of `Store` in the domain model, while preserving family-wide alias/name uniqueness as a transaction/database invariant across stores; reconcile this ownership change with persistence and event handling before implementing it.
-
-Use specific domain-event types for auditable entity changes rather than relying on a generic event plus an action string to identify the event. Audit snapshots remain written transactionally and are independent of asynchronous outbox delivery.
+Serialize family-scoped Catalog mutations by locking the owning family row inside the command transaction with `FOR NO KEY UPDATE`. PostgreSQL releases this lock when that transaction commits or rolls back; do not rely on the lock after the command handler returns. `StoreAlias` is a child entity of `Store` in the domain model, persisted with a `one-to-many` mapping, `cascade-persist`, and `orphan-removal`. Family-wide alias/name uniqueness remains enforced by database unique constraints. Domain events `StoreAliasCreated`, `StoreAliasRenamed`, and `StoreAliasDeleted` are registered through the `Store` aggregate root.
 
 ### Temporary state
 
@@ -98,17 +96,19 @@ Use Redis or a compatible managed key-value store as temporary storage, not as a
 
 Use it for short-lived Telegram conversation state and Active/Paused expense drafts. Expense draft keys are scoped to `(user_id, family_id)` and their TTL follows Business Requirements §6.2.1. The storage choice satisfies the draft restart requirement in [Add Expense UI §8.2](specs/add_expense.md#82-draft-guarantees). `Saving` and `SaveUnknown` recovery is durable in PostgreSQL as described above.
 
-Treat `Family` as the aggregate for its settings. Treat each membership and invitation as separate aggregate roots; do not load all members or invitations into a Family aggregate. The aggregate defines the domain consistency boundary; a database transaction may also write technical outbox records without making them part of the aggregate. Use cross-aggregate transactions only where MVP behavior requires atomicity: family creation with its creator membership, and invitation use with membership creation. For invitation use, atomically check the limit and insert `InvitationUse`; lock or otherwise serialize concurrent use of that invitation.
-
-Use database constraints for unique Telegram IDs, memberships, invitation token hashes, and invitation uses. Store only a hash of the secret invitation token. Generate a cryptographically random token that fits the Telegram `start` parameter limit in NFR §3.
+Treat `Family` as the aggregate for its settings. Treat each membership and invitation as separate aggregate roots; do not load all members or invitations into a Family aggregate. The aggregate defines the domain consistency boundary; a database transaction may also write technical outbox records without making them part of the aggregate. Use cross-aggregate transactions only where MVP behavior requires atomicity: family creation with its creator membership, and invitation use with membership creation.
 
 ## 4. Application boundaries
 
 Organize application use cases by bounded context. Each state-changing use case has a Command handler; reads have Query handlers. Keep validation and authorization in application/domain services, not Telegram handlers.
 
+Domain value objects validate their invariants in factory methods (e.g., `FamilyName::fromString()`, `CatalogName::fromString()`). When validation fails, throw a typed domain exception (e.g., `InvalidValueException`) with an `ErrorType` enum that identifies the error. The presentation layer maps the exception to a translation key via a centralized mapper (`MapExceptionToTranslationKey`), keeping the domain layer independent of presentation concerns.
+
 Phase 1 commands include creating a family, changing family settings, creating/revoking invitations, and joining a family. Queries include listing the user's families, viewing members/invitations, and reading settings.
 
-Phase 2 commands include creating, editing, and soft-deleting expenses; creating and managing family stores/categories; and updating store aliases or default categories. Queries include family-scoped catalog selection/search and paginated history/detail reads. Keep field validation and authorization in application/domain services, not Telegram handlers. The UI routes and fields remain defined in the linked UI specifications.
+Phase 2 commands include creating, editing, and soft-deleting expenses; creating and managing family stores/categories; and updating store aliases or default categories. Queries include family-scoped catalog selection/search and paginated history/detail reads. The UI routes and fields remain defined in the linked UI specifications.
+
+Large Telegram flow handlers are decomposed into step classes. Each step is a `final readonly` class focused on one wizard phase or settings screen. The handler acts as an orchestrator, delegating to step classes via dependency injection. Shared utilities (e.g., `CatalogFlowUtils`, `ListInvitationScreen`) are extracted as separate DI-injected classes. This follows the SOLID principle of single responsibility and open/closed design.
 
 For every request, resolve the Telegram user, active family, and relevant entity, then revalidate membership and authorization. A queued command must repeat authorization checks when the worker executes it; captured family context alone is not authority.
 
