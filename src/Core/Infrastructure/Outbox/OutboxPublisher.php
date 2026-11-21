@@ -11,7 +11,7 @@ use Psr\Log\NullLogger;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Throwable;
 
-class OutboxPublisher implements OutboxPublisherInterface
+final class OutboxPublisher implements OutboxPublisherInterface
 {
     private const int MAX_ATTEMPTS = 10;
     private const int INITIAL_RETRY_DELAY_SECONDS = 7;

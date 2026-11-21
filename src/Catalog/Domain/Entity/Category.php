@@ -13,7 +13,7 @@ use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
 
-class Category extends AggregateRoot
+final class Category extends AggregateRoot
 {
     private CategoryId $id;
     private CategoryName $name;

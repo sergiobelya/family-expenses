@@ -7,7 +7,7 @@ use App\Identity\Domain\Repository\UserRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-class EnsureUserExistsHandler
+readonly class EnsureUserExistsHandler
 {
     public function __construct(private UserRepositoryInterface $userRepository)
     {

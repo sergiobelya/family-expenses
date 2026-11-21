@@ -4,7 +4,7 @@ namespace App\Presentation\Telegram\Keyboard;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class MainMenuKeyboard
+readonly class MainMenuKeyboard
 {
     public function __construct(
         private TranslatorInterface $translator

@@ -13,7 +13,7 @@ use App\Core\Domain\ValueObject\Timezone;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-class UpdateFamilySettingsHandler
+readonly class UpdateFamilySettingsHandler
 {
     public function __construct(
         private FamilyRepositoryInterface $familyRepository,

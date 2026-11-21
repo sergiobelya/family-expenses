@@ -8,7 +8,7 @@ namespace App\Presentation\Telegram;
  * Grouped by prefix for clarity. Use constants instead of hardcoded strings
  * for single-source-of-truth, IDE autocomplete, and easier search/replacement.
  */
-final class CallbackActions
+final readonly class CallbackActions
 {
     // ── Navigation ────────────────────────────────────────────────────────────
 

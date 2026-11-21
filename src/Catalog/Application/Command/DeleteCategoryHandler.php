@@ -9,7 +9,7 @@ use App\Catalog\Domain\Repository\CategoryCatalogRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-final class DeleteCategoryHandler
+final readonly class DeleteCategoryHandler
 {
     public function __construct(
         private CategoryCatalogRepositoryInterface $catalog,

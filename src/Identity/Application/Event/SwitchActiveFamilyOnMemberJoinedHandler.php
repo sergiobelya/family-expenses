@@ -7,7 +7,7 @@ use App\Identity\Domain\Repository\UserRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'event.bus')]
-class SwitchActiveFamilyOnMemberJoinedHandler
+final readonly class SwitchActiveFamilyOnMemberJoinedHandler
 {
     public function __construct(
         private UserRepositoryInterface $userRepository

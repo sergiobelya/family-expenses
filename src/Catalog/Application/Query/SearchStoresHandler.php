@@ -7,7 +7,7 @@ use App\Catalog\Domain\Entity\Store;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
-final class SearchStoresHandler
+final readonly class SearchStoresHandler
 {
     public function __construct(
         private CatalogAccess $access,

@@ -19,7 +19,7 @@ use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\TimezoneSelector;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
+final readonly class FamilyCreationWizardHandler implements UserContextFlowHandlerInterface
 {
     private const string FLOW_NAME = 'family_create';
 

@@ -9,7 +9,7 @@ use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
-class GetFamilyInvitationsHandler
+readonly class GetFamilyInvitationsHandler
 {
     public function __construct(
         private FamilyMemberRepositoryInterface $familyMemberRepository,

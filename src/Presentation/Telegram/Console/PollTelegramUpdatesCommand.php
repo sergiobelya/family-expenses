@@ -17,7 +17,7 @@ use Throwable;
     name: 'app:telegram:poll',
     description: 'Receive and process Telegram updates using long polling'
 )]
-class PollTelegramUpdatesCommand extends Command
+final class PollTelegramUpdatesCommand extends Command
 {
     private const int LONG_POLL_TIMEOUT = 30;
 

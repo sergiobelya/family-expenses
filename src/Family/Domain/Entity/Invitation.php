@@ -12,7 +12,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 
-class Invitation extends AggregateRoot
+final class Invitation extends AggregateRoot
 {
     public const int DEFAULT_EXPIRATION_HOURS = 48;
 

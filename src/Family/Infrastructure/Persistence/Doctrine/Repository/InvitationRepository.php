@@ -9,7 +9,7 @@ use App\Core\Domain\ValueObject\InvitationId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-class InvitationRepository implements InvitationRepositoryInterface
+final readonly class InvitationRepository implements InvitationRepositoryInterface
 {
     /** @var EntityRepository<Invitation> */
     private EntityRepository $repository;

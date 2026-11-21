@@ -12,6 +12,7 @@ Code is organized by Bounded Contexts in `src/`:
 ### Design Principles
 - The application follows Clean Architecture, DDD (Domain-Driven Design), and logical CQRS. See [docs/nfr_requirements.md](../docs/nfr_requirements.md) for architectural details.
 - Application code follows SOLID principles. Favor composition over inheritance. Prefer open/closed design — extend behavior through interfaces and strategies rather than conditional logic. Keep methods focused so they fit on screen; decompose large classes into smaller, single-responsibility components.
+- Most classes should be `final readonly` to prevent unintended inheritance and mutation. Exceptions: domain entities (Doctrine needs reflection for hydration), abstract base classes, and classes that must be mocked in tests without stub implementations. If a class has a non-readonly dependency (e.g., a mutable service), the class itself may not be `readonly`, but most properties should still be marked `readonly`.
 
 ### Layer Responsibilities within a Context
 - **`Domain/`**: Pure domain logic and POPO entities. No framework or ORM dependencies.

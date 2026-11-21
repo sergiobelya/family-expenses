@@ -9,7 +9,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Symfony\Component\Uid\Uuid;
 
-class AuditLog
+final class AuditLog
 {
     private AuditLogId $id;
     private ?FamilyId $familyId;

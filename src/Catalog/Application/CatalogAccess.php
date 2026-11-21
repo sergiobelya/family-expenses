@@ -7,7 +7,7 @@ use App\Family\Domain\Exception\NotFamilyMemberException;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\UserId;
 
-final class CatalogAccess
+final readonly class CatalogAccess
 {
     public function __construct(
         private FamilyMembershipInterface $familyMembership,

@@ -10,7 +10,7 @@ use App\Core\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-class FamilyMemberRepository implements FamilyMemberRepositoryInterface
+final readonly class FamilyMemberRepository implements FamilyMemberRepositoryInterface
 {
     /** @var EntityRepository<FamilyMember> */
     private EntityRepository $repository;

@@ -5,7 +5,7 @@ namespace App\Presentation\Telegram;
 use App\Core\Domain\Exception\ErrorType;
 use App\Core\Domain\Exception\InvalidValueException;
 
-final class MapExceptionToTranslationKey
+final readonly class MapExceptionToTranslationKey
 {
     public function __invoke(InvalidValueException $exception): string
     {

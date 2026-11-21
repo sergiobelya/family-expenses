@@ -13,7 +13,7 @@ use DateTimeImmutable;
  * It is not an aggregate root — lifecycle methods are invoked by the Store root.
  * @see Store
  */
-class StoreAlias
+final class StoreAlias
 {
     private StoreAliasId $id;
     private StoreName $alias;

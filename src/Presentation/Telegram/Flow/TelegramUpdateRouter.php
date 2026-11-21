@@ -11,7 +11,7 @@ use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use LogicException;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
-class TelegramUpdateRouter
+readonly class TelegramUpdateRouter
 {
     /**
      * @param iterable<FlowHandlerInterface> $handlers

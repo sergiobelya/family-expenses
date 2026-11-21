@@ -2,7 +2,7 @@
 
 namespace App\Family\Infrastructure\Security;
 
-class InvitationTokenGenerator
+final readonly class InvitationTokenGenerator
 {
     public function generateToken(): string
     {

@@ -8,7 +8,7 @@ use App\Core\Domain\ValueObject\FamilyId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-class FamilyRepository implements FamilyRepositoryInterface
+final readonly class FamilyRepository implements FamilyRepositoryInterface
 {
     /** @var EntityRepository<Family> */
     private EntityRepository $repository;

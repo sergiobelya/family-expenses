@@ -9,7 +9,7 @@ use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-class RevokeInvitationHandler
+readonly class RevokeInvitationHandler
 {
     public function __construct(
         private FamilyMemberRepositoryInterface $familyMemberRepository,

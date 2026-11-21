@@ -8,7 +8,7 @@ use App\Catalog\Domain\Repository\StoreCatalogRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-final class RemoveStoreAliasHandler
+final readonly class RemoveStoreAliasHandler
 {
     public function __construct(
         private StoreCatalogRepositoryInterface $catalog,

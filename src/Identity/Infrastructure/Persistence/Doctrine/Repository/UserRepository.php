@@ -8,7 +8,7 @@ use App\Core\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-class UserRepository implements UserRepositoryInterface
+final readonly class UserRepository implements UserRepositoryInterface
 {
     /** @var EntityRepository<User> */
     private EntityRepository $repository;

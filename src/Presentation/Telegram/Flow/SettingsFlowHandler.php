@@ -18,7 +18,7 @@ use App\Presentation\Telegram\Keyboard\SupportedLanguages;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class SettingsFlowHandler implements UserContextFlowHandlerInterface
+final readonly class SettingsFlowHandler implements UserContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,

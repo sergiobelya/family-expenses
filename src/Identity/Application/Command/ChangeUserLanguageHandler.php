@@ -8,7 +8,7 @@ use App\Identity\Domain\Repository\UserRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-class ChangeUserLanguageHandler
+readonly class ChangeUserLanguageHandler
 {
     public function __construct(private UserRepositoryInterface $userRepository)
     {

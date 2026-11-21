@@ -21,7 +21,7 @@ use App\Presentation\Telegram\Keyboard\TimezoneSelector;
 use Closure;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
+final readonly class FamilySettingsFlowHandler implements FamilyContextFlowHandlerInterface
 {
     private const string FLOW_NAME = 'settings_family_edit';
 

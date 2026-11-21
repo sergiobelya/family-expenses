@@ -4,7 +4,7 @@ namespace App\Presentation\Telegram\Keyboard;
 
 use DateTimeZone;
 
-final class TimezoneOptions
+final readonly class TimezoneOptions
 {
     private const array COMMON_TIMEZONES = [
         'UTC',

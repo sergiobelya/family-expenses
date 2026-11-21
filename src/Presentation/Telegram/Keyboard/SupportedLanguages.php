@@ -6,7 +6,7 @@ namespace App\Presentation\Telegram\Keyboard;
 
 use App\Identity\Domain\Enum\UserLanguage;
 
-final class SupportedLanguages
+final readonly class SupportedLanguages
 {
     public const string DEFAULT = UserLanguage::ENGLISH->value;
 

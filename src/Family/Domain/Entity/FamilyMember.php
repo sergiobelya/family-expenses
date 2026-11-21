@@ -12,7 +12,7 @@ use App\Core\Domain\Aggregate\AggregateRoot;
 use DateTimeImmutable;
 use DateTimeZone;
 
-class FamilyMember extends AggregateRoot
+final class FamilyMember extends AggregateRoot
 {
     private FamilyMemberId $id;
     private FamilyId $familyId;

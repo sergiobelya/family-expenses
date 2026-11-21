@@ -10,7 +10,7 @@ use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
-class GetFamilySettingsHandler
+final readonly class GetFamilySettingsHandler
 {
     public function __construct(
         private FamilyRepositoryInterface $familyRepository,

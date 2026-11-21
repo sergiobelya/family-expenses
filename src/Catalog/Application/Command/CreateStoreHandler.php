@@ -11,7 +11,7 @@ use App\Core\Domain\ValueObject\FamilyId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-final class CreateStoreHandler
+final readonly class CreateStoreHandler
 {
     public function __construct(
         private StoreCatalogRepositoryInterface $catalog,

@@ -4,7 +4,7 @@ namespace App\Presentation\Telegram\Keyboard;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final class TimezoneSelector
+final readonly class TimezoneSelector
 {
     public function __construct(
         private TimezoneOptions $timezoneOptions,

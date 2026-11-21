@@ -14,7 +14,7 @@ use App\Family\Domain\ValueObject\FamilyName;
 use DateTimeImmutable;
 use DateTimeZone;
 
-class Family extends AggregateRoot
+final class Family extends AggregateRoot
 {
     private FamilyId $id;
     private FamilyName $name;

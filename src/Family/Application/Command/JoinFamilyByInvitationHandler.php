@@ -22,7 +22,7 @@ use DateTimeZone;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-class JoinFamilyByInvitationHandler
+readonly class JoinFamilyByInvitationHandler
 {
     public function __construct(
         private FamilyRepositoryInterface $familyRepository,

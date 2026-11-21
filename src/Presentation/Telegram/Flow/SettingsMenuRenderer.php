@@ -9,7 +9,7 @@ use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class SettingsMenuRenderer
+final readonly class SettingsMenuRenderer
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,

@@ -12,7 +12,7 @@ use DateTimeZone;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-class CreateInvitationHandler
+readonly class CreateInvitationHandler
 {
     public function __construct(
         private FamilyMemberRepositoryInterface $familyMemberRepository,

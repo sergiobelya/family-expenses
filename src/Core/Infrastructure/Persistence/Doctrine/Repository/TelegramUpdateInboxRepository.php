@@ -6,7 +6,7 @@ use App\Core\Infrastructure\Persistence\Doctrine\Entity\TelegramUpdateInbox;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-class TelegramUpdateInboxRepository
+readonly class TelegramUpdateInboxRepository
 {
     /** @var EntityRepository<TelegramUpdateInbox> */
     private EntityRepository $repository;

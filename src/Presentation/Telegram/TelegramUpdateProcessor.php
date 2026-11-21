@@ -7,7 +7,7 @@ use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Flow\TelegramUpdateRouter;
 use InvalidArgumentException;
 
-class TelegramUpdateProcessor
+readonly class TelegramUpdateProcessor
 {
     public function __construct(
         private TelegramUpdateRouter $updateRouter,

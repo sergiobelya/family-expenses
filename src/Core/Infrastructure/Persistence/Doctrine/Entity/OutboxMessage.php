@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Symfony\Component\Uid\Uuid;
 
-class OutboxMessage
+final class OutboxMessage
 {
     private OutboxMessageId $id;
     private string $eventType;

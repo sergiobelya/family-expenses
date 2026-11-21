@@ -2,7 +2,7 @@
 
 namespace App\Presentation\Telegram\Keyboard;
 
-final class ExchangeRateProviderOptions
+final readonly class ExchangeRateProviderOptions
 {
     /**
      * @var array<string, string>

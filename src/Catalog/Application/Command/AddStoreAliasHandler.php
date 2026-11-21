@@ -12,7 +12,7 @@ use App\Core\Domain\ValueObject\FamilyId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-final class AddStoreAliasHandler
+final readonly class AddStoreAliasHandler
 {
     public function __construct(
         private StoreCatalogRepositoryInterface $catalog,

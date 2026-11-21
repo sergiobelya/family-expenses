@@ -7,7 +7,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Symfony\Component\Uid\Uuid;
 
-class TelegramUpdateInbox
+final class TelegramUpdateInbox
 {
     private TelegramUpdateInboxId $id;
     private int $updateId;

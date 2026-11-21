@@ -8,7 +8,7 @@ use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
-class GetFamilyMembersHandler
+readonly class GetFamilyMembersHandler
 {
     public function __construct(private FamilyMemberRepositoryInterface $familyMemberRepository)
     {

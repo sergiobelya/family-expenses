@@ -8,7 +8,7 @@ use RuntimeException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
-class TelegramApiClient implements TelegramApiClientInterface
+readonly class TelegramApiClient implements TelegramApiClientInterface
 {
     private string $botToken;
     private HttpClientInterface $httpClient;

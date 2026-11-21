@@ -10,7 +10,7 @@ use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Identity\Domain\Entity\User;
 use App\Identity\Domain\Repository\UserRepositoryInterface;
 
-class ResolveActiveFamilyForUser
+readonly class ResolveActiveFamilyForUser
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,

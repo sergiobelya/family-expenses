@@ -4,7 +4,7 @@ namespace App\Presentation\Telegram\Keyboard;
 
 use Normalizer;
 
-final class InlineOptionSelector
+final readonly class InlineOptionSelector
 {
     private const int PAGE_SIZE = 8;
 

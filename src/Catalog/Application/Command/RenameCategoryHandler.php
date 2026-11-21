@@ -11,7 +11,7 @@ use App\Catalog\Domain\ValueObject\CategoryName;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-final class RenameCategoryHandler
+final readonly class RenameCategoryHandler
 {
     public function __construct(
         private CategoryCatalogRepositoryInterface $catalog,

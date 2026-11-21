@@ -16,7 +16,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'app:outbox:publish',
     description: 'Publishes pending transactional outbox messages to the message broker'
 )]
-class PublishOutboxMessagesCommand extends Command implements SignalableCommandInterface
+final class PublishOutboxMessagesCommand extends Command implements SignalableCommandInterface
 {
     private bool $shouldStop = false;
 

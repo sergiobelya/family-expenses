@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
 #[Route('/webhook/telegram', name: 'telegram_webhook', methods: ['POST'])]
-class TelegramWebhookController
+final readonly class TelegramWebhookController
 {
     public function __construct(
         private TelegramUpdateProcessor $updateProcessor,

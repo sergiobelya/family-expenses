@@ -4,7 +4,7 @@ namespace App\Core\Infrastructure\Persistence\Redis;
 
 use Predis\ClientInterface;
 
-class UserInteractionStateRepository
+readonly class UserInteractionStateRepository
 {
     private const string PREFIX = 'bot:interaction_state:';
     private const int TTL_SECONDS = 86400; // 24 hours

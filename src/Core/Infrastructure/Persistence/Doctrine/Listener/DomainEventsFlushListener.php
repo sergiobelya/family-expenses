@@ -18,14 +18,14 @@ use Symfony\Component\Messenger\MessageBusInterface;
 
 #[AsDoctrineListener(event: Events::onFlush, priority: 100)]
 #[AsDoctrineListener(event: Events::postFlush, priority: -100)]
-class DomainEventsFlushListener
+final class DomainEventsFlushListener
 {
     /** @var DomainEventInterface[] */
     private array $eventsToDispatch = [];
 
     public function __construct(
         #[Target('event.bus')]
-        private ?MessageBusInterface $eventBus = null
+        private readonly ?MessageBusInterface $eventBus = null
     ) {
     }
 

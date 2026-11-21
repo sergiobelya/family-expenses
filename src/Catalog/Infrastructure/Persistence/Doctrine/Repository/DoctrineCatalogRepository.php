@@ -15,7 +15,7 @@ use App\Core\Domain\ValueObject\StoreId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-class DoctrineCatalogRepository implements CatalogRepositoryInterface, FamilyCatalogLockInterface
+final readonly class DoctrineCatalogRepository implements CatalogRepositoryInterface, FamilyCatalogLockInterface
 {
     /** @var EntityRepository<Store> */
     private EntityRepository $stores;

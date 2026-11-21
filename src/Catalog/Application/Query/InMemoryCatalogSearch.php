@@ -13,7 +13,7 @@ use App\Core\Domain\Exception\InvalidValueException;
  * @deprecated Use PgTrgmCatalogSearch instead, which uses PostgreSQL's pg_trgm extension for better performance.
  * @see PgTrgmCatalogSearch
  */
-final class InMemoryCatalogSearch implements CatalogSearchInterface
+final readonly class InMemoryCatalogSearch implements CatalogSearchInterface
 {
     public function __construct(private CatalogRepositoryInterface $catalog)
     {

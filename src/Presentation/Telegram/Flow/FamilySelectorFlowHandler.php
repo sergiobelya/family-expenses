@@ -16,7 +16,7 @@ use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FamilySelectorFlowHandler implements UserContextFlowHandlerInterface
+final readonly class FamilySelectorFlowHandler implements UserContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,

@@ -7,7 +7,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
 
-class AuditLogRepository
+final readonly class AuditLogRepository
 {
     /** @var EntityRepository<AuditLog> */
     private EntityRepository $repository;

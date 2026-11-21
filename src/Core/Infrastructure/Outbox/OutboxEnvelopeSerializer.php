@@ -7,7 +7,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\MessageDecodingFailedException;
 use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 
-final class OutboxEnvelopeSerializer implements SerializerInterface
+final readonly class OutboxEnvelopeSerializer implements SerializerInterface
 {
     public function encode(Envelope $envelope): array
     {

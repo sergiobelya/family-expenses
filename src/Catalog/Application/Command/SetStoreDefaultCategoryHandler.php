@@ -9,7 +9,7 @@ use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-final class SetStoreDefaultCategoryHandler
+final readonly class SetStoreDefaultCategoryHandler
 {
     public function __construct(
         private CatalogRepositoryInterface $catalog,

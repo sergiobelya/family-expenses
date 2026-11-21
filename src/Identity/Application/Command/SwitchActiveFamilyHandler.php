@@ -8,7 +8,7 @@ use App\Identity\Domain\Repository\UserRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-class SwitchActiveFamilyHandler
+readonly class SwitchActiveFamilyHandler
 {
     public function __construct(private UserRepositoryInterface $userRepository)
     {

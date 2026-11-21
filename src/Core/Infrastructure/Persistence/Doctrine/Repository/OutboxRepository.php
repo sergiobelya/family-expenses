@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-class OutboxRepository
+readonly class OutboxRepository
 {
     /** @var EntityRepository<OutboxMessage> */
     private EntityRepository $repository;

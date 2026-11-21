@@ -10,7 +10,7 @@ use App\Catalog\Domain\ValueObject\CategoryName;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-final class CreateCategoryHandler
+final readonly class CreateCategoryHandler
 {
     public function __construct(
         private CategoryCatalogRepositoryInterface $catalog,

@@ -11,7 +11,7 @@ use App\Catalog\Domain\ValueObject\StoreName;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
-final class RenameStoreHandler
+final readonly class RenameStoreHandler
 {
     public function __construct(
         private StoreCatalogRepositoryInterface $catalog,

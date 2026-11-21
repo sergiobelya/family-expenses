@@ -8,7 +8,7 @@ use App\Catalog\Domain\Repository\CategoryCatalogRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
-final class ListCategoriesHandler
+final readonly class ListCategoriesHandler
 {
     public function __construct(
         private CategoryCatalogRepositoryInterface $catalog,

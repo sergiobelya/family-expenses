@@ -9,7 +9,7 @@ use App\Core\Domain\ValueObject\InvitationId;
 use App\Core\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
 
-readonly class InvitationUseRepository implements InvitationUseRepositoryInterface
+final readonly class InvitationUseRepository implements InvitationUseRepositoryInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager

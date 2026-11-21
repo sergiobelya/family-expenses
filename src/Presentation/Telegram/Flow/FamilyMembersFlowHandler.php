@@ -12,7 +12,7 @@ use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FamilyMembersFlowHandler implements FamilyContextFlowHandlerInterface
+final readonly class FamilyMembersFlowHandler implements FamilyContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,

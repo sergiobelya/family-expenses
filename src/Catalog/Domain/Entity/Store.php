@@ -20,7 +20,7 @@ use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
 
-class Store extends AggregateRoot
+final class Store extends AggregateRoot
 {
     /** @var StoreAlias[] */
     private array $aliases = [];

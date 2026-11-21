@@ -11,7 +11,7 @@ use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class MainMenuFlowHandler implements FamilyContextFlowHandlerInterface
+final readonly class MainMenuFlowHandler implements FamilyContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,

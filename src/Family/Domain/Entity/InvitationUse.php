@@ -8,7 +8,7 @@ use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
 
-class InvitationUse
+final class InvitationUse
 {
     private InvitationUseId $id;
     private InvitationId $invitationId;

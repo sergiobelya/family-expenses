@@ -22,7 +22,7 @@ use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class JoinFamilyFlowHandler implements UserContextFlowHandlerInterface
+final readonly class JoinFamilyFlowHandler implements UserContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,

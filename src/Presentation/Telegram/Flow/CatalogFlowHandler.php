@@ -16,7 +16,7 @@ use App\Presentation\Telegram\Flow\Catalog\StoreAliasScreen;
 use App\Presentation\Telegram\Flow\Catalog\StoreDefaultCategoryScreen;
 use Symfony\Component\Uid\Uuid;
 
-final class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
+final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInterface
 {
     private const string FLOW_NAME = CatalogFlowUtils::FLOW_NAME;
 

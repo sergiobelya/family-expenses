@@ -14,7 +14,7 @@ use Doctrine\ORM\Query\ResultSetMapping;
 /**
  * Catalog search implementation using PostgreSQL's pg_trgm extension for fuzzy matching.
  */
-final class PgTrgmCatalogSearch implements CatalogSearchInterface
+final readonly class PgTrgmCatalogSearch implements CatalogSearchInterface
 {
     private const float DISTANCE_THRESHOLD = 0.6;
 
