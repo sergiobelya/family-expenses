@@ -6,4 +6,22 @@ monolog:
             level: debug
             formatter: monolog.formatter.json
             include_stacktraces: true
-            channels: ["!event"]
+            channels: ["!event", "!doctrine", "!http_client", "!php"]
+        php:
+            type: stream
+            path: php://stderr
+            level: notice
+            formatter: monolog.formatter.json
+            channels: ["php"]
+        doctrine:
+            type: stream
+            path: php://stderr
+            level: error
+            formatter: monolog.formatter.json
+            channels: ["doctrine"]
+        http_client:
+            type: stream
+            path: php://stderr
+            level: info
+            formatter: monolog.formatter.json
+            channels: ["http_client"]
