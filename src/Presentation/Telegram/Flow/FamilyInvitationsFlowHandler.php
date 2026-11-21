@@ -2,15 +2,8 @@
 
 namespace App\Presentation\Telegram\Flow;
 
-use App\Family\Application\Command\CreateInvitationCommand;
 use App\Family\Application\Command\CreateInvitationHandler;
-use App\Family\Application\Command\RevokeInvitationCommand;
 use App\Family\Application\Command\RevokeInvitationHandler;
-use App\Family\Application\Query\GetFamilyInvitationsHandler;
-use App\Family\Application\Query\GetFamilyInvitationsQuery;
-use App\Family\Domain\Entity\Invitation;
-use App\Family\Domain\Entity\Family;
-use App\Core\Domain\ValueObject\InvitationId;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Presentation\Telegram\CallbackActions;
@@ -18,27 +11,33 @@ use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
-use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
+use App\Presentation\Telegram\Flow\FamilyInvitations\CreateInvitationStep;
+use App\Presentation\Telegram\Flow\FamilyInvitations\GetInvitationStatusLabel;
+use App\Presentation\Telegram\Flow\FamilyInvitations\ListInvitationScreen;
+use App\Presentation\Telegram\Flow\FamilyInvitations\RevokeInvitationStep;
+use App\Presentation\Telegram\Flow\FamilyInvitations\ViewInvitationStep;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
+final readonly class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
         private CreateInvitationHandler $createInvitationHandler,
         private RevokeInvitationHandler $revokeInvitationHandler,
-        private GetFamilyInvitationsHandler $getFamilyInvitationsHandler,
         private InvitationRepositoryInterface $invitationRepository,
         private InvitationUseRepositoryInterface $invitationUseRepository,
+        private ListInvitationScreen $listInvitationScreen,
+        private GetInvitationStatusLabel $getStatusLabel,
         private TranslatorInterface $translator,
         #[Autowire('%app.telegram_bot_username%')]
-        private string $botUsername
+        private string $botUsername,
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
-        if ($update->callbackData === CallbackActions::FAMILY_INVITE_CREATE || $update->callbackData === CallbackActions::FAMILY_INVITATIONS_LIST) {
+        if ($update->callbackData === CallbackActions::FAMILY_INVITE_CREATE
+            || $update->callbackData === CallbackActions::FAMILY_INVITATIONS_LIST) {
             return true;
         }
 
@@ -57,165 +56,47 @@ class FamilyInvitationsFlowHandler implements FamilyContextFlowHandlerInterface
             $this->telegramClient->answerCallbackQuery($update->callbackQueryId);
         }
 
-        $activeFamily = $context->activeFamily;
-
-        // 1. Create Invitation
+        // Create invitation
         if ($update->callbackData === CallbackActions::FAMILY_INVITE_CREATE) {
-            $result = ($this->createInvitationHandler)(new CreateInvitationCommand(
-                familyId: $activeFamily->getId(),
-                userId: $context->user->getId(),
-                expiresInHours: 48,
-                maxUses: 1
-            ));
-
-            $plainToken = $result['raw_token'];
-            /** @var Invitation $invitation */
-            $invitation = $result['invitation'];
-
-            $deepLink = sprintf('https://t.me/%s?start=invite_%s', $this->botUsername, $plainToken);
-
-            $msg = $this->translator->trans('family.invite.create_success', [
-                '%{family_name}' => htmlspecialchars($activeFamily->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                '%{link}' => $deepLink,
-                '%{max_uses}' => $invitation->getMaxUses() ?? '∞',
-            ]);
-
-            $kb = (new InlineKeyboardBuilder())
-                ->button($this->translator->trans('family.members.invitations_btn'), CallbackActions::FAMILY_INVITATIONS_LIST)
-                ->button($this->translator->trans('common.main_menu'), CallbackActions::NAV_MAIN_MENU)
-                ->toArray();
-
-            $this->telegramClient->sendMessage(
-                chatId: $context->chatId,
-                text: $msg,
-                replyMarkup: $kb
+            $step = new CreateInvitationStep(
+                $this->createInvitationHandler,
+                $this->telegramClient,
+                $this->translator,
+                $this->botUsername,
             );
+            $step->handle($update, $context);
             return;
         }
 
-        // 2. Revoke Invitation
+        // Revoke invitation
         if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX)) {
-            $invitationId = InvitationId::fromString(substr($update->callbackData, strlen(CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX)));
-
-            ($this->revokeInvitationHandler)(new RevokeInvitationCommand(
-                familyId: $activeFamily->getId(),
-                invitationId: $invitationId,
-                revokedByUserId: $context->user->getId()
-            ));
-
-            $this->telegramClient->sendMessage(
-                chatId: $context->chatId,
-                text: $this->translator->trans('family.invite.revoked_success')
+            $step = new RevokeInvitationStep(
+                $this->revokeInvitationHandler,
+                $this->listInvitationScreen,
+                $this->telegramClient,
+                $this->translator
             );
-
-            // Re-render list
-            $this->renderList($context, $activeFamily);
+            $step->handle($update, $context);
             return;
         }
 
-        // 3. View Invitation Details
+        // View invitation details
         if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_INVITATION_VIEW_PREFIX)) {
-            $invitationId = InvitationId::fromString(substr($update->callbackData, strlen(CallbackActions::FAMILY_INVITATION_VIEW_PREFIX)));
-            $invitation = $this->invitationRepository->findById($activeFamily->getId(), $invitationId);
-
-            if ($invitation === null || !$invitation->getFamilyId()->equals($activeFamily->getId())) {
-                $this->renderList($context, $activeFamily);
-                return;
-            }
-
-            $usesCount = $this->invitationUseRepository->countByInvitationId($activeFamily->getId(), $invitation->getId());
-            $status = $this->getStatusLabel($invitation, $usesCount);
-
-            $details = $this->translator->trans('family.invite.details_title', [
-                '%{status}' => $status,
-                '%{uses}' => $usesCount,
-                '%{max_uses}' => $invitation->getMaxUses() ?? '∞',
-                '%{expires_at}' => $invitation->getExpiresAt()->format('Y-m-d H:i'),
-            ]);
-
-            $builder = new InlineKeyboardBuilder();
-            if ($invitation->isActive() && ($invitation->getMaxUses() === null || $usesCount < $invitation->getMaxUses())) {
-                $builder->button($this->translator->trans('family.invite.revoke_btn'), CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX . $invitation->getId()->toRfc4122())->row();
-            }
-            $builder->button($this->translator->trans('common.back'), CallbackActions::FAMILY_INVITATIONS_LIST)->row();
-
-            $this->telegramClient->sendMessage(
-                chatId: $context->chatId,
-                text: $details,
-                replyMarkup: $builder->toArray()
+            $step = new ViewInvitationStep(
+                $this->invitationRepository,
+                $this->invitationUseRepository,
+                $this->listInvitationScreen,
+                $this->getStatusLabel,
+                $this->telegramClient,
+                $this->translator
             );
+            $step->handle($update, $context);
             return;
         }
 
-        // 4. List Invitations
+        // List invitations
         if ($update->callbackData === CallbackActions::FAMILY_INVITATIONS_LIST) {
-            $this->renderList($context, $activeFamily);
+            $this->listInvitationScreen->renderList($context);
         }
-    }
-
-    private function renderList(TelegramFamilyMemberContext $context, Family $activeFamily): void
-    {
-        $invitations = ($this->getFamilyInvitationsHandler)(new GetFamilyInvitationsQuery(
-            $activeFamily->getId(),
-            $context->user->getId()
-        ));
-
-        $builder = new InlineKeyboardBuilder();
-        $builder->button($this->translator->trans('family.members.invite_btn'), CallbackActions::FAMILY_INVITE_CREATE)->row();
-
-        if (empty($invitations)) {
-            $builder->button($this->translator->trans('common.back'), CallbackActions::FAMILY_MEMBERS)->row();
-            $this->telegramClient->sendMessage(
-                chatId: $context->chatId,
-                text: $this->translator->trans('family.invite.empty_list'),
-                replyMarkup: $builder->toArray()
-            );
-            return;
-        }
-
-        $lines = [
-            $this->translator->trans('family.invite.list_title', [
-                '%{family_name}' => htmlspecialchars($activeFamily->getName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            ]),
-            '',
-        ];
-
-        foreach ($invitations as $inv) {
-            $usesCount = $this->invitationUseRepository->countByInvitationId($activeFamily->getId(), $inv->getId());
-            $status = $this->getStatusLabel($inv, $usesCount);
-
-            $idShort = substr($inv->getId()->toRfc4122(), 0, 8);
-            $lines[] = $this->translator->trans('family.invite.item', [
-                '%{id}' => $idShort,
-                '%{status}' => $status,
-                '%{uses}' => $usesCount,
-                '%{max_uses}' => $inv->getMaxUses() ?? '∞',
-                '%{expires_at}' => $inv->getExpiresAt()->format('m-d H:i'),
-            ]);
-
-            $builder->button(sprintf('#%s (%s)', $idShort, $status), CallbackActions::FAMILY_INVITATION_VIEW_PREFIX . $inv->getId()->toRfc4122())->row();
-        }
-
-        $builder->button($this->translator->trans('common.back'), CallbackActions::FAMILY_MEMBERS)->row();
-
-        $this->telegramClient->sendMessage(
-            chatId: $context->chatId,
-            text: implode("\n", $lines),
-            replyMarkup: $builder->toArray()
-        );
-    }
-
-    private function getStatusLabel(Invitation $inv, int $usesCount): string
-    {
-        if ($inv->isRevoked()) {
-            return $this->translator->trans('family.invite.status_revoked');
-        }
-        if ($inv->isExpired()) {
-            return $this->translator->trans('family.invite.status_expired');
-        }
-        if ($inv->getMaxUses() !== null && $usesCount >= $inv->getMaxUses()) {
-            return $this->translator->trans('family.invite.status_fully_used');
-        }
-        return $this->translator->trans('family.invite.status_active');
     }
 }

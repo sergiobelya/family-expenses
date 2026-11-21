@@ -31,6 +31,8 @@ use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Flow\FamilyCreationWizardHandler;
+use App\Presentation\Telegram\Flow\FamilyInvitations\GetInvitationStatusLabel;
+use App\Presentation\Telegram\Flow\FamilyInvitations\ListInvitationScreen;
 use App\Presentation\Telegram\Flow\FamilyInvitationsFlowHandler;
 use App\Presentation\Telegram\Flow\FamilyMembersFlowHandler;
 use App\Presentation\Telegram\Flow\FamilyOnboardingFlowHandler;
@@ -279,13 +281,21 @@ class TelegramFlowHandlersTest extends TestCase
         $invUseRepo = $this->createMock(InvitationUseRepositoryInterface::class);
         $translator = $this->createTranslator();
 
+        $listScreen = new ListInvitationScreen(
+            $getInvHandler,
+            $invUseRepo,
+            new GetInvitationStatusLabel($translator),
+            $telegramClient,
+            $translator
+        );
         $handler = new FamilyInvitationsFlowHandler(
             $telegramClient,
             $createInvHandler,
             $revokeInvHandler,
-            $getInvHandler,
             $invRepo,
             $invUseRepo,
+            $listScreen,
+            new GetInvitationStatusLabel($translator),
             $translator,
             'test_bot'
         );
