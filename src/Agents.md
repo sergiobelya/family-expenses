@@ -9,6 +9,10 @@ Code is organized by Bounded Contexts in `src/`:
 - `src/Core/` (shared Value Objects, base aggregate/event contracts, infrastructure entities)
 - `src/Presentation/Telegram/` (Telegram delivery mechanism, webhook, flow handlers, UI keyboards/renderers)
 
+### Design Principles
+- The application follows Clean Architecture, DDD (Domain-Driven Design), and logical CQRS. See [docs/nfr_requirements.md](../docs/nfr_requirements.md) for architectural details.
+- Application code follows SOLID principles. Favor composition over inheritance. Prefer open/closed design — extend behavior through interfaces and strategies rather than conditional logic. Keep methods focused so they fit on screen; decompose large classes into smaller, single-responsibility components.
+
 ### Layer Responsibilities within a Context
 - **`Domain/`**: Pure domain logic and POPO entities. No framework or ORM dependencies.
   - `Entity/` (aggregates and entities extending `AggregateRoot` where applicable)
