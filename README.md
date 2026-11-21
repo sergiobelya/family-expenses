@@ -91,7 +91,7 @@ Without the trigger, Xdebug stays inactive and does not pause normal development
 
 ### phpunit
 ```bash
-docker compose run --rm php-app php vendor/bin/phpunit --configuration phpunit.dist.xml
+docker compose run --rm php-app php vendor/bin/phpunit
 ```
 
 ### phpstan
