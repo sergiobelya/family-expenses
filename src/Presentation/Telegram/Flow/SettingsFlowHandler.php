@@ -41,6 +41,11 @@ class SettingsFlowHandler implements UserContextFlowHandlerInterface
             return !($context instanceof TelegramFamilyMemberContext);
         }
 
+        // Language settings work for any context (user without active family, family member)
+        if ($update->callbackData === CallbackActions::SETTINGS_LANG_SELECT) {
+            return true;
+        }
+
         return str_starts_with($update->callbackData ?? '', CallbackActions::SETTINGS_LANG_SET_PREFIX);
     }
 
