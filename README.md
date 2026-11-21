@@ -99,6 +99,19 @@ docker compose run --rm php-app php vendor/bin/phpunit --configuration phpunit.d
 docker compose run --rm php-app vendor/bin/phpstan analyse --memory-limit 256M
 ```
 
+### Ensure that arguments injected into services match type declarations
+```bash
+docker compose run --rm php-app bin/console lint:container
+```
+
+### Lint translations files syntax
+```bash
+docker compose run --rm php-app bin/console lint:translations --locale=uk
+docker compose run --rm php-app bin/console lint:translations --locale=en
+docker compose run --rm php-app bin/console lint:translations --locale=pl
+docker compose run --rm php-app bin/console lint:translations --locale=ru
+```
+
 ### Security audit
 ```bash
 docker compose run --rm php-app composer audit

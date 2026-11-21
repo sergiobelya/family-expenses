@@ -4,6 +4,7 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow;
 
 use App\Catalog\Application\CatalogAccess;
 use App\Catalog\Application\FamilyCatalogLockInterface;
+use App\Catalog\Application\Query\CatalogSearchInterface;
 use App\Catalog\Domain\Repository\CatalogRepositoryInterface;
 use App\Catalog\Domain\Entity\Category;
 use App\Catalog\Domain\Entity\Store;
@@ -25,6 +26,7 @@ use App\Presentation\Telegram\Flow\Catalog\CatalogEntryScreen;
 use App\Presentation\Telegram\Flow\Catalog\CatalogFlowUtils;
 use App\Presentation\Telegram\Flow\Catalog\StoreAliasScreen;
 use App\Presentation\Telegram\Flow\Catalog\StoreDefaultCategoryScreen;
+use App\Presentation\Telegram\Flow\Catalog\StoreEntryScreen;
 use App\Presentation\Telegram\Flow\CatalogFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
@@ -48,12 +50,16 @@ final class CatalogFlowHandlerTest extends TestCase
         $commandBus = $this->createMock(MessageBusInterface::class);
         $exceptionMapper = new MapExceptionToTranslationKey();
         $optionSelector = new InlineOptionSelector();
+        $search = $this->createMock(CatalogSearchInterface::class);
+        $search->method('stores')->willReturn([]);
+        $search->method('categories')->willReturn([]);
 
         $utils = new CatalogFlowUtils($telegram, $states, $commandBus, $translator);
         $storeScreen = $this->createMock(CatalogEntryScreen::class);
         $categoryScreen = $this->createMock(CatalogEntryScreen::class);
-        $aliasScreen = new StoreAliasScreen($utils, $storeScreen, $repository, $exceptionMapper);
-        $defaultCategoryScreen = new StoreDefaultCategoryScreen($utils, $storeScreen, $repository, $optionSelector);
+        $realStoreScreen = new StoreEntryScreen($utils, $repository, $search, $exceptionMapper);
+        $aliasScreen = new StoreAliasScreen($utils, $realStoreScreen, $repository, $exceptionMapper);
+        $defaultCategoryScreen = new StoreDefaultCategoryScreen($utils, $realStoreScreen, $repository, $optionSelector);
 
         return new CatalogFlowHandler(
             $utils,
@@ -198,13 +204,17 @@ final class CatalogFlowHandlerTest extends TestCase
         $commandBus = $this->createMock(MessageBusInterface::class);
         $exceptionMapper = new MapExceptionToTranslationKey();
         $optionSelector = new InlineOptionSelector();
+        $search = $this->createMock(CatalogSearchInterface::class);
+        $search->method('stores')->willReturn([]);
+        $search->method('categories')->willReturn([]);
 
         $utils = new CatalogFlowUtils($telegram, $stateRepository, $commandBus, $translator);
         $storeScreen = $this->createMock(CatalogEntryScreen::class);
         $storeScreen->expects(self::once())->method('renderList')->with($this->isInstanceOf(TelegramFamilyMemberContext::class), 0);
         $categoryScreen = $this->createMock(CatalogEntryScreen::class);
-        $aliasScreen = new StoreAliasScreen($utils, $storeScreen, $repository, $exceptionMapper);
-        $defaultCategoryScreen = new StoreDefaultCategoryScreen($utils, $storeScreen, $repository, $optionSelector);
+        $realStoreScreen = new StoreEntryScreen($utils, $repository, $search, $exceptionMapper);
+        $aliasScreen = new StoreAliasScreen($utils, $realStoreScreen, $repository, $exceptionMapper);
+        $defaultCategoryScreen = new StoreDefaultCategoryScreen($utils, $realStoreScreen, $repository, $optionSelector);
 
         $handler = new CatalogFlowHandler(
             $utils,

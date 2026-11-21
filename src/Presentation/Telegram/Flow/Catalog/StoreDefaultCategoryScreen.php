@@ -17,7 +17,7 @@ final class StoreDefaultCategoryScreen
 {
     public function __construct(
         private CatalogFlowUtils $utils,
-        private CatalogEntryScreen $storeScreen,
+        private StoreEntryScreen $storeScreen,
         private CatalogRepositoryInterface $catalog,
         private InlineOptionSelector $optionSelector,
     ) {
