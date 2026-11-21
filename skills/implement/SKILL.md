@@ -49,6 +49,12 @@ After implementation, run the following commands:
 docker compose run --rm php-app vendor/bin/phpstan analyse --memory-limit 256M
 docker compose run --rm php-app php vendor/bin/phpunit
 docker compose run --rm php-app bin/console lint:container
+```
+
+If translations were changed, run:
+
+```bash
+
 docker compose run --rm php-app bin/console lint:translations --locale=uk
 docker compose run --rm php-app bin/console lint:translations --locale=en
 docker compose run --rm php-app bin/console lint:translations --locale=pl
