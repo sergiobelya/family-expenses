@@ -2,11 +2,18 @@
 
 ### Done
 
-(No tasks completed yet.)
+- **Expense Domain Model** — ✓ Done. Created Expense bounded context with:
+  - `Expense` aggregate root (`src/Expense/Domain/Entity/Expense.php`) — factory method `create()`, `edit()`, `softDelete()`, allocation reconciliation via bcmath, domain event recording
+  - `ExpenseAllocation` child entity (`src/Expense/Domain/Entity/ExpenseAllocation.php`) — category_id, amount in original currency
+  - `MoneyAmount` VO (`src/Core/Domain/ValueObject/MoneyAmount.php`) — wrapper around `moneyphp/money` with `fromDecimal()`/`fromInt()` factory methods, arithmetic operations, comparison methods; converts decimal strings to minor units per currency subunit exponent
+  - `ExpenseId`, `AllocationId` identifier VOs in `src/Core/Domain/ValueObject/`
+  - Domain events: abstract `BaseExpenseEvent` + concrete `ExpenseCreated`, `ExpenseEdited`, `ExpenseDeleted` implementing `AuditableEventInterface`
+  - Typed exceptions: `ExpenseNotFoundException`, `AllocationReconciliationException`
+  - `ExpenseRepositoryInterface` with family-scoped CRUD operations
+  - Unit tests: `ExpenseTest` (15 tests), `MoneyAmountTest` (12 tests), `ExpenseAllocationTest` (3 tests)
+  - `ExpenseConversion` and conversion rules are Phase 3.
 
 ### Pending
-
-- **Expense Domain Model** — Create the Expense bounded context with core domain entities: `Expense` (aggregate root with fields: family_id, author user_id, purchase date, store_id, original amount, original currency, type, soft-deletion state), `ExpenseAllocation` (category_id, amount in original currency). Value objects: `MoneyAmount` (wrapper around `moneyphp/money`, integrates with `CurrencyCode` VO, provides `allocate()` with largest-remainder rule per §6.4.1), `ExpenseId`, `AllocationId`. Domain events: `ExpenseCreated`, `ExpenseEdited`, `ExpenseDeleted`. Soft deletion with audit trail. `ExpenseConversion` and conversion rules are Phase 3.
 
 - **Expense Repository and Persistence** — Implement `ExpenseRepositoryInterface` in Domain with CRUD operations scoped to `FamilyId`. Doctrine XML mappings for `expenses`, `expense_allocations`, and `expense_save_attempts` tables. Unique constraints, composite foreign keys enforcing family ownership of expense/store/category references, indexes (including family-scoped history by purchase date). Custom Doctrine Types for Value Objects, including `MoneyAmountType` for `MoneyAmount` ↔ PostgreSQL `NUMERIC` + `VARCHAR(3)` mapping. Repository methods: `findById`, `findByFamilyId`, `findExpenseById`, `save`, `softDelete`, `findAllocationsByExpenseId`, `findSaveAttemptByIdempotencyKey`, `saveSaveAttempt`, `markSaveAttemptComplete`, `markSaveAttemptUnknown`. Exclude soft-deleted expenses from normal queries. Support for atomic save of expense + allocations + audit snapshot + save attempt completion in one transaction (NFR §3, system_design §3). Validate allocation reconciliation in the domain/application layer: reject incomplete or non-positive allocation rows before persistence. `expense_conversions` table and conversion-related methods are Phase 3.
 
