@@ -27,7 +27,6 @@ use PHPUnit\Framework\TestCase;
 final class DeleteExpenseHandlerTest extends TestCase
 {
     private ExpenseRepositoryInterface&MockObject $expenseRepository;
-    /** @var MockObject&ExpenseAuthorizationService @phpstan-ignore property.unresolvableType */
     private MockObject $authorization;
     private DeleteExpenseHandler $handler;
 

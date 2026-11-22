@@ -51,9 +51,21 @@
   - Unit tests: `EditExpenseHandlerTest` (11 tests), `DeleteExpenseHandlerTest` (4 tests) covering successful operations, non-member rejection, expense not found, non-author rejection, store/category not found, unsupported currency, zero amount, future date, mismatched allocations
   - Conversion recalculation rules are Phase 3; Phase 2 edit/delete operates without currency conversion
 
-### Pending
+- **Expense Draft Infrastructure** — ✓ Done. Implemented expense draft storage and lifecycle management:
+  - `ExpenseDraftStatus` backed enum (`src/Expense/Domain/ExpenseDraftStatus.php`) — states: Active, Paused, Saving, SaveUnknown, Saved, Discarded with `isTerminal()`, `isTemporary()`, `isDurable()` helpers
+  - `ExpenseDraft` DTO (`src/Expense/Domain/ExpenseDraft.php`) — immutable draft data with `createNew()` factory, `with*` mutation methods, `toArray()`/`fromArray()` for JSON serialization, `isExpired()`, `refreshExpiry()`
+  - `ExpenseDraftRepositoryInterface` (`src/Expense/Domain/Repository/ExpenseDraftRepositoryInterface.php`) — `find()`, `save()`, `remove()` scoped to (user_id, family_id)
+  - `ExpenseDraftRepository` Redis implementation (`src/Expense/Infrastructure/Persistence/Redis/ExpenseDraftRepository.php`) — JSON serialization with TTL, key format `expense:draft:{user_id}:{family_id}`
+  - `ExpenseSaveAttemptId` VO (`src/Expense/Domain/ValueObject/ExpenseSaveAttemptId.php`) — distinct immutable identifier
+  - `ExpenseSaveAttempt` entity (`src/Expense/Domain/Entity/ExpenseSaveAttempt.php`) — tracks save attempts with `pending()` factory, `markCompleted()`, `markFailed()`, status checks
+  - `ExpenseSaveAttemptRepositoryInterface` (`src/Expense/Domain/Repository/ExpenseSaveAttemptRepositoryInterface.php`) — `save()`, `findById()`, `findByIdempotencyKey()`, `findByUserAndFamily()`
+  - `ExpenseSaveAttemptIdType` Doctrine custom type (`src/Expense/Infrastructure/Persistence/Doctrine/Type/ExpenseSaveAttemptIdType.php`)
+  - `ExpenseSaveAttempt.orm.xml` Doctrine mapping with unique index on `idempotency_key`
+  - `DoctrineExpenseSaveAttemptRepository` implementation with family-scoped queries
+  - Migration `Version20261122130000` creates `expense_save_attempts` table with foreign keys and indexes
+  - Unit tests: `ExpenseDraftTest` (11 tests), `ExpenseSaveAttemptTest` (3 tests)
 
-- **Expense Draft Infrastructure** — Implement expense draft storage and lifecycle management. Draft is scoped to `(user_id, family_id)` tuple, at most one nonterminal draft per tuple. States: Active, Paused, Saving, SaveUnknown, Saved, Discarded. Content: current step, awaiting_input type, return_step, card message ID, card revision, selected store, amount, currency, category allocations, category_customized flag, purchase date, idempototency key, timestamps. Active/Paused drafts expire 24 hours after last meaningful change. Draft storage in Redis (consistent with existing `UserInteractionStateRepository`). Idempotency key created with draft, persisted in `ExpenseSaveAttempt` before the first save transaction, and reused for every save attempt. Sequential processing of updates for one draft (lock or optimistic revision check). A family switch changes which draft is accessible; it does not move or rewrite a draft. An unresolved save attempt must be reconciled before the draft can be replaced. Conversion snapshot is Phase 3.
+### Pending
 
 - **Add Expense Telegram Flow** — Implement the complete add expense wizard in Presentation layer following `add_expense.md` specification. States: AE-00 (Entry), AE-01 (Family context), AE-02 (Resume draft), AE-03 (Select store), AE-04 (Search stores), AE-05 (Draft paused: create store), AE-06 (Enter amount), AE-07 (More currencies), AE-08 (Select category), AE-09 (Split between categories), AE-10 (Review), AE-11 (Edit date), AE-13 (Saving), AE-14 (Success), AE-15 (Save error), AE-16 (Cancel confirmation), AE-17 (Expired draft), AE-18 (Stale callbacks). AE-12 (Manual exchange rate) is Phase 3. Use the one-card model with inline keyboards. Decompose into step classes with `AddExpenseStepInterface` (similar to FamilyCreationWizardHandler pattern). Shared utilities: card rendering, amount parsing, date parsing. Store/category detours pause the draft and redirect to existing Catalog flows. Rate parsing and conversion display are Phase 3.
 

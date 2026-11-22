@@ -17,6 +17,7 @@ doctrine:
             telegram_update_inbox_id: App\Core\Infrastructure\Persistence\Doctrine\Type\TelegramUpdateInboxIdType
             expense_id: App\Core\Infrastructure\Persistence\Doctrine\Type\ExpenseIdType
             allocation_id: App\Core\Infrastructure\Persistence\Doctrine\Type\AllocationIdType
+            expense_save_attempt_id: App\Expense\Infrastructure\Persistence\Doctrine\Type\ExpenseSaveAttemptIdType
             country_code: App\Core\Infrastructure\Persistence\Doctrine\Type\CountryCodeType
             family_name: App\Family\Infrastructure\Persistence\Doctrine\Type\FamilyNameType
             store_name: App\Catalog\Infrastructure\Persistence\Doctrine\Type\StoreNameType

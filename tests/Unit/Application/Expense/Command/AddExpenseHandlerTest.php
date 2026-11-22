@@ -33,7 +33,6 @@ final class AddExpenseHandlerTest extends TestCase
     private ExpenseRepositoryInterface&MockObject $expenseRepository;
     private StoreRepositoryInterface&MockObject $storeRepository;
     private CategoryRepositoryInterface&MockObject $categoryRepository;
-    /** @var MockObject&ExpenseAuthorizationService @phpstan-ignore property.unresolvableType */
     private MockObject $authorization;
     private AddExpenseHandler $handler;
 
