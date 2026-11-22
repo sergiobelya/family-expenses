@@ -134,6 +134,7 @@ catalog:
     search_empty: "No results found for “%{query}”."
     create_from_search: "➕ Create “%{name}”"
     search_results: "Search results for “%{query}”:"
+    search_no_results: "No results found."
     similar_store_create: "A store or seller with a similar name already exists. Create “%{name}” anyway?"
     similar_store_rename: "A store or seller with a similar name exists. Save “%{name}” as the new name?"
     similar_category_create: "A similar category already exists. Create “%{name}” anyway?"

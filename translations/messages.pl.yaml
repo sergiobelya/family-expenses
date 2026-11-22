@@ -134,6 +134,7 @@ catalog:
     search_empty: "Nie znaleziono wyników dla „%{query}”."
     create_from_search: "➕ Utwórz „%{name}”"
     search_results: "Wyniki wyszukiwania „%{query}”:"
+    search_no_results: "Nic nie znaleziono."
     similar_store_create: "Znaleziono sklep lub sprzedawcę o podobnej nazwie. Mimo to utworzyć „%{name}”?"
     similar_store_rename: "Znaleziono sklep lub sprzedawcę o podobnej nazwie. Zapisać „%{name}” jako nową nazwę?"
     similar_category_create: "Znaleziono kategorię o podobnej nazwie. Mimo to utworzyć „%{name}”?"

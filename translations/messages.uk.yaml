@@ -134,6 +134,7 @@ catalog:
     search_empty: "За запитом «%{query}» нічого не знайдено."
     create_from_search: "➕ Створити «%{name}»"
     search_results: "Результати пошуку «%{query}»:"
+    search_no_results: "Нічого не знайдено."
     similar_store_create: "Знайдено магазин або продавця зі схожою назвою. Створити «%{name}» попри це?"
     similar_store_rename: "Знайдено магазин або продавця зі схожою назвою. Зберегти «%{name}» як нову назву?"
     similar_category_create: "Знайдено категорію зі схожою назвою. Створити «%{name}» попри це?"
