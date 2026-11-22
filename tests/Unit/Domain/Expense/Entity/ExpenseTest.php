@@ -43,11 +43,11 @@ final class ExpenseTest extends TestCase
     private function createValidAllocations(): array
     {
         return [
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('60.00', CurrencyCode::fromString('PLN'))
             ),
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Transport', $this->familyId),
                 MoneyAmount::fromDecimal('40.50', CurrencyCode::fromString('PLN'))
             ),
@@ -123,7 +123,7 @@ final class ExpenseTest extends TestCase
     public function testCreateRejectsMismatchedAllocations(): void
     {
         $allocations = [
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('50.00', CurrencyCode::fromString('PLN'))
             ),
@@ -144,11 +144,11 @@ final class ExpenseTest extends TestCase
     public function testCreateRejectsExcessAllocations(): void
     {
         $allocations = [
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('80.00', CurrencyCode::fromString('PLN'))
             ),
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Transport', $this->familyId),
                 MoneyAmount::fromDecimal('80.00', CurrencyCode::fromString('PLN'))
             ),
@@ -169,7 +169,7 @@ final class ExpenseTest extends TestCase
     public function testCreateWithSingleAllocationMatchingTotal(): void
     {
         $allocations = [
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 $this->amount
             ),
@@ -205,7 +205,7 @@ final class ExpenseTest extends TestCase
         $newAmount = MoneyAmount::fromDecimal('200.00', CurrencyCode::fromString('PLN'));
         $newDate = new DateTimeImmutable('2026-02-01 12:00:00', new DateTimeZone('UTC'));
         $newAllocations = [
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Entertainment', $this->familyId),
                 MoneyAmount::fromDecimal('200.00', CurrencyCode::fromString('PLN'))
             ),
@@ -243,7 +243,7 @@ final class ExpenseTest extends TestCase
         iterator_to_array($expense->releaseEvents());
 
         $newAllocations = [
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('100.50', CurrencyCode::fromString('PLN'))
             ),
@@ -279,7 +279,7 @@ final class ExpenseTest extends TestCase
         iterator_to_array($expense->releaseEvents());
 
         $badAllocations = [
-            ExpenseAllocation::create(
+            new ExpenseAllocation(
                 new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('10.00', CurrencyCode::fromString('PLN'))
             ),
@@ -393,7 +393,7 @@ final class ExpenseTest extends TestCase
             now: $this->now
         );
 
-        $newAllocation = ExpenseAllocation::create(
+        $newAllocation = new ExpenseAllocation(
             new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
             MoneyAmount::fromDecimal('100.50', CurrencyCode::fromString('PLN'))
         );

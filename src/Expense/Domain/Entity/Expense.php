@@ -158,6 +158,7 @@ final class Expense extends AggregateRoot
 
     public function addAllocation(ExpenseAllocation $allocation): void
     {
+        $allocation->setExpense($this);
         $this->allocations[] = $allocation;
     }
 

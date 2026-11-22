@@ -17,5 +17,4 @@ interface ExpenseRepositoryInterface
      */
     public function findByFamilyId(FamilyId $familyId): array;
 
-    public function softDelete(Expense $expense): void;
 }

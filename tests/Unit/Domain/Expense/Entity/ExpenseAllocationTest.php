@@ -20,7 +20,7 @@ final class ExpenseAllocationTest extends TestCase
         $category = new ExpenseCategory($categoryId, 'Food', $familyId);
         $amount = MoneyAmount::fromDecimal('50.00', CurrencyCode::fromString('PLN'));
 
-        $allocation = ExpenseAllocation::create($category, $amount);
+        $allocation = new ExpenseAllocation($category, $amount);
 
         $this->assertInstanceOf(AllocationId::class, $allocation->getId());
         $this->assertTrue($allocation->getCategory()->getId()->equals($categoryId));
@@ -36,7 +36,7 @@ final class ExpenseAllocationTest extends TestCase
         $category = new ExpenseCategory($categoryId, 'Transport', $familyId);
         $amount = MoneyAmount::fromDecimal('50.00', CurrencyCode::fromString('PLN'));
 
-        $allocation = ExpenseAllocation::create($category, $amount, $expectedId);
+        $allocation = new ExpenseAllocation($category, $amount, $expectedId);
 
         $this->assertTrue($allocation->getId()->equals($expectedId));
     }
@@ -48,8 +48,8 @@ final class ExpenseAllocationTest extends TestCase
         $category = new ExpenseCategory($categoryId, 'Food', $familyId);
         $amount = MoneyAmount::fromDecimal('50.00', CurrencyCode::fromString('PLN'));
 
-        $a1 = ExpenseAllocation::create($category, $amount);
-        $a2 = ExpenseAllocation::create($category, $amount);
+        $a1 = new ExpenseAllocation($category, $amount);
+        $a2 = new ExpenseAllocation($category, $amount);
 
         $this->assertFalse($a1->getId()->equals($a2->getId()));
     }
