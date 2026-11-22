@@ -13,9 +13,9 @@ use App\Expense\Domain\Entity\ExpenseAllocation;
 use App\Expense\Domain\Entity\ExpenseCategory;
 use App\Expense\Domain\Entity\ExpenseStore;
 use App\Expense\Domain\Exception\ExpenseNotFoundException;
+use App\Core\Domain\Exception\NotFamilyMemberException;
 use App\Expense\Domain\Exception\ExpenseNotAuthorException;
 use App\Expense\Domain\Repository\ExpenseRepositoryInterface;
-use App\Family\Domain\Exception\NotFamilyMemberException;
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -39,7 +39,7 @@ final class DeleteExpenseHandlerTest extends TestCase
     protected function setUp(): void
     {
         $this->expenseRepository = $this->createMock(ExpenseRepositoryInterface::class);
-        $this->authorization = $this->createMock(ExpenseAuthorizationService::class); // @phpstan-ignore method.unresolvableReturnType
+        $this->authorization = $this->createMock(ExpenseAuthorizationService::class);
 
         $this->handler = new DeleteExpenseHandler(
             $this->expenseRepository,

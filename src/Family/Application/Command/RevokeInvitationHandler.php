@@ -2,8 +2,8 @@
 
 namespace App\Family\Application\Command;
 
+use App\Core\Domain\Exception\NotFamilyMemberException;
 use App\Family\Domain\Exception\InvitationNotFoundException;
-use App\Family\Domain\Exception\NotFamilyMemberException;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;

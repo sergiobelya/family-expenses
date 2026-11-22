@@ -5,9 +5,9 @@ namespace App\Expense\Application;
 use App\Core\Domain\Repository\FamilyMembershipInterface;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\UserId;
+use App\Core\Domain\Exception\NotFamilyMemberException;
 use App\Expense\Domain\Entity\Expense;
 use App\Expense\Domain\Exception\ExpenseNotAuthorException;
-use App\Family\Domain\Exception\NotFamilyMemberException;
 
 readonly class ExpenseAuthorizationService
 {

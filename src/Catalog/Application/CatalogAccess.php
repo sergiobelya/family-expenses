@@ -2,8 +2,8 @@
 
 namespace App\Catalog\Application;
 
+use App\Core\Domain\Exception\NotFamilyMemberException;
 use App\Core\Domain\Repository\FamilyMembershipInterface;
-use App\Family\Domain\Exception\NotFamilyMemberException;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\UserId;
 

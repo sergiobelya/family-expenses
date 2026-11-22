@@ -2,7 +2,6 @@
 
 namespace App\Tests\Unit\Application\Expense\Command;
 
-use App\Core\Domain\Exception\ErrorType;
 use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Domain\ValueObject\CategoryId;
 use App\Core\Domain\ValueObject\FamilyId;
@@ -18,9 +17,9 @@ use App\Expense\Domain\Entity\ExpenseStore;
 use App\Expense\Domain\Exception\CategoryNotFoundException;
 use App\Expense\Domain\Exception\StoreNotFoundException;
 use App\Expense\Domain\Repository\CategoryRepositoryInterface;
+use App\Core\Domain\Exception\NotFamilyMemberException;
 use App\Expense\Domain\Repository\ExpenseRepositoryInterface;
 use App\Expense\Domain\Repository\StoreRepositoryInterface;
-use App\Family\Domain\Exception\NotFamilyMemberException;
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -50,7 +49,7 @@ final class AddExpenseHandlerTest extends TestCase
         $this->expenseRepository = $this->createMock(ExpenseRepositoryInterface::class);
         $this->storeRepository = $this->createMock(StoreRepositoryInterface::class);
         $this->categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
-        $this->authorization = $this->createMock(ExpenseAuthorizationService::class); // @phpstan-ignore method.unresolvableReturnType
+        $this->authorization = $this->createMock(ExpenseAuthorizationService::class);
 
         $this->handler = new AddExpenseHandler(
             $this->expenseRepository,
