@@ -97,7 +97,7 @@ class CallbackDataLengthTest extends TestCase
             // Skip static values that don't end with ':'
             if (str_ends_with($prefix, ':') === false) {
                 $length = strlen($prefix);
-                if ($length > self::MAX_LENGTH) {
+                if ($length > self::MAX_LENGTH) { // @phpstan-ignore greater.alwaysFalse
                     $violations[] = sprintf(
                         '"%s" = %d chars (static, no UUID)',
                         $prefix,
@@ -110,7 +110,7 @@ class CallbackDataLengthTest extends TestCase
             $fullData = $prefix . self::FAKE_UUID;
             $length = strlen($fullData);
 
-            if ($length > self::MAX_LENGTH) {
+            if ($length > self::MAX_LENGTH) { // @phpstan-ignore greater.alwaysFalse
                 $violations[] = sprintf(
                     '"%s" + UUID = %d chars (prefix: %d, UUID: 36)',
                     $prefix,
