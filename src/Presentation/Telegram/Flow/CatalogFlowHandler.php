@@ -79,7 +79,7 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
         $data = $update->callbackData ?? '';
 
         // Default category picker: search, clear, pagination, select
-        if (preg_match('/^catalog:default-category:(search|clear|page:(\d+)|set:(none|[0-9a-f-]{36}))$/i', $data, $matches) === 1) {
+        if (preg_match('/^catalog:def-cat:(search|clear|page:(\d+)|set:(none|[0-9a-f-]{36}))$/i', $data, $matches) === 1) {
             $state = $this->stateRepository->get($context->telegramUserId);
             $storeId = $this->stateUuid($state, 'store_id');
             if ($storeId === null) {
@@ -156,7 +156,7 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
             return;
         }
         // Open default category picker for a store
-        if (preg_match('/^catalog:default-category:open:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
+        if (preg_match('/^catalog:def-cat:open:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
             $storeId = $this->parseUuid($matches[1]);
             if ($storeId !== null) {
                 $this->defaultCategoryScreen->renderDefaultCategoryPicker($context, $storeId);
@@ -164,7 +164,7 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
             return;
         }
         // Set a category as default for a store (from store details)
-        if (preg_match('/^catalog:default-category:set:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
+        if (preg_match('/^catalog:def-cat:set:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
             $categoryId = $this->parseUuid($matches[1]);
             if ($categoryId !== null) {
                 $state = $this->stateRepository->get($context->telegramUserId);
@@ -346,7 +346,7 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
             return;
         }
         // Create a new category from default category picker context
-        if (preg_match('/^catalog:default-category:new:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
+        if (preg_match('/^catalog:def-cat:new:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
             $storeId = $this->parseUuid($matches[1]);
             if ($storeId !== null) {
                 $this->categoryScreen->startNameInput($context, 'create', null, (string) $storeId);

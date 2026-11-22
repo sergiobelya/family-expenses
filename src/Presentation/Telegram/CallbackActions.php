@@ -80,7 +80,7 @@ final readonly class CallbackActions
     // ── Catalog ───────────────────────────────────────────────────────────────
 
     public const string CATALOG_PREFIX = 'catalog:';
-    public const string CATALOG_DEFAULT_CATEGORY_PREFIX = 'catalog:default-category';
+    public const string CATALOG_DEFAULT_CATEGORY_PREFIX = 'catalog:def-cat';
 
     public const string CATALOG_CANCEL = 'catalog:cancel';
     public const string CATALOG_CREATE_SEARCH = 'catalog:create-search';
@@ -90,8 +90,8 @@ final readonly class CallbackActions
     public const string CATALOG_WARNING_OPEN_STORE_PREFIX = 'catalog:warning:open-store:';
     public const string CATALOG_WARNING_OPEN_CATEGORY_PREFIX = 'catalog:warning:open-category:';
     public const string CATALOG_ALIAS_CONFLICT_EDIT = 'catalog:alias:conflict:edit';
-    public const string CATALOG_DEFAULT_CATEGORY_SET_NONE = 'catalog:default-category:set:none';
-    public const string CATALOG_DEFAULT_CATEGORY_OPEN_PREFIX = 'catalog:default-category:open:';
+    public const string CATALOG_DEFAULT_CATEGORY_SET_NONE = 'catalog:def-cat:set:none';
+    public const string CATALOG_DEFAULT_CATEGORY_OPEN_PREFIX = 'catalog:def-cat:open:';
     public const string CATALOG_ALIASES_PREFIX = 'catalog:aliases:';
     public const string CATALOG_STORE_PREFIX = 'catalog:store:';
     public const string CATALOG_CATEGORY_PREFIX = 'catalog:category:';
