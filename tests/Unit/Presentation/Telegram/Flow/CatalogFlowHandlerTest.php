@@ -160,7 +160,7 @@ final class CatalogFlowHandlerTest extends TestCase
                 'id' => 'callback-id',
                 'from' => ['id' => 123456],
                 'message' => ['message_id' => 9, 'chat' => ['id' => 111]],
-                'data' => 'catalog:default-category:open:' . $store->getId(),
+                'data' => 'catalog:def-cat:open:' . $store->getId(),
             ],
         ]);
 
@@ -172,9 +172,9 @@ final class CatalogFlowHandlerTest extends TestCase
             array_merge(...($markup['inline_keyboard'] ?? [])),
             'callback_data'
         );
-        self::assertContains('catalog:default-category:search', $callbackData);
-        self::assertContains('catalog:default-category:set:none', $callbackData);
-        self::assertContains('catalog:default-category:set:' . $category->getId(), $callbackData);
+        self::assertContains('catalog:def-cat:search', $callbackData);
+        self::assertContains('catalog:def-cat:set:none', $callbackData);
+        self::assertContains('catalog:def-cat:set:' . $category->getId(), $callbackData);
     }
 
     public function testStoreMenuOpensFamilyScopedStoreList(): void

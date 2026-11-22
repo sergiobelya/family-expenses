@@ -330,7 +330,7 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
             return;
         }
         // Open store details from a conflict warning screen
-        if (preg_match('/^catalog:warning:open-store:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
+        if (preg_match('/^catalog:warn:open-store:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
             $id = $this->parseUuid($matches[1]);
             if ($id !== null) {
                 $this->storeScreen->renderDetails($context, $id);
@@ -338,7 +338,7 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
             return;
         }
         // Open category details from a conflict warning screen
-        if (preg_match('/^catalog:warning:open-category:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
+        if (preg_match('/^catalog:warn:open-cat:([0-9a-f-]{36})$/i', $data, $matches) === 1) {
             $id = $this->parseUuid($matches[1]);
             if ($id !== null) {
                 $this->categoryScreen->renderDetails($context, $id);

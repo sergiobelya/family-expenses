@@ -87,8 +87,8 @@ final readonly class CallbackActions
     public const string CATALOG_WARNING_CONFIRM = 'catalog:warning:confirm';
     public const string CATALOG_WARNING_CANCEL = 'catalog:warning:cancel';
     public const string CATALOG_WARNING_EDIT = 'catalog:warning:edit';
-    public const string CATALOG_WARNING_OPEN_STORE_PREFIX = 'catalog:warning:open-store:';
-    public const string CATALOG_WARNING_OPEN_CATEGORY_PREFIX = 'catalog:warning:open-category:';
+    public const string CATALOG_WARNING_OPEN_STORE_PREFIX = 'catalog:warn:open-store:';
+    public const string CATALOG_WARNING_OPEN_CATEGORY_PREFIX = 'catalog:warn:open-cat:';
     public const string CATALOG_ALIAS_CONFLICT_EDIT = 'catalog:alias:conflict:edit';
     public const string CATALOG_DEFAULT_CATEGORY_SET_NONE = 'catalog:def-cat:set:none';
     public const string CATALOG_DEFAULT_CATEGORY_OPEN_PREFIX = 'catalog:def-cat:open:';
