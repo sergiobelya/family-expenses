@@ -2,14 +2,13 @@
 
 namespace App\Expense\Application\Command;
 
-use App\Core\Domain\Repository\FamilyMembershipInterface;
 use App\Core\Domain\ValueObject\{
     CurrencyCode,
     FamilyId,
     MoneyAmount,
-    StoreId,
-    UserId
+    StoreId
 };
+use App\Expense\Application\ExpenseAuthorizationService;
 use App\Expense\Domain\Entity\{
     Expense,
     ExpenseAllocation,
@@ -25,7 +24,6 @@ use App\Expense\Domain\Repository\{
     ExpenseRepositoryInterface,
     StoreRepositoryInterface
 };
-use App\Family\Domain\Exception\NotFamilyMemberException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -35,13 +33,13 @@ final readonly class AddExpenseHandler
         private ExpenseRepositoryInterface $expenseRepository,
         private StoreRepositoryInterface $storeRepository,
         private CategoryRepositoryInterface $categoryRepository,
-        private FamilyMembershipInterface $familyMembership,
+        private ExpenseAuthorizationService $authorization,
     ) {
     }
 
     public function __invoke(AddExpenseCommand $command): Expense
     {
-        $this->assertMember($command->familyId, $command->userId);
+        $this->authorization->assertMember($command->familyId, $command->userId);
 
         $currency = $this->assertCurrencyCode($command->currency);
         /** @var numeric-string $totalAmountStr */
@@ -63,15 +61,6 @@ final readonly class AddExpenseHandler
         $this->expenseRepository->save($expense);
 
         return $expense;
-    }
-
-    private function assertMember(
-        FamilyId $familyId,
-        UserId $userId
-    ): void {
-        if (!$this->familyMembership->isMember($familyId, $userId)) {
-            throw NotFamilyMemberException::forFamily((string) $familyId, (string) $userId);
-        }
     }
 
     private function assertCurrencyCode(string $currency): CurrencyCode

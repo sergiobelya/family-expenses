@@ -42,9 +42,16 @@
   - Unit tests: `AddExpenseHandlerTest` (12 tests) covering successful creation, multiple allocations, non-member rejection, store/category not found, unsupported currency, zero amount, future date, empty allocations, mismatched/excess/non-positive allocation sums
   - Draft infrastructure, `ExpenseSaveAttempt`, and idempotency key handling are deferred to the "Expense Draft Infrastructure" task
 
-### Pending
+- **Edit and Delete Expense Handlers** — ✓ Done. Implemented `EditExpenseCommand`/`EditExpenseHandler` and `DeleteExpenseCommand`/`DeleteExpenseHandler`:
+  - `EditExpenseCommand` DTO (`src/Expense/Application/Command/EditExpenseCommand.php`) — carries `ExpenseId`, `FamilyId`, `UserId`, `StoreId`, amount (decimal string), currency, `AllocationItem[]`, and `DateTimeImmutable` purchase date
+  - `EditExpenseHandler` (`src/Expense/Application/Command/EditExpenseHandler.php`) — validates membership via `FamilyMembershipInterface`, validates expense exists, validates author-only authorization (throws `ExpenseNotAuthorException`), validates currency, looks up `ExpenseStore` and `ExpenseCategory` entities, passes them to `Expense::edit()` with full revalidation of all fields via domain layer
+  - `DeleteExpenseCommand` DTO (`src/Expense/Application/Command/DeleteExpenseCommand.php`) — carries `ExpenseId`, `FamilyId`, `UserId`
+  - `DeleteExpenseHandler` (`src/Expense/Application/Command/DeleteExpenseHandler.php`) — validates membership, validates expense exists, validates author-only authorization, calls `Expense::softDelete()` with correct `actorUserId`
+  - Typed exception: `ExpenseNotAuthorException` in `Expense/Domain/Exception/`
+  - Unit tests: `EditExpenseHandlerTest` (11 tests), `DeleteExpenseHandlerTest` (4 tests) covering successful operations, non-member rejection, expense not found, non-author rejection, store/category not found, unsupported currency, zero amount, future date, mismatched allocations
+  - Conversion recalculation rules are Phase 3; Phase 2 edit/delete operates without currency conversion
 
-- **Edit and Delete Expense Handlers** — Implement `EditExpenseCommand`/`EditExpenseHandler` and `DeleteExpenseCommand`/`DeleteExpenseHandler`. Edit: author-only authorization, looks up `ExpenseStore` and `ExpenseCategory` entities before editing, revalidation of all fields. Delete: author-only authorization, soft deletion, audit event. Conversion recalculation rules are Phase 3; Phase 2 edit/delete operates without currency conversion.
+### Pending
 
 - **Expense Draft Infrastructure** — Implement expense draft storage and lifecycle management. Draft is scoped to `(user_id, family_id)` tuple, at most one nonterminal draft per tuple. States: Active, Paused, Saving, SaveUnknown, Saved, Discarded. Content: current step, awaiting_input type, return_step, card message ID, card revision, selected store, amount, currency, category allocations, category_customized flag, purchase date, idempototency key, timestamps. Active/Paused drafts expire 24 hours after last meaningful change. Draft storage in Redis (consistent with existing `UserInteractionStateRepository`). Idempotency key created with draft, persisted in `ExpenseSaveAttempt` before the first save transaction, and reused for every save attempt. Sequential processing of updates for one draft (lock or optimistic revision check). A family switch changes which draft is accessible; it does not move or rewrite a draft. An unresolved save attempt must be reconciled before the draft can be replaced. Conversion snapshot is Phase 3.
 

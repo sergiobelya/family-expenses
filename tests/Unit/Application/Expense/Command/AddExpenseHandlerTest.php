@@ -4,11 +4,11 @@ namespace App\Tests\Unit\Application\Expense\Command;
 
 use App\Core\Domain\Exception\ErrorType;
 use App\Core\Domain\Exception\InvalidValueException;
-use App\Core\Domain\Repository\FamilyMembershipInterface;
 use App\Core\Domain\ValueObject\CategoryId;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Domain\ValueObject\UserId;
+use App\Expense\Application\ExpenseAuthorizationService;
 use App\Expense\Application\Command\AddExpenseCommand;
 use App\Expense\Application\Command\AddExpenseHandler;
 use App\Expense\Application\Command\AllocationItem;
@@ -34,7 +34,8 @@ final class AddExpenseHandlerTest extends TestCase
     private ExpenseRepositoryInterface&MockObject $expenseRepository;
     private StoreRepositoryInterface&MockObject $storeRepository;
     private CategoryRepositoryInterface&MockObject $categoryRepository;
-    private FamilyMembershipInterface&MockObject $familyMembership;
+    /** @var MockObject&ExpenseAuthorizationService @phpstan-ignore property.unresolvableType */
+    private MockObject $authorization;
     private AddExpenseHandler $handler;
 
     private FamilyId $familyId;
@@ -49,13 +50,13 @@ final class AddExpenseHandlerTest extends TestCase
         $this->expenseRepository = $this->createMock(ExpenseRepositoryInterface::class);
         $this->storeRepository = $this->createMock(StoreRepositoryInterface::class);
         $this->categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
-        $this->familyMembership = $this->createMock(FamilyMembershipInterface::class);
+        $this->authorization = $this->createMock(ExpenseAuthorizationService::class); // @phpstan-ignore method.unresolvableReturnType
 
         $this->handler = new AddExpenseHandler(
             $this->expenseRepository,
             $this->storeRepository,
             $this->categoryRepository,
-            $this->familyMembership
+            $this->authorization
         );
 
         $this->familyId = FamilyId::generate();
@@ -70,11 +71,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testCreateExpenseSuccessfully(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->with($this->familyId, $this->userId)
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->with($this->storeId, $this->familyId)
@@ -115,10 +111,6 @@ final class AddExpenseHandlerTest extends TestCase
     {
         $category2 = new ExpenseCategory(CategoryId::generate(), 'Transport', $this->familyId);
 
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->willReturn($this->store);
@@ -151,10 +143,9 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsNonMember(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->with($this->familyId, $this->userId)
-            ->willReturn(false);
+        $this->authorization->expects($this->once())
+            ->method('assertMember')
+            ->willThrowException(NotFamilyMemberException::forFamily((string) $this->familyId, (string) $this->userId));
 
         $command = $this->createValidCommand();
 
@@ -165,10 +156,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsStoreNotFound(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->willReturn(null);
@@ -182,10 +169,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsCategoryNotFound(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->willReturn($this->store);
@@ -203,10 +186,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsUnsupportedCurrency(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $command = new AddExpenseCommand(
             familyId: $this->familyId,
             userId: $this->userId,
@@ -227,10 +206,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsZeroAmount(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $command = new AddExpenseCommand(
             familyId: $this->familyId,
             userId: $this->userId,
@@ -251,10 +226,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsFuturePurchaseDate(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->willReturn($this->store);
@@ -283,10 +254,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsEmptyAllocations(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->willReturn($this->store);
@@ -308,10 +275,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsMismatchedAllocationSum(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->willReturn($this->store);
@@ -339,10 +302,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsExcessAllocationSum(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->willReturn($this->store);
@@ -370,10 +329,6 @@ final class AddExpenseHandlerTest extends TestCase
     #[Test]
     public function testRejectsNonPositiveAllocation(): void
     {
-        $this->familyMembership->expects($this->once())
-            ->method('isMember')
-            ->willReturn(true);
-
         $this->storeRepository->expects($this->once())
             ->method('findById')
             ->willReturn($this->store);
