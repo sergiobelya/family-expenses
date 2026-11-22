@@ -16,7 +16,7 @@ use Doctrine\ORM\Query\ResultSetMapping;
  */
 final readonly class PgTrgmCatalogSearch implements CatalogSearchInterface
 {
-    private const float DISTANCE_THRESHOLD = 0.6;
+    private const float DISTANCE_THRESHOLD = 0.8;
 
     public function __construct(private EntityManagerInterface $entityManager)
     {
