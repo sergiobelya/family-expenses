@@ -21,7 +21,7 @@ final class ExpenseAllocation
     ) {
         $this->id = $id ?? AllocationId::generate();
         $this->category = $category;
-        $this->amount = $amount->getAmount();
+        $this->amount = $amount->getMinorUnits();
         $this->currency = (string) $amount->getCurrency();
     }
 

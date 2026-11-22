@@ -22,5 +22,4 @@ class NotFamilyMemberException extends RuntimeException
     {
         return new self($familyId, $userId, $previous);
     }
-
 }

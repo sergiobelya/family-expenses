@@ -3,6 +3,8 @@
 namespace App\Expense\Domain\Entity;
 
 use App\Core\Domain\Aggregate\AggregateRoot;
+use App\Core\Domain\Exception\ErrorType;
+use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\ExpenseId;
 use App\Core\Domain\ValueObject\FamilyId;
@@ -69,11 +71,15 @@ final class Expense extends AggregateRoot
         ?DateTimeImmutable $now = null
     ): self {
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        if ($purchaseDate > $now) {
+            throw new InvalidValueException(ErrorType::PURCHASE_DATE_IN_FUTURE);
+        }
+
         $expense = new self(
             familyId: $familyId,
             authorUserId: $authorUserId,
             store: $store,
-            amount: $amount->getAmount(),
+            amount: $amount->getMinorUnits(),
             currency: (string) $amount->getCurrency(),
             purchaseDate: $purchaseDate,
             deletedAt: null,
@@ -181,10 +187,15 @@ final class Expense extends AggregateRoot
         UserId $actorUserId,
         ?DateTimeImmutable $now = null
     ): void {
+        $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        if ($purchaseDate > $now) {
+            throw new InvalidValueException(ErrorType::PURCHASE_DATE_IN_FUTURE);
+        }
+
         $beforeData = $this->snapshot();
 
         $this->store = $store;
-        $this->amount = $amount->getAmount();
+        $this->amount = $amount->getMinorUnits();
         $this->currency = (string) $amount->getCurrency();
         $this->purchaseDate = $purchaseDate;
         $this->allocations = [];
@@ -194,7 +205,7 @@ final class Expense extends AggregateRoot
         }
         $this->validateAllocations();
 
-        $this->updatedAt = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $this->updatedAt = $now;
 
         $this->recordEvent(new ExpenseEdited(
             expenseId: $this->getId(),
@@ -227,10 +238,17 @@ final class Expense extends AggregateRoot
 
     private function validateAllocations(): void
     {
+        if (empty($this->allocations)) {
+            throw new AllocationReconciliationException(
+                expectedAmount: $this->amount,
+                actualAmount: '0'
+            );
+        }
+
         $totalAllocated = '0';
         foreach ($this->allocations as $allocation) {
             /** @var numeric-string $allocationAmount */
-            $allocationAmount = $allocation->getAmount()->getAmount();
+            $allocationAmount = $allocation->getAmount()->getMinorUnits();
             $totalAllocated = bcadd($totalAllocated, $allocationAmount, 10);
         }
 
@@ -264,7 +282,7 @@ final class Expense extends AggregateRoot
                     'id' => (string) $a->getId(),
                     'category_id' => (string) $a->getCategory()->getId(),
                     'category_name' => $a->getCategory()->getName(),
-                    'amount' => $a->getAmount()->getAmount(),
+                    'amount' => $a->getAmount()->getMinorUnits(),
                 ],
                 $this->allocations
             ),

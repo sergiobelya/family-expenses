@@ -2,8 +2,10 @@
 
 namespace App\Tests\Unit\Core\Domain\ValueObject;
 
+use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\MoneyAmount;
+use Money\Money;
 use PHPUnit\Framework\TestCase;
 
 final class MoneyAmountTest extends TestCase
@@ -12,7 +14,7 @@ final class MoneyAmountTest extends TestCase
     {
         $amount = MoneyAmount::fromDecimal('100.50', CurrencyCode::fromString('PLN'));
 
-        $this->assertSame('10050', $amount->getAmount());
+        $this->assertSame('10050', $amount->getMinorUnits());
         $this->assertTrue($amount->getCurrency()->equals(CurrencyCode::fromString('PLN')));
     }
 
@@ -20,7 +22,7 @@ final class MoneyAmountTest extends TestCase
     {
         $amount = MoneyAmount::fromInt(10050, CurrencyCode::fromString('EUR'));
 
-        $this->assertSame('10050', $amount->getAmount());
+        $this->assertSame('10050', $amount->getMinorUnits());
         $this->assertTrue($amount->getCurrency()->equals(CurrencyCode::fromString('EUR')));
     }
 
@@ -31,7 +33,7 @@ final class MoneyAmountTest extends TestCase
 
         $sum = $a->add($b);
 
-        $this->assertSame('15050', $sum->getAmount());
+        $this->assertSame('15050', $sum->getMinorUnits());
         $this->assertTrue($sum->getCurrency()->equals(CurrencyCode::fromString('PLN')));
     }
 
@@ -42,39 +44,65 @@ final class MoneyAmountTest extends TestCase
 
         $diff = $a->subtract($b);
 
-        $this->assertSame('15000', $diff->getAmount());
+        $this->assertSame('15000', $diff->getMinorUnits());
         $this->assertTrue($diff->getCurrency()->equals(CurrencyCode::fromString('USD')));
     }
 
-    public function testIsZero(): void
+    public function testConstructorRejectsZero(): void
     {
-        $zero = MoneyAmount::fromDecimal('0', CurrencyCode::fromString('PLN'));
-        $nonZero = MoneyAmount::fromDecimal('1.00', CurrencyCode::fromString('PLN'));
-
-        $this->assertTrue($zero->isZero());
-        $this->assertFalse($nonZero->isZero());
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        new MoneyAmount(new Money('0', CurrencyCode::fromString('PLN')->toMoneyCurrency()));
     }
 
-    public function testIsPositive(): void
+    public function testConstructorRejectsNegative(): void
     {
-        $positive = MoneyAmount::fromDecimal('10.00', CurrencyCode::fromString('PLN'));
-        $zero = MoneyAmount::fromDecimal('0', CurrencyCode::fromString('PLN'));
-        $negative = MoneyAmount::fromDecimal('-10.00', CurrencyCode::fromString('PLN'));
-
-        $this->assertTrue($positive->isPositive());
-        $this->assertFalse($zero->isPositive());
-        $this->assertFalse($negative->isPositive());
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        new MoneyAmount(new Money('-1000', CurrencyCode::fromString('PLN')->toMoneyCurrency()));
     }
 
-    public function testIsNegative(): void
+    public function testFromDecimalRejectsZero(): void
     {
-        $negative = MoneyAmount::fromDecimal('-10.00', CurrencyCode::fromString('PLN'));
-        $zero = MoneyAmount::fromDecimal('0', CurrencyCode::fromString('PLN'));
-        $positive = MoneyAmount::fromDecimal('10.00', CurrencyCode::fromString('PLN'));
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        MoneyAmount::fromDecimal('0', CurrencyCode::fromString('PLN'));
+    }
 
-        $this->assertTrue($negative->isNegative());
-        $this->assertFalse($zero->isNegative());
-        $this->assertFalse($positive->isNegative());
+    public function testFromDecimalRejectsNegative(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        MoneyAmount::fromDecimal('-10.00', CurrencyCode::fromString('PLN'));
+    }
+
+    public function testFromIntRejectsZero(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        MoneyAmount::fromInt(0, CurrencyCode::fromString('PLN'));
+    }
+
+    public function testFromIntRejectsNegative(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        MoneyAmount::fromInt(-1000, CurrencyCode::fromString('PLN'));
+    }
+
+    public function testFromDecimalRejectsInvalidFormat(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_invalid_format');
+        /** @phpstan-ignore-next-line intentionally passing non-numeric string to test validation */
+        MoneyAmount::fromDecimal('not_a_number', CurrencyCode::fromString('PLN'));
+    }
+
+    public function testFromDecimalWithIskZeroExponent(): void
+    {
+        // ISK has exponent 0, so "100" should work (no decimal conversion needed)
+        $amount = MoneyAmount::fromDecimal('100', CurrencyCode::fromString('ISK'));
+        $this->assertSame('100', $amount->getMinorUnits());
     }
 
     public function testGreaterThan(): void

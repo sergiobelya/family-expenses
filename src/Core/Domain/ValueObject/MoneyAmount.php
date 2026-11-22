@@ -2,7 +2,11 @@
 
 namespace App\Core\Domain\ValueObject;
 
+use App\Core\Domain\Exception\ErrorType;
+use App\Core\Domain\Exception\InvalidValueException;
+use Money\Exception as MoneyException;
 use Money\Money;
+use Throwable;
 
 final readonly class MoneyAmount
 {
@@ -38,8 +42,14 @@ final readonly class MoneyAmount
 
     private Money $money;
 
+    /**
+     * @throws InvalidValueException if the amount is zero or negative
+     */
     public function __construct(Money $money)
     {
+        if (!$money->isPositive()) {
+            throw new InvalidValueException(ErrorType::MONEY_AMOUNT_NOT_POSITIVE);
+        }
         $this->money = $money;
     }
 
@@ -48,26 +58,40 @@ final readonly class MoneyAmount
      * The value is converted to minor units (cents) internally.
      *
      * @param numeric-string $amount
+     * @throws InvalidValueException if the amount is zero, negative, or not a valid number
      */
     public static function fromDecimal(string $amount, CurrencyCode $currency): self
     {
-        $exponent = self::MINOR_UNIT_EXPONENT[$currency->value] ?? 2;
-        /** @var numeric-string $multiplier */
-        $multiplier = bcpow('10', (string) $exponent, 0);
-        /** @var numeric-string $minorUnits */
-        $minorUnits = bcmul($amount, $multiplier, 0);
-        return new self(new Money($minorUnits, $currency->toMoneyCurrency()));
+        try {
+            $exponent = self::MINOR_UNIT_EXPONENT[$currency->value] ?? 2;
+            /** @var numeric-string $multiplier */
+            $multiplier = bcpow('10', (string) $exponent, 0);
+            /** @var numeric-string $minorUnits */
+            $minorUnits = bcmul($amount, $multiplier, 0);
+            $money = new Money($minorUnits, $currency->toMoneyCurrency());
+        } catch (MoneyException|\ValueError) {
+            throw new InvalidValueException(ErrorType::MONEY_AMOUNT_INVALID_FORMAT);
+        }
+        return new self($money);
     }
 
     /**
      * Create from minor units (e.g. 10050 = 100.50 PLN).
+     *
+     * @throws InvalidValueException if the amount is zero or negative
      */
-    public static function fromInt(int $amount, CurrencyCode $currency): self
+    public static function fromInt(int $amountInMinorUnits, CurrencyCode $currency): self
     {
-        return new self(new Money($amount, $currency->toMoneyCurrency()));
+        $money = new Money($amountInMinorUnits, $currency->toMoneyCurrency());
+        return new self($money);
     }
 
-    public function getAmount(): string
+    /**
+     * Returns the amount as a numeric string in minor units (e.g. "10050" = 100.50 PLN).
+     *
+     * @return numeric-string
+     */
+    public function getMinorUnits(): string
     {
         return $this->money->getAmount();
     }
