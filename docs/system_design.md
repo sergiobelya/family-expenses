@@ -48,7 +48,7 @@ Keep auditing as a cross-cutting application capability, not part of any aggrega
 
 Expense Management owns expenses and category allocations. An `Expense` is the aggregate root; its allocations are children because their amounts must reconcile exactly to the expense total.
 
-The family-scoped Catalog owns stores, store aliases, and categories. They are separate aggregates from expenses. Expense records refer to them by IDs, not ORM associations. Catalog search is a query capability; it must not become an alternate source of truth for names or family ownership.
+The family-scoped Catalog owns stores, store aliases, and categories. They are separate aggregates from expenses. Expense records refer to Catalog entities by IDs. When a bounded context needs display names or other fields from an upstream context, create a lightweight read-only entity in the current context with the required fields, rather than referencing entities from another context directly. Use this approach only when genuinely needed (e.g., for display in expense cards, domain events). Catalog search is a query capability; it must not become an alternate source of truth for names or family ownership.
 
 Paginated history, expense details, and the Phase 2 search/filter behavior are Expense Management queries. Exchange-rate providers, saved conversions, amount search across currencies, reports, and recurring-expense scheduling are designed in later phases.
 
@@ -73,6 +73,7 @@ Active-family selection is a navigation preference, not authorization. Resolve i
 ### Expense persistence and consistency
 
 - Keep the original amount, currency, purchase date, creator, family, and store on `Expense`. Persist category allocations separately, with the expense ID, category ID, and allocation amount. Store money as exact decimals, enforce currency precision, and never use binary floating point. Use the `moneyphp/money` library for all monetary calculations, wrapped in a domain `MoneyAmount` value object that integrates with the project's `CurrencyCode` value object.
+- `ExpenseStore` and `ExpenseCategory` are read-only entities in the Expense context, containing `id`, `name`, and `family_id`. They are populated from the Catalog repository when creating or editing an expense. The name in the entity reflects the current database value; the historical name is preserved in domain event snapshots.
 - Keep the database authoritative. Enforce family ownership of expense, store, category, and default-category references using composite foreign keys where practical; also validate the active member and referenced records in the application transaction. Index family-scoped history by purchase date and exclude soft-deleted expenses from normal queries.
 - Save an expense, all allocations, its audit snapshot, and the completion result for its save attempt atomically. Validate allocation reconciliation in the domain/application layer; reject incomplete or non-positive rows before persistence.
 - Persist an `ExpenseSaveAttempt` and immutable snapshot before the first save transaction, with a unique idempotency key. Use the key to return the same committed expense after retries or an ambiguous result. Do not expire unresolved attempts; an unresolved attempt is reconciled before the draft can be replaced.

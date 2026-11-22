@@ -3,31 +3,30 @@
 namespace App\Expense\Domain\Entity;
 
 use App\Core\Domain\ValueObject\AllocationId;
-use App\Core\Domain\ValueObject\CategoryId;
 use App\Core\Domain\ValueObject\MoneyAmount;
 
 final class ExpenseAllocation
 {
     private AllocationId $id;
-    private CategoryId $categoryId;
+    private ExpenseCategory $category;
     private MoneyAmount $amount;
 
     private function __construct(
-        CategoryId $categoryId,
+        ExpenseCategory $category,
         MoneyAmount $amount,
         ?AllocationId $id = null
     ) {
         $this->id = $id ?? AllocationId::generate();
-        $this->categoryId = $categoryId;
+        $this->category = $category;
         $this->amount = $amount;
     }
 
     public static function create(
-        CategoryId $categoryId,
+        ExpenseCategory $category,
         MoneyAmount $amount,
         ?AllocationId $id = null
     ): self {
-        return new self($categoryId, $amount, $id);
+        return new self($category, $amount, $id);
     }
 
     public function getId(): AllocationId
@@ -35,9 +34,9 @@ final class ExpenseAllocation
         return $this->id;
     }
 
-    public function getCategoryId(): CategoryId
+    public function getCategory(): ExpenseCategory
     {
-        return $this->categoryId;
+        return $this->category;
     }
 
     public function getAmount(): MoneyAmount

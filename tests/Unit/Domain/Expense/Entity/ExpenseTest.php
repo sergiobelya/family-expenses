@@ -12,6 +12,8 @@ use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Domain\ValueObject\UserId;
 use App\Expense\Domain\Entity\Expense;
 use App\Expense\Domain\Entity\ExpenseAllocation;
+use App\Expense\Domain\Entity\ExpenseCategory;
+use App\Expense\Domain\Entity\ExpenseStore;
 use App\Expense\Domain\Event\ExpenseCreated;
 use App\Expense\Domain\Event\ExpenseDeleted;
 use App\Expense\Domain\Event\ExpenseEdited;
@@ -25,7 +27,7 @@ final class ExpenseTest extends TestCase
     private DateTimeImmutable $now;
     private FamilyId $familyId;
     private UserId $userId;
-    private StoreId $storeId;
+    private ExpenseStore $store;
     private MoneyAmount $amount;
 
     protected function setUp(): void
@@ -33,7 +35,7 @@ final class ExpenseTest extends TestCase
         $this->now = new DateTimeImmutable('2026-01-15 10:00:00', new DateTimeZone('UTC'));
         $this->familyId = FamilyId::generate();
         $this->userId = UserId::generate();
-        $this->storeId = StoreId::generate();
+        $this->store = new ExpenseStore(StoreId::generate(), 'Aldi', $this->familyId);
         $this->amount = MoneyAmount::fromDecimal('100.50', CurrencyCode::fromString('PLN'));
     }
 
@@ -42,11 +44,11 @@ final class ExpenseTest extends TestCase
     {
         return [
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('60.00', CurrencyCode::fromString('PLN'))
             ),
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Transport', $this->familyId),
                 MoneyAmount::fromDecimal('40.50', CurrencyCode::fromString('PLN'))
             ),
         ];
@@ -58,7 +60,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $allocations,
@@ -68,7 +70,8 @@ final class ExpenseTest extends TestCase
         $this->assertInstanceOf(ExpenseId::class, $expense->getId());
         $this->assertTrue($expense->getFamilyId()->equals($this->familyId));
         $this->assertTrue($expense->getAuthorUserId()->equals($this->userId));
-        $this->assertTrue($expense->getStoreId()->equals($this->storeId));
+        $this->assertTrue($expense->getStore()->getId()->equals($this->store->getId()));
+        $this->assertSame('Aldi', $expense->getStore()->getName());
         $this->assertTrue($expense->getAmount()->equals($this->amount));
         $this->assertSame($this->now, $expense->getPurchaseDate());
         $this->assertNull($expense->getDeletedAt());
@@ -82,7 +85,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -98,7 +101,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -121,7 +124,7 @@ final class ExpenseTest extends TestCase
     {
         $allocations = [
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('50.00', CurrencyCode::fromString('PLN'))
             ),
         ];
@@ -130,7 +133,7 @@ final class ExpenseTest extends TestCase
         Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $allocations,
@@ -142,11 +145,11 @@ final class ExpenseTest extends TestCase
     {
         $allocations = [
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('80.00', CurrencyCode::fromString('PLN'))
             ),
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Transport', $this->familyId),
                 MoneyAmount::fromDecimal('80.00', CurrencyCode::fromString('PLN'))
             ),
         ];
@@ -155,7 +158,7 @@ final class ExpenseTest extends TestCase
         Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $allocations,
@@ -167,7 +170,7 @@ final class ExpenseTest extends TestCase
     {
         $allocations = [
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 $this->amount
             ),
         ];
@@ -175,7 +178,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $allocations,
@@ -190,7 +193,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -198,19 +201,19 @@ final class ExpenseTest extends TestCase
         );
         iterator_to_array($expense->releaseEvents());
 
-        $newStoreId = StoreId::generate();
+        $newStore = new ExpenseStore(StoreId::generate(), 'Lidl', $this->familyId);
         $newAmount = MoneyAmount::fromDecimal('200.00', CurrencyCode::fromString('PLN'));
         $newDate = new DateTimeImmutable('2026-02-01 12:00:00', new DateTimeZone('UTC'));
         $newAllocations = [
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Entertainment', $this->familyId),
                 MoneyAmount::fromDecimal('200.00', CurrencyCode::fromString('PLN'))
             ),
         ];
         $newNow = new DateTimeImmutable('2026-02-01 13:00:00', new DateTimeZone('UTC'));
 
         $expense->edit(
-            storeId: $newStoreId,
+            store: $newStore,
             amount: $newAmount,
             purchaseDate: $newDate,
             allocations: $newAllocations,
@@ -218,7 +221,8 @@ final class ExpenseTest extends TestCase
             now: $newNow
         );
 
-        $this->assertTrue($expense->getStoreId()->equals($newStoreId));
+        $this->assertTrue($expense->getStore()->getId()->equals($newStore->getId()));
+        $this->assertSame('Lidl', $expense->getStore()->getName());
         $this->assertTrue($expense->getAmount()->equals($newAmount));
         $this->assertSame($newDate, $expense->getPurchaseDate());
         $this->assertCount(1, $expense->getAllocations());
@@ -230,7 +234,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -240,13 +244,13 @@ final class ExpenseTest extends TestCase
 
         $newAllocations = [
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('100.50', CurrencyCode::fromString('PLN'))
             ),
         ];
 
         $expense->edit(
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $newAllocations,
@@ -266,7 +270,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -276,14 +280,14 @@ final class ExpenseTest extends TestCase
 
         $badAllocations = [
             ExpenseAllocation::create(
-                CategoryId::generate(),
+                new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
                 MoneyAmount::fromDecimal('10.00', CurrencyCode::fromString('PLN'))
             ),
         ];
 
         $this->expectException(AllocationReconciliationException::class);
         $expense->edit(
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $badAllocations,
@@ -297,7 +301,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -317,7 +321,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -339,7 +343,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -365,7 +369,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $allocations,
@@ -382,7 +386,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -390,7 +394,7 @@ final class ExpenseTest extends TestCase
         );
 
         $newAllocation = ExpenseAllocation::create(
-            CategoryId::generate(),
+            new ExpenseCategory(CategoryId::generate(), 'Food', $this->familyId),
             MoneyAmount::fromDecimal('100.50', CurrencyCode::fromString('PLN'))
         );
         $expense->setAllocations([$newAllocation]);
@@ -403,7 +407,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),
@@ -419,7 +423,7 @@ final class ExpenseTest extends TestCase
         $expense = Expense::create(
             familyId: $this->familyId,
             authorUserId: $this->userId,
-            storeId: $this->storeId,
+            store: $this->store,
             amount: $this->amount,
             purchaseDate: $this->now,
             allocations: $this->createValidAllocations(),

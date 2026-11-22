@@ -7,7 +7,6 @@ use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\ExpenseId;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\MoneyAmount;
-use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Domain\ValueObject\UserId;
 use App\Expense\Domain\Event\ExpenseCreated;
 use App\Expense\Domain\Event\ExpenseDeleted;
@@ -24,7 +23,7 @@ final class Expense extends AggregateRoot
     private ExpenseId $id;
     private FamilyId $familyId;
     private UserId $authorUserId;
-    private StoreId $storeId;
+    private ExpenseStore $store;
     private string $amount;
     private string $currency;
     private DateTimeImmutable $purchaseDate;
@@ -35,7 +34,7 @@ final class Expense extends AggregateRoot
     private function __construct(
         FamilyId $familyId,
         UserId $authorUserId,
-        StoreId $storeId,
+        ExpenseStore $store,
         string $amount,
         string $currency,
         DateTimeImmutable $purchaseDate,
@@ -47,7 +46,7 @@ final class Expense extends AggregateRoot
         $this->id = $id ?? ExpenseId::generate();
         $this->familyId = $familyId;
         $this->authorUserId = $authorUserId;
-        $this->storeId = $storeId;
+        $this->store = $store;
         $this->amount = $amount;
         $this->currency = $currency;
         $this->purchaseDate = $purchaseDate;
@@ -62,7 +61,7 @@ final class Expense extends AggregateRoot
     public static function create(
         FamilyId $familyId,
         UserId $authorUserId,
-        StoreId $storeId,
+        ExpenseStore $store,
         MoneyAmount $amount,
         DateTimeImmutable $purchaseDate,
         array $allocations,
@@ -73,7 +72,7 @@ final class Expense extends AggregateRoot
         $expense = new self(
             familyId: $familyId,
             authorUserId: $authorUserId,
-            storeId: $storeId,
+            store: $store,
             amount: $amount->getAmount(),
             currency: (string) $amount->getCurrency(),
             purchaseDate: $purchaseDate,
@@ -114,9 +113,9 @@ final class Expense extends AggregateRoot
         return $this->authorUserId;
     }
 
-    public function getStoreId(): StoreId
+    public function getStore(): ExpenseStore
     {
-        return $this->storeId;
+        return $this->store;
     }
 
     public function getAmount(): MoneyAmount
@@ -174,7 +173,7 @@ final class Expense extends AggregateRoot
      * @param ExpenseAllocation[] $allocations
      */
     public function edit(
-        StoreId $storeId,
+        ExpenseStore $store,
         MoneyAmount $amount,
         DateTimeImmutable $purchaseDate,
         array $allocations,
@@ -183,7 +182,7 @@ final class Expense extends AggregateRoot
     ): void {
         $beforeData = $this->snapshot();
 
-        $this->storeId = $storeId;
+        $this->store = $store;
         $this->amount = $amount->getAmount();
         $this->currency = (string) $amount->getCurrency();
         $this->purchaseDate = $purchaseDate;
@@ -253,7 +252,8 @@ final class Expense extends AggregateRoot
             'id' => (string) $this->id,
             'family_id' => (string) $this->familyId,
             'author_user_id' => (string) $this->authorUserId,
-            'store_id' => (string) $this->storeId,
+            'store_id' => (string) $this->store->getId(),
+            'store_name' => $this->store->getName(),
             'amount' => $this->amount,
             'currency' => $this->currency,
             'purchase_date' => $this->purchaseDate->format('Y-m-d H:i:s'),
@@ -261,7 +261,8 @@ final class Expense extends AggregateRoot
             'allocations' => array_map(
                 fn (ExpenseAllocation $a): array => [
                     'id' => (string) $a->getId(),
-                    'category_id' => (string) $a->getCategoryId(),
+                    'category_id' => (string) $a->getCategory()->getId(),
+                    'category_name' => $a->getCategory()->getName(),
                     'amount' => $a->getAmount()->getAmount(),
                 ],
                 $this->allocations
