@@ -91,7 +91,7 @@ final class Category extends AggregateRoot
 
     public function rename(CategoryName $categoryName, UserId $actorUserId, ?DateTimeImmutable $now = null): void
     {
-        if ($this->nameIsDifferentFrom($categoryName)) {
+        if (!$this->nameIsDifferentFrom($categoryName)) {
             return;
         }
 
