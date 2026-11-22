@@ -19,11 +19,13 @@ use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeZone;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 final class Store extends AggregateRoot
 {
-    /** @var StoreAlias[] */
-    private array $aliases = [];
+    /** @var Collection<int, StoreAlias> */
+    private Collection $aliases;
 
     private StoreId $id;
     private StoreName $name;
@@ -43,6 +45,7 @@ final class Store extends AggregateRoot
         $this->name = $name;
         $this->dedupeKey = $name->getDedupeKey();
         $this->defaultCategoryId = $defaultCategoryId;
+        $this->aliases = new ArrayCollection();
         $this->createdAt = $now;
         $this->updatedAt = $now;
     }
@@ -167,7 +170,7 @@ final class Store extends AggregateRoot
                 occurredAt: $now
             ));
         }
-        $this->aliases = [];
+        $this->aliases = new ArrayCollection();
         $this->recordEvent(new StoreDeleted(
             entityId: $this->id,
             familyId: $this->getFamilyId(),
@@ -186,7 +189,7 @@ final class Store extends AggregateRoot
             $name,
             now: $now
         );
-        $this->aliases[] = $storeAlias;
+        $this->aliases->add($storeAlias);
         $this->recordEvent(new StoreAliasCreated(
             entityId: $storeAlias->getId(),
             familyId: $this->getFamilyId(),
@@ -224,10 +227,7 @@ final class Store extends AggregateRoot
     {
         $alias = $this->findAlias($aliasId);
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->aliases = array_values(array_filter(
-            $this->aliases,
-            fn (StoreAlias $a) => !$a->getId()->equals($aliasId)
-        ));
+        $this->aliases->removeElement($alias);
         $this->recordEvent(new StoreAliasDeleted(
             entityId: $alias->getId(),
             familyId: $this->getFamilyId(),
@@ -252,7 +252,7 @@ final class Store extends AggregateRoot
      */
     public function getAliases(): array
     {
-        return $this->aliases;
+        return $this->aliases->toArray();
     }
 
     private function findAlias(StoreAliasId $aliasId): StoreAlias

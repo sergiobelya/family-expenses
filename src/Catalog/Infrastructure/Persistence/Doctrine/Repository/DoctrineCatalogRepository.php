@@ -67,17 +67,7 @@ final readonly class DoctrineCatalogRepository implements CatalogRepositoryInter
 
     public function findStoreWithAliases(FamilyId $familyId, StoreId $storeId): ?Store
     {
-        return $this->entityManager->createQueryBuilder()
-            ->select('store')
-            ->from(Store::class, 'store')
-            ->leftJoin('store.aliases', 'aliases')
-            ->addSelect('aliases')
-            ->where('store.familyId = :familyId')
-            ->andWhere('store.id = :storeId')
-            ->setParameter('familyId', $familyId)
-            ->setParameter('storeId', $storeId)
-            ->getQuery()
-            ->getOneOrNullResult();
+        return $this->stores->findOneBy(['familyId' => $familyId, 'id' => $storeId]);
     }
 
     public function findCategory(FamilyId $familyId, CategoryId $categoryId): ?Category
