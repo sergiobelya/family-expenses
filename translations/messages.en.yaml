@@ -154,3 +154,123 @@ catalog:
     category_deleted: "Category deleted."
     set_as_default: "Set as default category"
     category_created: "Category created. Set it as this store's default?"
+
+expense:
+    amount:
+        invalid_format: "Enter a positive number. Example: 125.50"
+        not_positive: "Amount must be greater than zero."
+        too_large: "Amount exceeds the maximum of 100,000,000."
+        too_precise: "This currency does not use more than %{precision} decimal places."
+        too_precise_zero: "This currency has no decimal places."
+        empty: "not entered yet"
+        prompt: "💰 Send the amount in %{currency}. Example: %{example_amount}"
+    add:
+        # Card anatomy
+        card_header: "🧾 New expense · 👪 %{family_name}"
+        store:
+            label: "Store"
+            empty: "not selected yet"
+            prompt: "🏪 Choose the store for this expense, or search by name."
+            unavailable: "“%{store_name}” is no longer available. Choose another store."
+            search:
+                prompt: "🔎 Send the store name to search."
+                results: "Stores matching “%{query}”:"
+                none: "No stores found for “%{query}”. Create it in the Stores section or try another name."
+                empty: "Send at least one letter or digit."
+                limited: "Search is limited right now. Only close name matches are shown."
+                unavailable: "Search is temporarily unavailable. Choose a store from the list."
+        category:
+            label: "Category"
+            empty: "not selected yet"
+            prompt: "🏷 Choose a category for %{amount} %{currency}."
+            unavailable: "“%{category_name}” is no longer available. Choose another category."
+            search:
+                prompt: "🔎 Send the category name to search."
+                results: "Categories matching “%{query}”:"
+                none: "No categories found for “%{query}”. Create it in the Categories section or try another name."
+                empty: "Send at least one letter or digit."
+        date:
+            empty: "not selected yet"
+            today: "today"
+            yesterday: "yesterday"
+            prompt: "📅 Send the purchase date (DD.MM.YYYY, DD.MM, or YYYY-MM-DD)."
+            invalid: "Enter a valid date (DD.MM.YYYY, DD.MM, or YYYY-MM-DD)."
+            future: "Purchase date cannot be in the future."
+            too_old: "Purchase date cannot be before 2020."
+        currency:
+            more: "💱 More currencies"
+            search:
+                prompt: "🔎 Send a currency code or name to search."
+                none: "No currencies found for “%{query}”."
+        split:
+            title: "🧩 Split between categories"
+            prompt: "Send the amount for %{category}."
+            remaining: "%{amount} %{currency} remaining"
+            over: "Over by %{amount} %{currency}"
+            done: "✅ Done"
+            add: "➕ Add category"
+            add_remaining: "➕ Add remaining"
+            remove: "🗑 Remove"
+            pick: "🔎 Pick category"
+            pick_search: "🔎 Search categories"
+            use_remaining: "Use remaining amount"
+            invalid_sum: "The split amounts must equal %{total} %{currency}."
+        review:
+            title: "🧾 Review your expense"
+            confirm: "✅ Confirm and save"
+            confirm_no_conversion: "✅ Save without conversion"
+            edit_store: "✏️ Store"
+            edit_amount: "✏️ Amount"
+            edit_category: "✏️ Category"
+            edit_date: "✏️ Date"
+            conversion_none: "⚠️ No conversion available."
+            conversion_ok: "💱 ≈ %{converted} %{reporting_currency}"
+            conversion_manual: "Manual rate applied."
+            conversion_reporting_changed: "Reporting currency changed. Please review the conversion."
+        save:
+            in_progress_card: "⏳ Saving the expense…"
+            in_progress: "Saving… one moment."
+            error: "⚠️ I couldn't confirm that the expense was saved. Your draft is kept. Tap Retry — it will not create a duplicate."
+            retry: "🔄 Retry"
+            review_draft: "✏️ Review draft"
+            committed_meanwhile: "This expense was already saved."
+        success:
+            title: "✅ Expense saved"
+            body: "%{store_name} · %{amount} %{currency}\nCategory: %{category_summary}\nDate: %{date}"
+            conversion_none: "⚠️ Saved without conversion. Reports will try to convert it with an available rate and mark it as not converted if none exists."
+            conversion_ok: "💱 ≈ %{converted} %{reporting_currency}"
+            add_another: "➕ Add another"
+            open_expense: "📋 Open expense"
+        cancel:
+            confirm: "Discard this expense draft? Everything you entered will be lost."
+            done: "Draft discarded. No expense was created."
+            yes: "Yes, discard"
+            no: "No, keep editing"
+        expired:
+            message: "This expense draft has expired. Tap “Start new expense” to begin again."
+            restart: "➕ Start new expense"
+            close: "✖️ Close"
+        callback:
+            stale: "This button is no longer active."
+        input:
+            unexpected: "I wasn't expecting text right now. Use the buttons on the expense card."
+            not_text: "Please send text."
+            show_card: "Show card"
+        membership:
+            lost: "You're no longer a member of this family, so the expense can't be saved. The draft was closed."
+        draft:
+            paused_for_creation: "⏸ Your expense draft is saved until %{expires_at}. Create %{entity_name} in the %{section_name} section, then come back with the button below or with “Add expense”."
+            return: "↩️ Back to expense"
+        family:
+            select:
+                prompt: "Which family is this expense for?"
+            change:
+                btn: "👪 Change family"
+        date_picker:
+            today: "📅 Today"
+            yesterday: "📅 Yesterday"
+            type_date: "✍️ Type date"
+        pagination:
+            previous: "‹ Previous"
+            next: "Next ›"
+            page: "Page %{current}/%{total}"

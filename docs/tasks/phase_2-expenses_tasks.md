@@ -65,9 +65,9 @@
   - Migration `Version20261122130000` creates `expense_save_attempts` table with foreign keys and indexes
   - Unit tests: `ExpenseDraftTest` (11 tests), `ExpenseSaveAttemptTest` (3 tests)
 
-### Pending
-
 - **Add Expense Telegram Flow — Subtask 1: Infrastructure** — Create the foundation for the expense flow: `AddExpenseFlowHandler` (implements `FamilyContextFlowHandlerInterface`), `AddExpenseStepInterface`, callback action constants in `CallbackActions`, shared utilities (`ExpenseCardRenderer` for card text/keyboard rendering, `AmountParser` for amount validation per §6.1, `DateParser` for date validation per §6.3), and `ExpenseFlowUtils` for draft management (create/resume/pause/restore). Register the handler in `TelegramUpdateRouter`. Add English translations for all `expense.add.*` keys from the spec.
+
+### Pending
 
 - **Add Expense Telegram Flow — Subtask 2: Entry & Draft (AE-00, AE-01, AE-02, AE-17, AE-18)** — Implement entry point from menu and `/add`, family context check (AE-01), draft resume (AE-02), expired draft handling (AE-17), and stale callback/unexpected input handling (AE-18). Integrate with `ExpenseDraftRepository` for draft lifecycle. Handle the one-card model: send initial card or re-anchor existing card.
 

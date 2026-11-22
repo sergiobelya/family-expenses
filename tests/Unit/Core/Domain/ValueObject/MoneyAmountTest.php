@@ -2,6 +2,7 @@
 
 namespace App\Tests\Unit\Core\Domain\ValueObject;
 
+use App\Core\Domain\Exception\ErrorType;
 use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\MoneyAmount;
@@ -142,5 +143,74 @@ final class MoneyAmountTest extends TestCase
         $money = $amount->getMoney();
         $this->assertInstanceOf(\Money\Money::class, $money);
         $this->assertSame('10050', $money->getAmount());
+    }
+
+    public function testGetMaxPrecisionReturnsCorrectValue(): void
+    {
+        $this->assertSame(2, MoneyAmount::getMaxPrecision('PLN'));
+        $this->assertSame(2, MoneyAmount::getMaxPrecision('EUR'));
+        $this->assertSame(0, MoneyAmount::getMaxPrecision('ISK'));
+        $this->assertSame(2, MoneyAmount::getMaxPrecision('UNKNOWN')); // default fallback
+    }
+
+    public function testFromDecimalWithValidationCreatesValidAmount(): void
+    {
+        $amount = MoneyAmount::fromDecimalWithValidation('125.50', CurrencyCode::fromString('PLN'));
+
+        $this->assertSame('12550', $amount->getMinorUnits());
+    }
+
+    public function testFromDecimalWithValidationRejectsTooPrecise(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_too_precise');
+        MoneyAmount::fromDecimalWithValidation('12.345', CurrencyCode::fromString('PLN'));
+    }
+
+    public function testFromDecimalWithValidationRejectsTooPreciseForZeroDecimalCurrency(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_too_precise_zero');
+        MoneyAmount::fromDecimalWithValidation('500.5', CurrencyCode::fromString('ISK'));
+    }
+
+    public function testFromDecimalWithValidationAcceptsZeroDecimalCurrency(): void
+    {
+        $amount = MoneyAmount::fromDecimalWithValidation('500', CurrencyCode::fromString('ISK'));
+        $this->assertSame('500', $amount->getMinorUnits());
+    }
+
+    public function testFromDecimalWithValidationRejectsTooLarge(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_too_large');
+        MoneyAmount::fromDecimalWithValidation('100000001', CurrencyCode::fromString('PLN'));
+    }
+
+    public function testFromDecimalWithValidationAcceptsMaxAmount(): void
+    {
+        $amount = MoneyAmount::fromDecimalWithValidation('100000000', CurrencyCode::fromString('PLN'));
+        $this->assertSame('10000000000', $amount->getMinorUnits());
+    }
+
+    public function testFromDecimalWithValidationRejectsZero(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        MoneyAmount::fromDecimalWithValidation('0', CurrencyCode::fromString('PLN'));
+    }
+
+    public function testFromDecimalWithValidationRejectsNegative(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        MoneyAmount::fromDecimalWithValidation('-10.00', CurrencyCode::fromString('PLN'));
+    }
+
+    public function testFromDecimalWithValidationWithCustomMaxAmount(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_too_large');
+        MoneyAmount::fromDecimalWithValidation('500', CurrencyCode::fromString('PLN'), 100);
     }
 }

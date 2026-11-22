@@ -54,6 +54,14 @@ final readonly class MoneyAmount
     }
 
     /**
+     * Return the minor-unit exponent (decimal precision) for a currency.
+     */
+    public static function getMaxPrecision(string $currencyCode): int
+    {
+        return self::MINOR_UNIT_EXPONENT[$currencyCode] ?? 2;
+    }
+
+    /**
      * Create from a decimal string (e.g. "100.50" = 100.50 in major units).
      * The value is converted to minor units (cents) internally.
      *
@@ -73,6 +81,48 @@ final readonly class MoneyAmount
             throw new InvalidValueException(ErrorType::MONEY_AMOUNT_INVALID_FORMAT);
         }
         return new self($money);
+    }
+
+    /**
+     * Create from a decimal string with precision and maximum validation.
+     * Validates that the input respects the currency's minor-unit precision
+     * and does not exceed the configured maximum amount.
+     *
+     * @param string $amount A decimal string (e.g. "125.50")
+     * @param int $maxAmount Maximum allowed amount in major units (default 100,000,000)
+     * @throws InvalidValueException if precision exceeds currency's minor units
+     * @throws InvalidValueException if amount exceeds maximum
+     * @throws InvalidValueException if the amount is zero, negative, or not a valid number
+     */
+    public static function fromDecimalWithValidation(
+        string $amount,
+        CurrencyCode $currency,
+        int $maxAmount = 100_000_000
+    ): self {
+        $maxPrecision = self::getMaxPrecision($currency->value);
+
+        // Check precision before conversion
+        $dotPos = strpos($amount, '.');
+        if ($dotPos !== false) {
+            $fractionalLength = strlen($amount) - $dotPos - 1;
+            if ($fractionalLength > $maxPrecision) {
+                throw new InvalidValueException(
+                    $maxPrecision === 0
+                        ? ErrorType::MONEY_AMOUNT_TOO_PRECISE_ZERO
+                        : ErrorType::MONEY_AMOUNT_TOO_PRECISE
+                );
+            }
+        }
+
+        // Check maximum amount
+        // @phpstan-ignore argument.type
+        if (bccomp($amount, (string) $maxAmount, 0) > 0) {
+            throw new InvalidValueException(ErrorType::MONEY_AMOUNT_TOO_LARGE);
+        }
+
+        // At this point $amount is validated as a proper decimal string
+        /** @var numeric-string $amount */
+        return self::fromDecimal($amount, $currency);
     }
 
     /**

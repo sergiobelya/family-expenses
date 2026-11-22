@@ -154,3 +154,122 @@ catalog:
     category_deleted: "Kategoria została usunięta."
     set_as_default: "Ustaw jako domyślną kategorię"
     category_created: "Kategoria została utworzona. Ustawić ją jako domyślną dla tego sklepu?"
+
+expense:
+    amount:
+        invalid_format: "Wpisz dodatnią liczbę. Przykład: 125.50"
+        not_positive: "Kwota musi być większa od zera."
+        too_large: "Kwota przekracza maksimum 100 000 000."
+        too_precise: "Ta waluta nie używa więcej niż %{precision} miejsc po przecinku."
+        too_precise_zero: "Ta waluta nie ma miejsc po przecinku."
+        empty: "nie wprowadzono"
+        prompt: "💰 Wyślij kwotę w %{currency}. Przykład: %{example_amount}"
+    add:
+        card_header: "🧾 Nowy wydatek · 👪 %{family_name}"
+        store:
+            label: "Sklep"
+            empty: "nie wybrano"
+            prompt: "🏪 Wybierz sklep dla tego wydatku lub wyszukaj po nazwie."
+            unavailable: "„%{store_name}” nie jest już dostępny. Wybierz inny sklep."
+            search:
+                prompt: "🔎 Wyślij nazwę sklepu do wyszukania."
+                results: "Sklepy pasujące do „%{query}”:"
+                none: "Nie znaleziono sklepów dla „%{query}”. Utwórz go w sekcji Sklepy lub spróbuj innej nazwy."
+                empty: "Wyślij co najmniej jedną literę lub cyfrę."
+                limited: "Wyszukiwanie jest teraz ograniczone. Pokazane są tylko dokładne dopasowania."
+                unavailable: "Wyszukiwanie jest tymczasowo niedostępne. Wybierz sklep z listy."
+        category:
+            label: "Kategoria"
+            empty: "nie wybrano"
+            prompt: "🏷 Wybierz kategorię dla %{amount} %{currency}."
+            unavailable: "„%{category_name}” nie jest już dostępna. Wybierz inną kategorię."
+            search:
+                prompt: "🔎 Wyślij nazwę kategorii do wyszukania."
+                results: "Kategorie pasujące do „%{query}”:"
+                none: "Nie znaleziono kategorii dla „%{query}”. Utwórz ją w sekcji Kategorie lub spróbuj innej nazwy."
+                empty: "Wyślij co najmniej jedną literę lub cyfrę."
+        date:
+            empty: "nie wybrano"
+            today: "dzisiaj"
+            yesterday: "wczoraj"
+            prompt: "📅 Wyślij datę zakupu (DD.MM.RRRR, DD.MM lub RRRR-MM-DD)."
+            invalid: "Wpisz poprawną datę (DD.MM.RRRR, DD.MM lub RRRR-MM-DD)."
+            future: "Data zakupu nie może być w przyszłości."
+            too_old: "Data zakupu nie może być wcześniejsza niż 2020."
+        currency:
+            more: "💱 Więcej walut"
+            search:
+                prompt: "🔎 Wyślij kod lub nazwę waluty do wyszukania."
+                none: "Nie znaleziono walut dla „%{query}”."
+        split:
+            title: "🧩 Podział między kategorie"
+            prompt: "Wyślij kwotę dla %{category}."
+            remaining: "%{amount} %{currency} pozostało"
+            over: "Przekroczono o %{amount} %{currency}"
+            done: "✅ Gotowe"
+            add: "➕ Dodaj kategorię"
+            add_remaining: "➕ Dodaj resztę"
+            remove: "🗑 Usuń"
+            pick: "🔎 Wybierz kategorię"
+            pick_search: "🔎 Szukaj kategorii"
+            use_remaining: "Użyj pozostałej kwoty"
+            invalid_sum: "Kwoty podziału muszą równać się %{total} %{currency}."
+        review:
+            title: "🧾 Sprawdź swój wydatek"
+            confirm: "✅ Potwierdź i zapisz"
+            confirm_no_conversion: "✅ Zapisz bez konwersji"
+            edit_store: "✏️ Sklep"
+            edit_amount: "✏️ Kwota"
+            edit_category: "✏️ Kategoria"
+            edit_date: "✏️ Data"
+            conversion_none: "⚠️ Konwersja niedostępna."
+            conversion_ok: "💱 ≈ %{converted} %{reporting_currency}"
+            conversion_manual: "Kurs ustawiony ręcznie."
+            conversion_reporting_changed: "Waluta raportowania została zmieniona. Sprawdź konwersję."
+        save:
+            in_progress_card: "⏳ Zapisywanie wydatku…"
+            in_progress: "Zapisywanie… chwilę."
+            error: "⚠️ Nie udało się potwierdzić zapisania wydatku. Szkic został zachowany. Naciśnij Ponów — nie utworzy to duplikatu."
+            retry: "🔄 Ponów"
+            review_draft: "✏️ Sprawdź szkic"
+            committed_meanwhile: "Ten wydatek został już zapisany."
+        success:
+            title: "✅ Wydatek zapisany"
+            body: "%{store_name} · %{amount} %{currency}\nKategoria: %{category_summary}\nData: %{date}"
+            conversion_none: "⚠️ Zapisano bez konwersji. Raporty spróbują go przekonwertować po dostępnym kursie."
+            conversion_ok: "💱 ≈ %{converted} %{reporting_currency}"
+            add_another: "➕ Dodaj kolejny"
+            open_expense: "📋 Otwórz wydatek"
+        cancel:
+            confirm: "Odrzucić szkic wydatku? Wszystkie wprowadzone dane zostaną utracone."
+            done: "Szkic odrzucony. Nie utworzono wydatku."
+            yes: "Tak, odrzuć"
+            no: "Nie, kontynuuj"
+        expired:
+            message: "Ten szkic wydatku wygasł. Naciśnij „Nowy wydatek”, aby zacząć od nowa."
+            restart: "➕ Nowy wydatek"
+            close: "✖️ Zamknij"
+        callback:
+            stale: "Ten przycisk nie jest już aktywny."
+        input:
+            unexpected: "Nie oczekuję teraz tekstu. Użyj przycisków na karcie wydatku."
+            not_text: "Wyślij tekst."
+            show_card: "Pokaż kartę"
+        membership:
+            lost: "Nie jesteś już członkiem tej rodziny, więc wydatek nie może być zapisany. Szkic został zamknięty."
+        draft:
+            paused_for_creation: "⏸ Szkic wydatku jest zapisany do %{expires_at}. Utwórz %{entity_name} w sekcji %{section_name}, a następnie wróć przyciskiem poniżej lub „Dodaj wydatek”."
+            return: "↩️ Wróć do wydatku"
+        family:
+            select:
+                prompt: "Dla której rodziny jest ten wydatek?"
+            change:
+                btn: "👪 Przełącz rodzinę"
+        date_picker:
+            today: "📅 Dzisiaj"
+            yesterday: "📅 Wczoraj"
+            type_date: "✍️ Wpisz datę"
+        pagination:
+            previous: "‹ Wstecz"
+            next: "Dalej ›"
+            page: "Str. %{current}/%{total}"

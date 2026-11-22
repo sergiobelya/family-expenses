@@ -101,4 +101,91 @@ final readonly class CallbackActions
     public const string CATALOG_SEARCH_PREFIX = 'catalog:search:';
     public const string CATALOG_PAGE_PREFIX = 'catalog:page:';
     public const string CATALOG_RETURN_PREFIX = 'catalog:return:';
+
+    // ── Add Expense Flow ────────────────────────────────────────────────────
+
+    public const string EXPENSE_PREFIX = 'exp:';
+
+    // Entry
+    public const string EXPENSE_ADD = 'exp:add';
+    public const string EXPENSE_CONTINUE = 'exp:continue';
+
+    // Store selection (AE-03/AE-04)
+    public const string EXPENSE_STORE_SELECT_PREFIX = 'exp:store:';
+    public const string EXPENSE_STORE_SEARCH = 'exp:store:search';
+    public const string EXPENSE_STORE_SEARCH_CLEAR = 'exp:store:search:clear';
+    public const string EXPENSE_STORE_SEARCH_PREFIX = 'exp:store:search:';
+    public const string EXPENSE_STORE_PAGE_PREFIX = 'exp:store:page:';
+    public const string EXPENSE_STORE_ADD = 'exp:store:add';
+    public const string EXPENSE_STORE_CREATE_QUERY = 'exp:store:create:';
+
+    // Amount (AE-06)
+    public const string EXPENSE_CURRENCY_PREFIX = 'exp:curr:';
+    public const string EXPENSE_CURRENCY_MORE = 'exp:curr:more';
+
+    // More currencies (AE-07)
+    public const string EXPENSE_CURRENCY_SELECT_PREFIX = 'exp:currency:set:';
+    public const string EXPENSE_CURRENCY_SEARCH = 'exp:currency:search';
+    public const string EXPENSE_CURRENCY_SEARCH_CLEAR = 'exp:currency:search:clear';
+    public const string EXPENSE_CURRENCY_PAGE_PREFIX = 'exp:currency:page:';
+
+    // Category (AE-08)
+    public const string EXPENSE_CATEGORY_SELECT_PREFIX = 'exp:cat:';
+    public const string EXPENSE_CATEGORY_CONTINUE = 'exp:cat:continue';
+    public const string EXPENSE_CATEGORY_SEARCH = 'exp:cat:search';
+    public const string EXPENSE_CATEGORY_SEARCH_CLEAR = 'exp:cat:search:clear';
+    public const string EXPENSE_CATEGORY_PAGE_PREFIX = 'exp:cat:page:';
+    public const string EXPENSE_CATEGORY_CREATE = 'exp:cat:create';
+    public const string EXPENSE_CATEGORY_CREATE_QUERY = 'exp:cat:create:';
+    public const string EXPENSE_CATEGORY_SPLIT = 'exp:cat:split';
+
+    // Split (AE-09)
+    public const string EXPENSE_SPLIT_ADD = 'exp:split:add';
+    public const string EXPENSE_SPLIT_ADD_REMAINING = 'exp:split:add:remaining';
+    public const string EXPENSE_SPLIT_REMOVE_PREFIX = 'exp:split:rm:';
+    public const string EXPENSE_SPLIT_EDIT_PREFIX = 'exp:split:edit:';
+    public const string EXPENSE_SPLIT_DONE = 'exp:split:done';
+    public const string EXPENSE_SPLIT_PICK_SEARCH = 'exp:split:search';
+    public const string EXPENSE_SPLIT_PICK_PREFIX = 'exp:split:pick:';
+    public const string EXPENSE_SPLIT_USE_REMAINING = 'exp:split:use:remaining';
+
+    // Review (AE-10)
+    public const string EXPENSE_CONFIRM = 'exp:confirm';
+    public const string EXPENSE_CONFIRM_NO_CONVERSION = 'exp:confirm:no-conv';
+    public const string EXPENSE_EDIT_STORE = 'exp:edit:store';
+    public const string EXPENSE_EDIT_AMOUNT = 'exp:edit:amount';
+    public const string EXPENSE_EDIT_CATEGORY = 'exp:edit:category';
+    public const string EXPENSE_EDIT_DATE = 'exp:edit:date';
+
+    // Date (AE-11)
+    public const string EXPENSE_DATE_TODAY = 'exp:date:today';
+    public const string EXPENSE_DATE_YESTERDAY = 'exp:date:yesterday';
+    public const string EXPENSE_DATE_TYPE = 'exp:date:type';
+    public const string EXPENSE_DATE_SET_PREFIX = 'exp:date:set:';
+    public const string EXPENSE_DATE_CAL_PREFIX = 'exp:date:cal:';
+
+    // Saving (AE-13/AE-15)
+    public const string EXPENSE_RETRY = 'exp:retry';
+    public const string EXPENSE_REVIEW_DRAFT = 'exp:review:draft';
+
+    // Success (AE-14)
+    public const string EXPENSE_ADD_ANOTHER = 'exp:add:another';
+    public const string EXPENSE_OPEN_EXPENSE = 'exp:open';
+
+    // Cancel (AE-16)
+    public const string EXPENSE_CANCEL = 'exp:cancel';
+    public const string EXPENSE_CANCEL_YES = 'exp:cancel:yes';
+    public const string EXPENSE_CANCEL_NO = 'exp:cancel:no';
+
+    // Expired (AE-17)
+    public const string EXPENSE_EXPIRED_RESTART = 'exp:expired:restart';
+    public const string EXPENSE_EXPIRED_CLOSE = 'exp:expired:close';
+
+    // Shared
+    public const string EXPENSE_BACK = 'exp:back';
+    public const string EXPENSE_CHANGE_FAMILY = 'exp:change:family';
+    public const string EXPENSE_RETURN = 'exp:return';
+
+    // Draft token prefix for callback data (exp:t:<token>:<rev>:<action>)
+    public const string EXPENSE_TOKEN_PREFIX = 'exp:t:';
 }
