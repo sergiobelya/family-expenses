@@ -4,7 +4,6 @@ namespace App\Presentation\Telegram\Flow\FamilySettings;
 
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
-use Closure;
 use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
@@ -19,7 +18,7 @@ final class FamilySettingsCurrencyStep implements FamilySettingsStepInterface
         private TelegramApiClientInterface $telegramClient,
         private UpdateFamilySettingsHandler $updateFamilySettingsHandler,
         private TranslatorInterface $translator,
-        private Closure $renderFamilySettings
+        private FamilySettingsRenderer $familySettingsRenderer
     ) {}
 
     public function handle(
@@ -59,16 +58,16 @@ final class FamilySettingsCurrencyStep implements FamilySettingsStepInterface
     ): void {
         ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
             familyId: $context->activeFamily->getId(),
-            userId: $context->user->getId(),
             defaultExpenseCurrency: $defaultExpenseCurrency,
-            reportingCurrency: $reportingCurrency
+            reportingCurrency: $reportingCurrency,
+            userId: $context->user->getId()
         ));
 
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,
             text: $this->translator->trans('settings.saved')
         );
-        ($this->renderFamilySettings)($context);
+        $this->familySettingsRenderer->render($context);
     }
 
     private function renderCurrencySelector(

@@ -12,10 +12,10 @@ use App\Family\Application\Command\CreateInvitationHandler;
 use App\Family\Application\Command\JoinFamilyByInvitationHandler;
 use App\Family\Application\Command\RevokeInvitationHandler;
 use App\Family\Application\Command\UpdateFamilySettingsHandler;
-use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Family\Application\Query\GetFamilyInvitationsHandler;
 use App\Family\Application\Query\GetFamilyMembersHandler;
 use App\Family\Application\Query\GetUserFamiliesHandler;
+use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Entity\Invitation;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
@@ -36,19 +36,24 @@ use App\Presentation\Telegram\Flow\FamilyInvitations\ListInvitationScreen;
 use App\Presentation\Telegram\Flow\FamilyInvitationsFlowHandler;
 use App\Presentation\Telegram\Flow\FamilyMembersFlowHandler;
 use App\Presentation\Telegram\Flow\FamilyOnboardingFlowHandler;
-use App\Presentation\Telegram\Flow\FamilySettingsFlowHandler;
 use App\Presentation\Telegram\Flow\FamilySelectorFlowHandler;
+use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsCurrencyStep;
+use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsNameStep;
+use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsProviderStep;
+use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsRenderer;
+use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsTimezoneStep;
+use App\Presentation\Telegram\Flow\FamilySettingsFlowHandler;
 use App\Presentation\Telegram\Flow\JoinFamilyFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
-use App\Presentation\Telegram\Flow\SettingsMenuRenderer;
-use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use App\Presentation\Telegram\Flow\SettingsFlowHandler;
-use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
+use App\Presentation\Telegram\Flow\SettingsMenuRenderer;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
+use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\TimezoneOptions;
 use App\Presentation\Telegram\Keyboard\TimezoneSelector;
-use PHPUnit\Framework\TestCase;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -383,15 +388,11 @@ class TelegramFlowHandlersTest extends TestCase
         $stateRepo = $this->createMock(UserInteractionStateRepository::class);
         $translator = $this->createTranslator();
 
-        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
-        $handler = new FamilySettingsFlowHandler(
+        $handler = $this->createFamilySettingsFlowHandler(
             $telegramClient,
             $updateFamilySettingsHandler,
             $stateRepo,
-            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
-            $translator,
-            new SettingsMenuRenderer($telegramClient, $translator),
-            $exceptionMapper
+            $translator
         );
 
         $user = new User(123456);
@@ -422,15 +423,11 @@ class TelegramFlowHandlersTest extends TestCase
             });
 
         $translator = $this->createTranslator();
-        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
-        $handler = new FamilySettingsFlowHandler(
+        $handler = $this->createFamilySettingsFlowHandler(
             $telegramClient,
             $this->createMock(UpdateFamilySettingsHandler::class),
             $this->createMock(UserInteractionStateRepository::class),
-            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
-            $translator,
-            new SettingsMenuRenderer($telegramClient, $translator),
-            $exceptionMapper
+            $translator
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
@@ -471,15 +468,11 @@ class TelegramFlowHandlersTest extends TestCase
         $updateFamilySettingsHandler->expects($this->never())->method('__invoke');
 
         $translator = $this->createTranslator();
-        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
-        $handler = new FamilySettingsFlowHandler(
+        $handler = $this->createFamilySettingsFlowHandler(
             $telegramClient,
             $updateFamilySettingsHandler,
             $this->createMock(UserInteractionStateRepository::class),
-            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
-            $translator,
-            new SettingsMenuRenderer($telegramClient, $translator),
-            $exceptionMapper
+            $translator
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
@@ -659,15 +652,11 @@ class TelegramFlowHandlersTest extends TestCase
         $stateRepo->expects($this->exactly(2))->method('set');
 
         $translator = $this->createTranslator();
-        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
-        $handler = new FamilySettingsFlowHandler(
+        $handler = $this->createFamilySettingsFlowHandler(
             $telegramClient,
             $this->createMock(UpdateFamilySettingsHandler::class),
             $stateRepo,
-            new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
-            $translator,
-            new SettingsMenuRenderer($telegramClient, $translator),
-            $exceptionMapper
+            $translator
         );
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
@@ -740,5 +729,50 @@ class TelegramFlowHandlersTest extends TestCase
         $buttons = $messages[1]['reply_markup']['inline_keyboard'];
         $this->assertSame('America/New_York', $buttons[2][0]['text']);
         $this->assertSame('family:create:timezone:set:America/New_York', $buttons[2][0]['callback_data']);
+    }
+
+    private function createFamilySettingsFlowHandler(
+        TelegramApiClientInterface&MockObject $telegramClient,
+        UpdateFamilySettingsHandler&MockObject $updateFamilySettingsHandler,
+        UserInteractionStateRepository&MockObject $stateRepo,
+        LocaleAwareInterface&TranslatorInterface $translator
+    ): FamilySettingsFlowHandler {
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
+        $familySettingsRenderer = new FamilySettingsRenderer($telegramClient, $translator);
+
+        return new FamilySettingsFlowHandler(
+            $telegramClient,
+            new FamilySettingsNameStep(
+                $telegramClient,
+                $updateFamilySettingsHandler,
+                $stateRepo,
+                $translator,
+                $exceptionMapper,
+                $familySettingsRenderer
+            ),
+            new FamilySettingsTimezoneStep(
+                $telegramClient,
+                $updateFamilySettingsHandler,
+                $stateRepo,
+                new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
+                $translator
+            ),
+            new FamilySettingsCurrencyStep(
+                $telegramClient,
+                $updateFamilySettingsHandler,
+                $translator,
+                $familySettingsRenderer
+            ),
+            new FamilySettingsProviderStep(
+                $telegramClient,
+                $updateFamilySettingsHandler,
+                $translator,
+                $familySettingsRenderer
+            ),
+            $stateRepo,
+            $translator,
+            $familySettingsRenderer,
+            new SettingsMenuRenderer($telegramClient, $translator)
+        );
     }
 }

@@ -5,16 +5,15 @@ namespace App\Presentation\Telegram\Flow\FamilySettings;
 use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
-use Closure;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
 use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Family\Domain\ValueObject\FamilyName;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
-use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FamilySettingsNameStep implements FamilySettingsStepInterface
@@ -25,7 +24,7 @@ final class FamilySettingsNameStep implements FamilySettingsStepInterface
         private UserInteractionStateRepository $stateRepository,
         private TranslatorInterface $translator,
         private MapExceptionToTranslatableMessage $exceptionToTranslation,
-        private Closure $renderFamilySettings
+        private FamilySettingsRenderer $familySettingsRenderer
     ) {}
 
     public function handle(
@@ -71,14 +70,14 @@ final class FamilySettingsNameStep implements FamilySettingsStepInterface
                 chatId: $context->chatId,
                 text: ($this->exceptionToTranslation)($e)->trans($this->translator, $context->language)
             );
-            ($this->renderFamilySettings)($context);
+            $this->familySettingsRenderer->render($context);
             return;
         }
 
         ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
             familyId: $context->activeFamily->getId(),
-            userId: $context->user->getId(),
-            name: (string) $familyName
+            name: (string) $familyName,
+            userId: $context->user->getId()
         ));
 
         $this->telegramClient->sendMessage(
@@ -86,6 +85,6 @@ final class FamilySettingsNameStep implements FamilySettingsStepInterface
             text: $this->translator->trans('settings.saved')
         );
 
-        ($this->renderFamilySettings)($context);
+        $this->familySettingsRenderer->render($context);
     }
 }
