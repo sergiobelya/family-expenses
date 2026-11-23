@@ -41,7 +41,7 @@ use App\Presentation\Telegram\Flow\FamilySelectorFlowHandler;
 use App\Presentation\Telegram\Flow\JoinFamilyFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Flow\SettingsMenuRenderer;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use App\Presentation\Telegram\Flow\SettingsFlowHandler;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
@@ -142,7 +142,7 @@ class TelegramFlowHandlersTest extends TestCase
         $translator = $this->createTranslator();
         $mainMenuKb = new MainMenuKeyboard($translator);
 
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
@@ -383,7 +383,7 @@ class TelegramFlowHandlersTest extends TestCase
         $stateRepo = $this->createMock(UserInteractionStateRepository::class);
         $translator = $this->createTranslator();
 
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilySettingsFlowHandler(
             $telegramClient,
             $updateFamilySettingsHandler,
@@ -422,7 +422,7 @@ class TelegramFlowHandlersTest extends TestCase
             });
 
         $translator = $this->createTranslator();
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilySettingsFlowHandler(
             $telegramClient,
             $this->createMock(UpdateFamilySettingsHandler::class),
@@ -471,7 +471,7 @@ class TelegramFlowHandlersTest extends TestCase
         $updateFamilySettingsHandler->expects($this->never())->method('__invoke');
 
         $translator = $this->createTranslator();
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilySettingsFlowHandler(
             $telegramClient,
             $updateFamilySettingsHandler,
@@ -513,7 +513,7 @@ class TelegramFlowHandlersTest extends TestCase
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
         $translator = $this->createTranslator();
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
@@ -659,7 +659,7 @@ class TelegramFlowHandlersTest extends TestCase
         $stateRepo->expects($this->exactly(2))->method('set');
 
         $translator = $this->createTranslator();
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilySettingsFlowHandler(
             $telegramClient,
             $this->createMock(UpdateFamilySettingsHandler::class),
@@ -713,7 +713,7 @@ class TelegramFlowHandlersTest extends TestCase
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
         $translator = $this->createTranslator();
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,

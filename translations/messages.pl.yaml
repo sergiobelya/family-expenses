@@ -76,6 +76,14 @@ family:
         switch_to_family: "Przełącz na %{family_name}"
         joined_success: "🎉 Dołączyłeś do rodziny <b>%{family_name}</b>!"
         invalid_or_expired: "To zaproszenie jest nieprawidłowe, wygasłe, odwołane lub wykorzystane."
+    not_found: "Rodzina nie została znaleziona."
+    not_member: "Nie jesteś członkiem tej rodziny."
+    already_member: "Jesteś już członkiem tej rodziny."
+    invitation:
+        expired: "Termin ważności zaproszenia wygasł."
+        revoked: "Zaproszenie zostało wycofane."
+        not_found: "Zaproszenie nie zostało znalezione."
+        limit_exceeded: "Limit użycia zaproszenia został wyczerpany."
 
 settings:
     title: "⚙️ <b>Ustawienia</b>"
@@ -99,6 +107,9 @@ settings:
     saved: "Ustawienia zostały zapisane."
     name_too_short: "Nazwa rodziny musi mieć co najmniej 2 znaki."
     name_too_long: "Nazwa rodziny nie może przekraczać 100 znaków."
+    invalid_currency: "Ta waluta nie jest obsługiwana."
+    invalid_country: "Ten kod kraju jest nieprawidłowy."
+    invalid_timezone: "Ta strefa czasowa jest nieprawidłowa."
 
 catalog:
     stores_title: "🏪 Sklepy"
@@ -150,16 +161,23 @@ catalog:
     alias_conflict: "Ta nazwa jest już używana przez %{name}."
     saved: "Zapisano."
     referenced: "Ten element jest używany i nie można go usunąć."
+    name_taken: "Sklep lub kategoria o tej nazwie już istnieje."
     store_deleted: "Sklep został usunięty."
     category_deleted: "Kategoria została usunięta."
     set_as_default: "Ustaw jako domyślną kategorię"
     category_created: "Kategoria została utworzona. Ustawić ją jako domyślną dla tego sklepu?"
 
 expense:
+    not_found: "Wydatek nie został znaleziony."
+    store_not_found: "Sklep nie został znaleziony."
+    category_not_found: "Kategoria nie została znaleziona."
+    not_author: "Tylko autor może edytować ten wydatek."
+    allocation_mismatch: "Kwoty rozdzielone nie zgadzają się z kwotą całkowitą."
+    future_date: "Data zakupu nie może być w przyszłości."
     amount:
         invalid_format: "Wpisz dodatnią liczbę. Przykład: 125.50"
         not_positive: "Kwota musi być większa od zera."
-        too_large: "Kwota przekracza maksimum 100 000 000."
+        too_large: "Kwota przekracza maksimum %{maxAmount}."
         too_precise: "Ta waluta nie używa więcej niż %{precision} miejsc po przecinku."
         too_precise_zero: "Ta waluta nie ma miejsc po przecinku."
         empty: "nie wprowadzono"

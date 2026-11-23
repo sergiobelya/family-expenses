@@ -103,7 +103,7 @@ Treat `Family` as the aggregate for its settings. Treat each membership and invi
 
 Organize application use cases by bounded context. Each state-changing use case has a Command handler; reads have Query handlers. Keep validation and authorization in application/domain services, not Telegram handlers.
 
-Domain value objects validate their invariants in factory methods (e.g., `FamilyName::fromString()`, `CatalogName::fromString()`). When validation fails, throw a typed domain exception (e.g., `InvalidValueException`) with an `ErrorType` enum that identifies the error. The presentation layer maps the exception to a translation key via a centralized mapper (`MapExceptionToTranslationKey`), keeping the domain layer independent of presentation concerns.
+Domain value objects validate their invariants in factory methods (e.g., `FamilyName::fromString()`, `CatalogName::fromString()`). When validation fails, throw a typed domain exception (e.g., `InvalidValueException`) with an `ErrorType` enum that identifies the error. The presentation layer maps the exception to a translation key via a centralized mapper (`MapExceptionToTranslatableMessage`), keeping the domain layer independent of presentation concerns.
 
 Phase 1 commands include creating a family, changing family settings, creating/revoking invitations, and joining a family. Queries include listing the user's families, viewing members/invitations, and reading settings.
 

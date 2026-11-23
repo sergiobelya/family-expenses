@@ -12,7 +12,7 @@ use App\Core\Domain\ValueObject\FamilyId;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use Symfony\Component\Uid\Uuid;
 
 final class CategoryEntryScreen implements CatalogEntryScreen
@@ -23,7 +23,7 @@ final class CategoryEntryScreen implements CatalogEntryScreen
         private CatalogFlowUtils $utils,
         private CatalogRepositoryInterface $catalog,
         private CatalogSearchInterface $search,
-        private MapExceptionToTranslationKey $exceptionToTranslation,
+        private MapExceptionToTranslatableMessage $exceptionToTranslation,
     ) {
         $this->nameInput = new CategoryNameInputHandler(
             $this->utils,

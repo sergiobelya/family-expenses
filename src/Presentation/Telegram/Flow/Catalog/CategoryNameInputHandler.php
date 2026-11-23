@@ -16,7 +16,7 @@ use App\Core\Domain\ValueObject\FamilyId;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
@@ -26,7 +26,7 @@ final class CategoryNameInputHandler
         private CatalogFlowUtils $utils,
         private CatalogRepositoryInterface $catalog,
         private CatalogSearchInterface $search,
-        private MapExceptionToTranslationKey $exceptionToTranslation,
+        private MapExceptionToTranslatableMessage $exceptionToTranslation,
         private string $listCallback,
     ) {
     }
@@ -47,7 +47,7 @@ final class CategoryNameInputHandler
         } catch (InvalidValueException $e) {
             $this->utils->render(
                 $context,
-                ($this->exceptionToTranslation)($e),
+                $this->utils->translateMessage(($this->exceptionToTranslation)($e), $context->language),
                 $this->utils->backKeyboard($this->listCallback)
             );
             return;

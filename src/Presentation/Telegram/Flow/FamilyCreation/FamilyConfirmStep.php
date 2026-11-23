@@ -9,7 +9,7 @@ use App\Family\Application\Command\CreateFamilyCommand;
 use App\Family\Application\Command\CreateFamilyHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
@@ -24,7 +24,7 @@ final class FamilyConfirmStep implements FamilyCreationStepInterface
         private CreateFamilyHandler $createFamilyHandler,
         private MainMenuKeyboard $mainMenuKeyboard,
         private TranslatorInterface $translator,
-        private MapExceptionToTranslationKey $exceptionToTranslation
+        private MapExceptionToTranslatableMessage $exceptionToTranslation
     ) {}
 
     public function handle(
@@ -68,7 +68,7 @@ final class FamilyConfirmStep implements FamilyCreationStepInterface
             ));
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
-                text: $this->translator->trans(($this->exceptionToTranslation)($e))
+                text: ($this->exceptionToTranslation)($e)->trans($this->translator, $context->language)
             );
         }
 

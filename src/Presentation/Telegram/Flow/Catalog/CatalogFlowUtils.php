@@ -11,6 +11,7 @@ use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use RuntimeException;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -34,14 +35,16 @@ final class CatalogFlowUtils
 
     /**
      * @param array<string, mixed> $markup
+     * @param array<string, mixed> $params
      */
     public function render(
         TelegramFamilyMemberContext $context,
         string $textOrKey,
         array $markup,
-        ?UserInteractionState $previousState = null
+        ?UserInteractionState $previousState = null,
+        array $params = []
     ): void {
-        $text = str_starts_with($textOrKey, 'catalog.') ? $this->trans($textOrKey) : $textOrKey;
+        $text = str_starts_with($textOrKey, 'catalog.') ? $this->trans($textOrKey, $params) : $textOrKey;
         $state = $previousState ?? $this->stateRepository->get($context->telegramUserId);
         $messageId = isset($state?->data['message_id']) ? (int) $state->data['message_id'] : null;
         if ($messageId !== null) {
@@ -150,8 +153,13 @@ final class CatalogFlowUtils
     }
 
     /** @param array<string|int, mixed> $parameters */
-    public function trans(string $key, array $parameters = []): string
+    public function trans(string $key, array $parameters = [], ?string $locale = null): string
     {
-        return $this->translator->trans($key, $parameters);
+        return $this->translator->trans($key, $parameters, $locale);
+    }
+
+    public function translateMessage(TranslatableMessage $message, string $locale): string
+    {
+        return $message->trans($this->translator, $locale);
     }
 }

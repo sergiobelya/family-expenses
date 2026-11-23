@@ -31,7 +31,7 @@ use App\Presentation\Telegram\Flow\CatalogFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -48,7 +48,7 @@ final class CatalogFlowHandlerTest extends TestCase
         $lock = $this->createMock(FamilyCatalogLockInterface::class);
         $access = new CatalogAccess($members, $lock);
         $commandBus = $this->createMock(MessageBusInterface::class);
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $optionSelector = new InlineOptionSelector();
         $search = $this->createMock(CatalogSearchInterface::class);
         $search->method('stores')->willReturn([]);
@@ -202,7 +202,7 @@ final class CatalogFlowHandlerTest extends TestCase
         $lock = $this->createMock(FamilyCatalogLockInterface::class);
         $access = new CatalogAccess($members, $lock);
         $commandBus = $this->createMock(MessageBusInterface::class);
-        $exceptionMapper = new MapExceptionToTranslationKey();
+        $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $optionSelector = new InlineOptionSelector();
         $search = $this->createMock(CatalogSearchInterface::class);
         $search->method('stores')->willReturn([]);

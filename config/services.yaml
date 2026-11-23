@@ -11,6 +11,8 @@ services:
     _instanceof:
         App\Presentation\Telegram\Flow\FlowHandlerInterface:
             tags: ['app.telegram_flow_handler']
+        App\Presentation\Telegram\ExceptionMapper\ExceptionMapperInterface:
+            tags: ['app.exception_mapper']
 
     App\:
         resource: '../src/'

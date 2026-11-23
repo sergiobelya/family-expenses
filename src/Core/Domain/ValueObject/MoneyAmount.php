@@ -109,7 +109,8 @@ final readonly class MoneyAmount
                 throw new InvalidValueException(
                     $maxPrecision === 0
                         ? ErrorType::MONEY_AMOUNT_TOO_PRECISE_ZERO
-                        : ErrorType::MONEY_AMOUNT_TOO_PRECISE
+                        : ErrorType::MONEY_AMOUNT_TOO_PRECISE,
+                    ['maxPrecision' => $maxPrecision]
                 );
             }
         }
@@ -117,7 +118,7 @@ final readonly class MoneyAmount
         // Check maximum amount
         // @phpstan-ignore argument.type
         if (bccomp($amount, (string) $maxAmount, 0) > 0) {
-            throw new InvalidValueException(ErrorType::MONEY_AMOUNT_TOO_LARGE);
+            throw new InvalidValueException(ErrorType::MONEY_AMOUNT_TOO_LARGE, ['maxAmount' => $maxAmount]);
         }
 
         // At this point $amount is validated as a proper decimal string

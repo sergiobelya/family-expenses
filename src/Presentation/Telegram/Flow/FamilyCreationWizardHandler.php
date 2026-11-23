@@ -12,7 +12,7 @@ use App\Presentation\Telegram\Flow\FamilyCreation\FamilyCurrencyStep;
 use App\Presentation\Telegram\Flow\FamilyCreation\FamilyNameStep;
 use App\Presentation\Telegram\Flow\FamilyCreation\FamilyProviderStep;
 use App\Presentation\Telegram\Flow\FamilyCreation\FamilyTimezoneStep;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
@@ -36,7 +36,7 @@ final readonly class FamilyCreationWizardHandler implements UserContextFlowHandl
         private MainMenuKeyboard $mainMenuKeyboard,
         private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator,
-        private MapExceptionToTranslationKey $exceptionToTranslation
+        private MapExceptionToTranslatableMessage $exceptionToTranslation
     ) {
         $this->nameStep = new FamilyNameStep(
             $this->telegramClient,

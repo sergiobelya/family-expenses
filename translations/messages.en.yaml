@@ -76,6 +76,14 @@ family:
         switch_to_family: "Switch to %{family_name}"
         joined_success: "🎉 You have joined <b>%{family_name}</b>!"
         invalid_or_expired: "This invitation link is invalid, expired, revoked, or fully used."
+    not_found: "Family was not found."
+    not_member: "You are not a member of this family."
+    already_member: "You are already a member of this family."
+    invitation:
+        expired: "This invitation has expired."
+        revoked: "This invitation has been revoked."
+        not_found: "Invitation was not found."
+        limit_exceeded: "This invitation has reached its maximum usage limit."
 
 settings:
     title: "⚙️ <b>Settings</b>"
@@ -99,6 +107,9 @@ settings:
     saved: "Settings updated successfully."
     name_too_short: "Family name must be at least 2 characters."
     name_too_long: "Family name must not exceed 100 characters."
+    invalid_currency: "That currency is not supported."
+    invalid_country: "That country code is not valid."
+    invalid_timezone: "That time zone is not valid."
 
 catalog:
     stores_title: "🏪 Stores"
@@ -150,16 +161,23 @@ catalog:
     alias_conflict: "This name is already used by %{name}."
     saved: "Saved."
     referenced: "This item is used by existing records and cannot be deleted."
+    name_taken: "A store or category with this name already exists."
     store_deleted: "Store deleted."
     category_deleted: "Category deleted."
     set_as_default: "Set as default category"
     category_created: "Category created. Set it as this store's default?"
 
 expense:
+    not_found: "This expense was not found."
+    store_not_found: "The store was not found."
+    category_not_found: "The category was not found."
+    not_author: "Only the author can edit this expense."
+    allocation_mismatch: "The split amounts do not match the total."
+    future_date: "Purchase date cannot be in the future."
     amount:
         invalid_format: "Enter a positive number. Example: 125.50"
         not_positive: "Amount must be greater than zero."
-        too_large: "Amount exceeds the maximum of 100,000,000."
+        too_large: "Amount exceeds the maximum of %{maxAmount}."
         too_precise: "This currency does not use more than %{precision} decimal places."
         too_precise_zero: "This currency has no decimal places."
         empty: "not entered yet"

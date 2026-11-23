@@ -624,25 +624,25 @@ Callbacks must carry an opaque draft token and the card revision. Callback data 
 |-----|---------|
 | `amount.invalid_format` | I couldn't read that amount. Send a positive number such as 125.50 or 125,50, without spaces or thousands separators. |
 | `amount.not_positive` | The amount must be greater than zero. |
-| `amount.too_precise` | {currency} allows up to {precision} decimal places. |
-| `amount.too_precise_zero` | {currency} doesn't use decimal places. |
-| `amount.too_large` | That amount is too large. The maximum is {max} {currency}. |
-| `currency.precision_conflict` | {currency} allows fewer decimal places than {amount}. Edit the amount before continuing. |
-| `currency.changed_keep_amount` | Currency changed to {currency}. The amount stays {amount}. |
-| `split.error.remaining` | {remaining} {currency} is still unallocated. Allocate the whole amount to continue. |
-| `split.error.over` | The allocations exceed the expense by {excess} {currency}. Adjust the amounts. |
+| `amount.too_precise` | %{currency} allows up to %precision% decimal places. |
+| `amount.too_precise_zero` | %{currency} doesn't use decimal places. |
+| `amount.too_large` | That amount is too large. The maximum is %{max} %{currency}. |
+| `currency.precision_conflict` | %{currency} allows fewer decimal places than %{amount}. Edit the amount before continuing. |
+| `currency.changed_keep_amount` | Currency changed to %{currency}. The amount stays %{amount}. |
+| `split.error.remaining` | %{remaining} %{currency} is still unallocated. Allocate the whole amount to continue. |
+| `split.error.over` | The allocations exceed the expense by %{excess} %{currency}. Adjust the amounts. |
 | `split.error.empty` | Add at least one category. |
 | `split.error.row_incomplete` | Every row needs a category and an amount. |
-| `date.invalid` | I couldn't read that date. Send it as {example_date_iso} or {example_date_dmy}. |
+| `date.invalid` | I couldn't read that date. Send it as %{example_date_iso} or %{example_date_dmy}. |
 | `date.future` | The purchase date can't be in the future. |
-| `date.too_old` | The purchase date can't be earlier than {min_date}. |
+| `date.too_old` | The purchase date can't be earlier than %{min_date}. |
 | `rate.invalid` | I couldn't read that rate. Send a positive number such as 4.25 or 4,25. |
-| `rate.too_precise` | Use at most {max_decimals} decimal places for the rate. |
+| `rate.too_precise` | Use at most %max_decimals% decimal places for the rate. |
 | `rate.too_large` | That rate is too large. |
 | `store.unavailable` | “{store_name}” is no longer available. Choose another store. |
 | `category.unavailable` | “{category_name}” is no longer available. Choose another category. |
 
-Strings with counts (`amount.too_precise`) need ICU plural rules, especially for Ukrainian, Polish, and Russian.
+Strings with counts (`amount.too_precise`, `rate.too_precise`) need plural forms for Ukrainian, Polish, Russian (three forms) and English (two forms); pass the number as `%count%`.
 
 ### 6.3 Purchase date
 
@@ -745,7 +745,7 @@ No note field exists in MVP.
 
 - UI strings live in localization resources keyed as `expense.add.*`; handlers contain no literal text.
 - English is the source. Ukrainian, Polish, and Russian are translated from the approved English; Telegram's locale selects the initial language and the user may change it in Settings.
-- Use ICU MessageFormat placeholders (`{name}`) and plural rules; never concatenate fragments.
+- Use named placeholders (`%{name}`) and plural forms (`%count%`); never concatenate fragments.
 - Example key across languages:
 
 | Key | EN | UK | PL | RU |

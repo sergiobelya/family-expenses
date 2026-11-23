@@ -12,7 +12,7 @@ use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsNameStep;
 use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsProviderStep;
 use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsStepInterface;
 use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsTimezoneStep;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
@@ -32,7 +32,7 @@ final readonly class FamilySettingsFlowHandler implements FamilyContextFlowHandl
         private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator,
         private SettingsMenuRenderer $settingsMenuRenderer,
-        private MapExceptionToTranslationKey $exceptionToTranslation
+        private MapExceptionToTranslatableMessage $exceptionToTranslation
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
