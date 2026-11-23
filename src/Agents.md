@@ -73,3 +73,23 @@ Code is organized by Bounded Contexts in `src/`:
 - A pessimistic database lock is held for the duration of its enclosing Doctrine transaction and is released on commit or rollback. Acquire it only through a command dispatched on `command.bus`; do not assume it protects work after the transaction ends.
 - When concurrent modifications must be prevented, choose the approach per situation: atomic database operations (e.g., `INSERT ... SELECT` with conditional WHERE, unique constraints), pessimistic database locks, optimistic locking (version-based retry), or Redis-based locks via `symfony/lock`. Prefer database-level solutions when the lock must be tied to a transaction; use Redis lock for inter-process coordination outside database transactions (e.g., background workers, multi-step wizards).
 - Use `SELECT ... FOR NO KEY UPDATE` when locking a row that is not being modified (e.g., reading a parent row while mutating child tables). It serializes concurrent access without blocking child-table inserts through foreign-key locks, and reduces deadlock probability compared to `SELECT ... FOR UPDATE`. Use `SELECT ... FOR UPDATE` when the locked row is being modified or when foreign-key lock propagation is required.
+
+## 8. Input Validation Levels
+
+Validate each rule at the lowest level that has the data it needs. A rule lives at exactly one level; other levels reuse it instead of reimplementing it.
+
+| Level | Validates | Must not |
+|---|---|---|
+| **Presentation** | Telegram transport and input syntax: update type, stale callbacks, callback data format, conversion of typed text to a canonical form (e.g. `125,50` → `125.50`). Converts raw UUIDs to identifier value objects (§5). | Apply business rules, round or drop input, or build context-dependent value objects. |
+| **Domain** | Invariants that depend only on the value itself (and parameters passed in). Value objects validate in factory methods and accept only canonical input. | Read configuration, clock, or repositories. |
+| **Application** | Rules that need context: configuration limits, clock, family time zone, repositories, membership, existence and family ownership of referenced entities. | Trust earlier validation: handlers always revalidate. |
+| **Infrastructure** | Database constraints stay authoritative (§3). A constraint violation from a race is translated into a typed domain exception. | Be the primary source of user-facing validation. |
+
+### Rules
+
+- **Shared validators.** When a Telegram step needs early feedback before any command exists, it calls an Application validator (`src/{Context}/Application/Validation/`). The same validator is used by the command handler. Validators are plain services, not commands or queries.
+- **Value objects in Presentation.** Presentation may create a value object directly only if it needs no configuration, clock, or repository (e.g. `FamilyName`, `SearchQuery`). Everything else goes through an Application validator. This refines §5.
+- **Single values throw.** A validator for one value returns the value object or throws a typed exception with an `ErrorType` and structured properties (§6). Do not return result objects for single values.
+- **Several problems return a result.** A check that can find multiple problems (e.g. draft revalidation) returns a result object with a list of backed-enum problems. It never throws for them.
+- **Error mapping.** Presentation maps exceptions and problems to a `TranslatableMessage` through the centralized mapper (`MapExceptionToTranslatableMessage`). The mapper returns a `Symfony\Component\Translation\TranslatableMessage` that holds the translation key and interpolation parameters (e.g., `%{maxAmount}`, `%{precision}`). Callers extract the key via `getMessage()` and parameters via `getParameters()`, then pass them to `TranslatorInterface::trans()`. The flow orchestrator catches typed exceptions in one place. Presentation alone chooses how to show the error (card error line, toast, or return to a step). Unmapped exceptions are logged and shown as a generic error.
+- **Output escaping.** Escape user text when rendering, not when validating. Keep the typed value on a validation error.
