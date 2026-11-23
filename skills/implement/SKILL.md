@@ -16,6 +16,7 @@ Do **not** use this skill when:
 
 ## Workflow
 
+Check `Dockerfile` for the active PHP version and extensions.
 Follow these steps for each task implementation. Repeat the cycle until all critical issues are resolved.
 
 ### 1. Read the task and guidelines
@@ -24,6 +25,7 @@ Follow these steps for each task implementation. Repeat the cycle until all crit
 - Read `src/Agents.md` for implementation rules and architecture guidelines. **Follow all rules strictly.**
 - Read `docs/nfr_requirements.md` for non-functional requirements if applicable.
 - Read `docs/system_design.md` for system design decisions if applicable.
+- Read related specification in `docs/specs/` if applicable.
 
 ### 2. Implement the task
 
@@ -51,10 +53,9 @@ docker compose run --rm php-app php vendor/bin/phpunit
 docker compose run --rm php-app bin/console lint:container
 ```
 
-If translations were changed, run:
+If translation files (`translations/messages.*.yaml`) were changed, run:
 
 ```bash
-
 docker compose run --rm php-app bin/console lint:translations --locale=uk
 docker compose run --rm php-app bin/console lint:translations --locale=en
 docker compose run --rm php-app bin/console lint:translations --locale=pl
@@ -82,12 +83,14 @@ After tests pass, perform a thorough review of all uncommitted changes:
   - Missing tests for edge cases
   - Documentation updates
 
-### 6. Fix critical issues
+### 6. Fix issues found in review
 
 - Fix all critical issues identified in the review.
-- If minor issues are found alongside critical ones, fix them too.
-- Re-run tests and static analysis after fixes.
-- Re-run review after fixes.
+- On the first cycle iteration, fix all minor issues too, regardless of whether critical issues exist.
+- On the second and later iterations, fix minor issues together with critical — but only if critical issues are present.
+- Re-run tests and static analysis after fixes (see §4. Run tests and static analysis).
+- After tests pass, always re-run review to ensure fixes did not introduce new critical issues.
+- If a re-run review finds only minor issues (no critical), stop — minor issues alone must not trigger another fix cycle.
 
 ### 7. Repeat until clean
 
