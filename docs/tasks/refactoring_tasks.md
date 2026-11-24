@@ -20,5 +20,7 @@
 
 ### Pending
 
+- **API collecting validator** — When REST API delivery needs all field errors at once (API forms), implement a collecting validator that returns a result with a list of problems, built on the same value object rules and Application validators. Each delivery mechanism maps errors itself: Telegram to translation keys, API to stable error codes (`ErrorType`). `ErrorType` is the shared contract; translation keys are not part of the domain.
+
 - **Thread-local locale** — `TranslatorInterface::setLocale()` is called on every request in `TelegramUserContextResolver`. In multi-threaded environments (e.g., RoadRunner) this can cause race conditions. Use `LocaleAwareInterface` with thread-local storage or pass locale explicitly instead of mutating a shared translator instance.
 
