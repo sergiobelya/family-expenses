@@ -2,9 +2,9 @@
 
 namespace App\Presentation\Telegram\Flow;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
-use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsCurrencyStep;
@@ -27,7 +27,7 @@ final readonly class FamilySettingsFlowHandler implements FamilyContextFlowHandl
 
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private UpdateFamilySettingsHandler $updateFamilySettingsHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private UserInteractionStateRepository $stateRepository,
         private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator,
@@ -109,7 +109,7 @@ final readonly class FamilySettingsFlowHandler implements FamilyContextFlowHandl
 
         $nameStep = new FamilySettingsNameStep(
             $this->telegramClient,
-            $this->updateFamilySettingsHandler,
+            $this->messageBusDispatcher,
             $this->stateRepository,
             $this->translator,
             $this->exceptionToTranslation,
@@ -118,7 +118,7 @@ final readonly class FamilySettingsFlowHandler implements FamilyContextFlowHandl
 
         $timezoneStep = new FamilySettingsTimezoneStep(
             $this->telegramClient,
-            $this->updateFamilySettingsHandler,
+            $this->messageBusDispatcher,
             $this->stateRepository,
             $this->timezoneSelector,
             $this->translator
@@ -126,14 +126,14 @@ final readonly class FamilySettingsFlowHandler implements FamilyContextFlowHandl
 
         $currencyStep = new FamilySettingsCurrencyStep(
             $this->telegramClient,
-            $this->updateFamilySettingsHandler,
+            $this->messageBusDispatcher,
             $this->translator,
             $renderFamilySettings
         );
 
         $providerStep = new FamilySettingsProviderStep(
             $this->telegramClient,
-            $this->updateFamilySettingsHandler,
+            $this->messageBusDispatcher,
             $this->translator,
             $renderFamilySettings
         );

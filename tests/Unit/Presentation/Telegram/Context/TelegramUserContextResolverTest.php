@@ -4,8 +4,8 @@ namespace App\Tests\Unit\Presentation\Telegram\Context;
 
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Domain\Entity\Family;
-use App\Identity\Application\Command\EnsureUserExistsHandler;
 use App\Identity\Domain\Entity\User;
 use App\Presentation\Telegram\Context\ResolveActiveFamilyForUser;
 use App\Presentation\Telegram\Context\TelegramUserContextResolver;
@@ -18,13 +18,13 @@ class TelegramUserContextResolverTest extends TestCase
 {
     public function testResolveReturnsNullWhenNoUserOrChat(): void
     {
-        $ensureHandler = $this->createMock(EnsureUserExistsHandler::class);
-        $ensureHandler->expects(self::never())->method('__invoke');
+        $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
+        $messageBusDispatcher->expects(self::never())->method('dispatchCommand');
         $resolveActiveFamily = $this->createMock(ResolveActiveFamilyForUser::class);
         $resolveActiveFamily->expects(self::never())->method('__invoke');
         $translator = $this->createMock(LocaleAwareInterface::class);
 
-        $resolver = new TelegramUserContextResolver($ensureHandler, $resolveActiveFamily, $translator);
+        $resolver = new TelegramUserContextResolver($messageBusDispatcher, $resolveActiveFamily, $translator);
 
         $update = new TelegramUpdate(1, null, null, null, null, null, null, null, null, null, null, null);
         $this->assertNull($resolver->resolve($update));
@@ -36,8 +36,9 @@ class TelegramUserContextResolverTest extends TestCase
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
         $user->switchActiveFamily($family->getId());
 
-        $ensureHandler = $this->createMock(EnsureUserExistsHandler::class);
-        $ensureHandler->expects($this->once())->method('__invoke')->willReturn($user);
+        $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
+        $messageBusDispatcher->expects($this->once())->method('dispatchCommand')
+            ->willReturn($user);
 
         $resolveActiveFamily = $this->createMock(ResolveActiveFamilyForUser::class);
         $resolveActiveFamily->expects(self::once())
@@ -48,7 +49,7 @@ class TelegramUserContextResolverTest extends TestCase
         $translator = $this->createMock(LocaleAwareInterface::class);
         $translator->expects($this->once())->method('setLocale')->with('uk');
 
-        $resolver = new TelegramUserContextResolver($ensureHandler, $resolveActiveFamily, $translator);
+        $resolver = new TelegramUserContextResolver($messageBusDispatcher, $resolveActiveFamily, $translator);
 
         $update = TelegramUpdate::fromArray([
             'update_id' => 10,

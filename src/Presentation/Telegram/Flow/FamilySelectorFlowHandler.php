@@ -2,11 +2,10 @@
 
 namespace App\Presentation\Telegram\Flow;
 
-use App\Family\Application\Query\GetUserFamiliesHandler;
+use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Identity\Application\Command\SwitchActiveFamilyCommand;
-use App\Identity\Application\Command\SwitchActiveFamilyHandler;
-use App\Core\Domain\ValueObject\FamilyId;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -20,8 +19,7 @@ final readonly class FamilySelectorFlowHandler implements UserContextFlowHandler
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private GetUserFamiliesHandler $getUserFamiliesHandler,
-        private SwitchActiveFamilyHandler $switchActiveFamilyHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private MainMenuKeyboard $mainMenuKeyboard,
         private TranslatorInterface $translator
     ) {}
@@ -56,13 +54,13 @@ final readonly class FamilySelectorFlowHandler implements UserContextFlowHandler
         if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_SELECT_PREFIX)) {
             $familyId = FamilyId::fromString(substr($update->callbackData, strlen(CallbackActions::FAMILY_SELECT_PREFIX)));
 
-            ($this->switchActiveFamilyHandler)(new SwitchActiveFamilyCommand(
+            $this->messageBusDispatcher->dispatchCommand(new SwitchActiveFamilyCommand(
                 userId: $context->user->getId(),
                 activeFamilyId: $familyId
             ));
 
-            $families = ($this->getUserFamiliesHandler)(new GetUserFamiliesQuery($context->user->getId()));
-            $selectedFamilyName = 'Family';
+            $families = $this->messageBusDispatcher->dispatchQuery(new GetUserFamiliesQuery($context->user->getId()));
+            $selectedFamilyName = '';
             foreach ($families as $f) {
                 if ($f->getId()->equals($familyId)) {
                     $selectedFamilyName = (string) $f->getName();
@@ -82,11 +80,10 @@ final readonly class FamilySelectorFlowHandler implements UserContextFlowHandler
             return;
         }
 
-        $families = ($this->getUserFamiliesHandler)(new GetUserFamiliesQuery($context->user->getId()));
-
-        $builder = new InlineKeyboardBuilder();
+        $families = $this->messageBusDispatcher->dispatchQuery(new GetUserFamiliesQuery($context->user->getId()));
         $activeFamilyId = $context->user->getActiveFamilyId();
 
+        $builder = new InlineKeyboardBuilder();
         foreach ($families as $family) {
             $isActive = $activeFamilyId !== null && $activeFamilyId->equals($family->getId());
             $badge = $isActive ? $this->translator->trans('family.selector.current_badge') : '';
@@ -104,4 +101,5 @@ final readonly class FamilySelectorFlowHandler implements UserContextFlowHandler
             replyMarkup: $builder->toArray()
         );
     }
+
 }

@@ -2,9 +2,9 @@
 
 namespace App\Presentation\Telegram\Flow;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
-use App\Family\Application\Command\CreateFamilyHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Flow\FamilyCreation\FamilyConfirmStep;
@@ -32,7 +32,7 @@ final readonly class FamilyCreationWizardHandler implements UserContextFlowHandl
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
         private UserInteractionStateRepository $stateRepository,
-        private CreateFamilyHandler $createFamilyHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private MainMenuKeyboard $mainMenuKeyboard,
         private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator,
@@ -61,7 +61,7 @@ final readonly class FamilyCreationWizardHandler implements UserContextFlowHandl
         $this->confirmStep = new FamilyConfirmStep(
             $this->telegramClient,
             $this->stateRepository,
-            $this->createFamilyHandler,
+            $this->messageBusDispatcher,
             $this->mainMenuKeyboard,
             $this->translator,
             $this->exceptionToTranslation

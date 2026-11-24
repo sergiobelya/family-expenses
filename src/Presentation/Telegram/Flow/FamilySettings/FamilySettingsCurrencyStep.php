@@ -2,22 +2,22 @@
 
 namespace App\Presentation\Telegram\Flow\FamilySettings;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
-use Closure;
-use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
+use Closure;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FamilySettingsCurrencyStep implements FamilySettingsStepInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private UpdateFamilySettingsHandler $updateFamilySettingsHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private TranslatorInterface $translator,
         private Closure $renderFamilySettings
     ) {}
@@ -57,7 +57,7 @@ final class FamilySettingsCurrencyStep implements FamilySettingsStepInterface
         ?string $defaultExpenseCurrency = null,
         ?string $reportingCurrency = null
     ): void {
-        ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
+        $this->messageBusDispatcher->dispatchCommand(new UpdateFamilySettingsCommand(
             familyId: $context->activeFamily->getId(),
             userId: $context->user->getId(),
             defaultExpenseCurrency: $defaultExpenseCurrency,
@@ -91,4 +91,5 @@ final class FamilySettingsCurrencyStep implements FamilySettingsStepInterface
             replyMarkup: $kb
         );
     }
+
 }

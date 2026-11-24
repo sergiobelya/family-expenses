@@ -2,8 +2,8 @@
 
 namespace App\Presentation\Telegram\Flow;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Application\Command\JoinFamilyByInvitationCommand;
-use App\Family\Application\Command\JoinFamilyByInvitationHandler;
 use App\Family\Domain\Exception\FamilyNotFoundException;
 use App\Family\Domain\Exception\InvitationExpiredException;
 use App\Family\Domain\Exception\InvitationLimitExceededException;
@@ -26,7 +26,7 @@ final readonly class JoinFamilyFlowHandler implements UserContextFlowHandlerInte
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private JoinFamilyByInvitationHandler $joinFamilyByInvitationHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private InvitationRepositoryInterface $invitationRepository,
         private InvitationUseRepositoryInterface $invitationUseRepository,
         private FamilyRepositoryInterface $familyRepository,
@@ -59,7 +59,7 @@ final readonly class JoinFamilyFlowHandler implements UserContextFlowHandlerInte
             $plainToken = substr($update->callbackData, strlen(CallbackActions::FAMILY_JOIN_CONFIRM_PREFIX));
 
             try {
-                $result = ($this->joinFamilyByInvitationHandler)(new JoinFamilyByInvitationCommand(
+                $result = $this->messageBusDispatcher->dispatchCommand(new JoinFamilyByInvitationCommand(
                     token: $plainToken,
                     userId: $context->user->getId()
                 ));
@@ -158,4 +158,5 @@ final readonly class JoinFamilyFlowHandler implements UserContextFlowHandlerInte
             );
         }
     }
+
 }

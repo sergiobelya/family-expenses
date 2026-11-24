@@ -2,10 +2,10 @@
 
 namespace App\Presentation\Telegram\Flow\FamilySettings;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
-use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -20,7 +20,7 @@ final class FamilySettingsTimezoneStep implements FamilySettingsStepInterface
 
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private UpdateFamilySettingsHandler $updateFamilySettingsHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private UserInteractionStateRepository $stateRepository,
         private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator
@@ -121,7 +121,7 @@ final class FamilySettingsTimezoneStep implements FamilySettingsStepInterface
         }
 
         $this->stateRepository->clear($context->telegramUserId);
-        ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
+        $this->messageBusDispatcher->dispatchCommand(new UpdateFamilySettingsCommand(
             familyId: $context->activeFamily->getId(),
             userId: $context->user->getId(),
             timezone: $tz
@@ -163,4 +163,5 @@ final class FamilySettingsTimezoneStep implements FamilySettingsStepInterface
             replyMarkup: $selection['keyboard']
         );
     }
+
 }

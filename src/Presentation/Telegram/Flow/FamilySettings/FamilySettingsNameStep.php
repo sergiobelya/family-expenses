@@ -3,11 +3,10 @@
 namespace App\Presentation\Telegram\Flow\FamilySettings;
 
 use App\Core\Domain\Exception\InvalidValueException;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
-use Closure;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
-use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Family\Domain\ValueObject\FamilyName;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
@@ -15,13 +14,14 @@ use App\Presentation\Telegram\MapExceptionToTranslationKey;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
+use Closure;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FamilySettingsNameStep implements FamilySettingsStepInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private UpdateFamilySettingsHandler $updateFamilySettingsHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private UserInteractionStateRepository $stateRepository,
         private TranslatorInterface $translator,
         private MapExceptionToTranslationKey $exceptionToTranslation,
@@ -75,7 +75,7 @@ final class FamilySettingsNameStep implements FamilySettingsStepInterface
             return;
         }
 
-        ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
+        $this->messageBusDispatcher->dispatchCommand(new UpdateFamilySettingsCommand(
             familyId: $context->activeFamily->getId(),
             userId: $context->user->getId(),
             name: (string) $familyName
@@ -88,4 +88,5 @@ final class FamilySettingsNameStep implements FamilySettingsStepInterface
 
         ($this->renderFamilySettings)($context);
     }
+
 }

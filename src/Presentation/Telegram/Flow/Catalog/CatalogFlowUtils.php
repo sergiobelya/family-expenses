@@ -2,6 +2,7 @@
 
 namespace App\Presentation\Telegram\Flow\Catalog;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Presentation\Telegram\CallbackActions;
@@ -9,12 +10,10 @@ use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use RuntimeException;
-use Symfony\Component\Messenger\Stamp\HandledStamp;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final class CatalogFlowUtils
+final readonly class CatalogFlowUtils
 {
     public const string FLOW_NAME = 'catalog';
     public const int PAGE_SIZE = 8;
@@ -22,7 +21,7 @@ final class CatalogFlowUtils
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
         private UserInteractionStateRepository $stateRepository,
-        private MessageBusInterface $commandBus,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private TranslatorInterface $translator,
     ) {
     }
@@ -91,10 +90,7 @@ final class CatalogFlowUtils
 
     public function runCommand(object $command): mixed
     {
-        $envelope = $this->commandBus->dispatch($command);
-        $handledStamp = $envelope->last(HandledStamp::class);
-
-        return $handledStamp?->getResult();
+        return $this->messageBusDispatcher->dispatchCommand($command);
     }
 
     /**
