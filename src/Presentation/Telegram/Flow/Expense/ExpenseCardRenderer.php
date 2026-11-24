@@ -2,7 +2,6 @@
 
 namespace App\Presentation\Telegram\Flow\Expense;
 
-use App\Core\Domain\ValueObject\MoneyAmount;
 use App\Expense\Domain\ExpenseDraft;
 use App\Expense\Domain\Entity\ExpenseStore;
 use App\Expense\Domain\Entity\ExpenseCategory;
@@ -22,6 +21,7 @@ final readonly class ExpenseCardRenderer
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
         private TranslatorInterface $translator,
+        private MoneyAmountFormatter $amountFormatter,
     ) {
     }
 
@@ -92,7 +92,7 @@ final readonly class ExpenseCardRenderer
 
         // Amount line
         if ($draft->amount !== null && $draft->currency !== null) {
-            $lines[] = '💰 ' . $this->formatAmount($draft->amount, $draft->currency);
+            $lines[] = '💰 ' . $this->amountFormatter->format($draft->amount, $draft->currency);
         } else {
             $lines[] = '💰 ' . $this->translator->trans('expense.amount.empty');
         }
@@ -107,7 +107,7 @@ final readonly class ExpenseCardRenderer
                 $lines[] = '🏷 ' . $this->translator->trans('expense.add.category.label') . ':';
                 foreach ($allocations as $a) {
                     $lines[] = '  • ' . $a['category']->getName()
-                        . ' — ' . $this->formatAmount($a['amount'], $draft->currency ?? 'PLN');
+                        . ' — ' . $this->amountFormatter->format($a['amount'], $draft->currency ?? 'PLN');
                 }
             }
         } else {
@@ -130,29 +130,6 @@ final readonly class ExpenseCardRenderer
         $lines[] = $prompt;
 
         return implode("\n", $lines);
-    }
-
-    /**
-     * Formats an amount for display: "125.50 PLN".
-     */
-    public function formatAmount(string $amount, string $currencyCode): string
-    {
-        $precision = MoneyAmount::getMaxPrecision($currencyCode);
-        if ($precision === 0) {
-            // bcadd with scale 0 truncates the integer part incorrectly, so drop
-            // the fractional part manually for zero-precision currencies.
-            $formatted = explode('.', $amount)[0];
-        } else {
-            // @phpstan-ignore argument.type
-            $formatted = rtrim(rtrim(bcadd($amount, '0', $precision), '0'), '.');
-            // Pad trailing zeros to match currency precision without using float cast,
-            // which loses precision for numbers > 15 digits (IEEE 754 double limit).
-            $parts = explode('.', $formatted);
-            $decimal = $parts[1] ?? '';
-            $decimal = str_pad($decimal, $precision, '0');
-            $formatted = $parts[0] . '.' . $decimal;
-        }
-        return $formatted . ' ' . $currencyCode;
     }
 
     /**
