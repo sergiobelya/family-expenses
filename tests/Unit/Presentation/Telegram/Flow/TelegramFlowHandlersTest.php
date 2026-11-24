@@ -5,16 +5,9 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
 use App\Core\Domain\ValueObject\UserId;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
-use App\Family\Application\Command\CreateFamilyHandler;
-use App\Family\Application\Command\CreateInvitationHandler;
-use App\Family\Application\Command\JoinFamilyByInvitationHandler;
-use App\Family\Application\Command\RevokeInvitationHandler;
-use App\Family\Application\Command\UpdateFamilySettingsHandler;
-use App\Family\Application\Query\GetFamilyInvitationsHandler;
-use App\Family\Application\Query\GetFamilyMembersHandler;
-use App\Family\Application\Query\GetUserFamiliesHandler;
 use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Entity\Invitation;
@@ -23,8 +16,6 @@ use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Family\Infrastructure\Security\InvitationTokenGenerator;
-use App\Identity\Application\Command\ChangeUserLanguageHandler;
-use App\Identity\Application\Command\SwitchActiveFamilyHandler;
 use App\Identity\Domain\Entity\User;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -141,9 +132,7 @@ class TelegramFlowHandlersTest extends TestCase
         $telegramClient->expects($this->atLeastOnce())->method('sendMessage');
 
         $stateRepo = $this->createMock(UserInteractionStateRepository::class);
-        $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
-        $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
-        $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
+        $commandBus = $this->createMock(MessageBusDispatcherInterface::class);
         $translator = $this->createTranslator();
         $mainMenuKb = new MainMenuKeyboard($translator);
 
@@ -151,7 +140,7 @@ class TelegramFlowHandlersTest extends TestCase
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
-            $createFamilyHandler,
+            $commandBus,
             $mainMenuKb,
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
@@ -175,17 +164,14 @@ class TelegramFlowHandlersTest extends TestCase
         $telegramClient = $this->createMock(TelegramApiClientInterface::class);
         $telegramClient->expects($this->once())->method('sendMessage');
 
-        $getUserFamiliesHandler = $this->createMock(GetUserFamiliesHandler::class);
-        $getUserFamiliesHandler->method('__invoke')->willReturn([]);
-
-        $switchHandler = $this->createMock(SwitchActiveFamilyHandler::class);
+        $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
+        $messageBusDispatcher->method('dispatchQuery')->willReturn([]);
         $translator = $this->createTranslator();
         $mainMenuKb = new MainMenuKeyboard($translator);
 
         $handler = new FamilySelectorFlowHandler(
             $telegramClient,
-            $getUserFamiliesHandler,
-            $switchHandler,
+            $messageBusDispatcher,
             $mainMenuKb,
             $translator
         );
@@ -210,14 +196,13 @@ class TelegramFlowHandlersTest extends TestCase
             ->method('sendMessage')
             ->with(111, 'family.selector.title', self::anything());
 
-        $getUserFamiliesHandler = $this->createMock(GetUserFamiliesHandler::class);
-        $getUserFamiliesHandler->expects(self::once())->method('__invoke')->willReturn([]);
+        $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
+        $messageBusDispatcher->expects(self::once())->method('dispatchQuery')->willReturn([]);
 
         $translator = $this->createTranslator();
         $handler = new FamilySelectorFlowHandler(
             $telegramClient,
-            $getUserFamiliesHandler,
-            $this->createMock(SwitchActiveFamilyHandler::class),
+            $messageBusDispatcher,
             new MainMenuKeyboard($translator),
             $translator
         );
@@ -246,12 +231,12 @@ class TelegramFlowHandlersTest extends TestCase
         $telegramClient = $this->createMock(TelegramApiClientInterface::class);
         $telegramClient->expects($this->once())->method('sendMessage');
 
-        $getMembersHandler = $this->createMock(GetFamilyMembersHandler::class);
-        $getMembersHandler->method('__invoke')->willReturn([]);
+        $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
+        $messageBusDispatcher->method('dispatchQuery')->willReturn([]);
 
         $translator = $this->createTranslator();
 
-        $handler = new FamilyMembersFlowHandler($telegramClient, $getMembersHandler, $translator);
+        $handler = new FamilyMembersFlowHandler($telegramClient, $messageBusDispatcher, $translator);
 
         $user = new User(123456);
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
@@ -271,23 +256,22 @@ class TelegramFlowHandlersTest extends TestCase
         $telegramClient = $this->createMock(TelegramApiClientInterface::class);
         $telegramClient->expects($this->once())->method('sendMessage');
 
-        $createInvHandler = $this->createMock(CreateInvitationHandler::class);
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
         $invitation = Invitation::create($family->getId(), UserId::generate(), 'hash', null, 1);
 
-        $createInvHandler->method('__invoke')->willReturn([
+        $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
+        $messageBusDispatcher->method('dispatchCommand')->willReturn([
             'raw_token' => 'plain_123',
             'invitation' => $invitation,
         ]);
+        $messageBusDispatcher->method('dispatchQuery')->willReturn([]);
 
-        $revokeInvHandler = $this->createMock(RevokeInvitationHandler::class);
-        $getInvHandler = $this->createMock(GetFamilyInvitationsHandler::class);
         $invRepo = $this->createMock(InvitationRepositoryInterface::class);
         $invUseRepo = $this->createMock(InvitationUseRepositoryInterface::class);
         $translator = $this->createTranslator();
 
         $listScreen = new ListInvitationScreen(
-            $getInvHandler,
+            $messageBusDispatcher,
             $invUseRepo,
             new GetInvitationStatusLabel($translator),
             $telegramClient,
@@ -295,8 +279,7 @@ class TelegramFlowHandlersTest extends TestCase
         );
         $handler = new FamilyInvitationsFlowHandler(
             $telegramClient,
-            $createInvHandler,
-            $revokeInvHandler,
+            $messageBusDispatcher,
             $invRepo,
             $invUseRepo,
             $listScreen,
@@ -322,7 +305,6 @@ class TelegramFlowHandlersTest extends TestCase
         $telegramClient = $this->createMock(TelegramApiClientInterface::class);
         $telegramClient->expects($this->once())->method('sendMessage');
 
-        $joinHandler = $this->createMock(JoinFamilyByInvitationHandler::class);
         $invRepo = $this->createMock(InvitationRepositoryInterface::class);
         $invUseRepo = $this->createMock(InvitationUseRepositoryInterface::class);
         $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
@@ -340,7 +322,8 @@ class TelegramFlowHandlersTest extends TestCase
             1
         );
 
-        $joinHandler->method('__invoke')->willReturn([
+        $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
+        $messageBusDispatcher->method('dispatchCommand')->willReturn([
             'family' => $family,
             'already_member' => false,
         ]);
@@ -351,7 +334,7 @@ class TelegramFlowHandlersTest extends TestCase
 
         $handler = new JoinFamilyFlowHandler(
             $telegramClient,
-            $joinHandler,
+            $messageBusDispatcher,
             $invRepo,
             $invUseRepo,
             $familyRepo,
@@ -384,13 +367,13 @@ class TelegramFlowHandlersTest extends TestCase
                 return [];
             });
 
-        $updateFamilySettingsHandler = $this->createMock(UpdateFamilySettingsHandler::class);
+        $commandBus = $this->createMock(MessageBusDispatcherInterface::class);
         $stateRepo = $this->createMock(UserInteractionStateRepository::class);
         $translator = $this->createTranslator();
 
         $handler = $this->createFamilySettingsFlowHandler(
             $telegramClient,
-            $updateFamilySettingsHandler,
+            $commandBus,
             $stateRepo,
             $translator
         );
@@ -425,7 +408,7 @@ class TelegramFlowHandlersTest extends TestCase
         $translator = $this->createTranslator();
         $handler = $this->createFamilySettingsFlowHandler(
             $telegramClient,
-            $this->createMock(UpdateFamilySettingsHandler::class),
+            $this->createMock(MessageBusDispatcherInterface::class),
             $this->createMock(UserInteractionStateRepository::class),
             $translator
         );
@@ -464,13 +447,10 @@ class TelegramFlowHandlersTest extends TestCase
             ->method('sendMessage')
             ->with(111, 'settings.unsupported_provider', $this->anything());
 
-        $updateFamilySettingsHandler = $this->createMock(UpdateFamilySettingsHandler::class);
-        $updateFamilySettingsHandler->expects($this->never())->method('__invoke');
-
         $translator = $this->createTranslator();
         $handler = $this->createFamilySettingsFlowHandler(
             $telegramClient,
-            $updateFamilySettingsHandler,
+            $this->createMock(MessageBusDispatcherInterface::class),
             $this->createMock(UserInteractionStateRepository::class),
             $translator
         );
@@ -502,15 +482,13 @@ class TelegramFlowHandlersTest extends TestCase
         );
         $stateRepo->expects($this->never())->method('set');
 
-        $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
-        $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
-        $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
+        $commandBus = $this->createMock(MessageBusDispatcherInterface::class);
         $translator = $this->createTranslator();
         $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
-            $createFamilyHandler,
+            $commandBus,
             new MainMenuKeyboard($translator),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
@@ -545,8 +523,7 @@ class TelegramFlowHandlersTest extends TestCase
 
         $handler = new SettingsFlowHandler(
             $telegramClient,
-            $this->createMock(ChangeUserLanguageHandler::class),
-            $this->createMock(GetUserFamiliesHandler::class),
+            $this->createMock(MessageBusDispatcherInterface::class),
             $stateRepo,
             $this->createTranslator(),
             $this->createTranslator(),
@@ -586,16 +563,16 @@ class TelegramFlowHandlersTest extends TestCase
             });
 
         $user = new User(123456);
-        $changeLanguageHandler = $this->createMock(ChangeUserLanguageHandler::class);
-        $changeLanguageHandler->expects(self::once())
-            ->method('__invoke')
-            ->with(self::callback(static fn ($command): bool => $command->language === 'uk'));
+        $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
+        $messageBusDispatcher->expects(self::once())
+            ->method('dispatchCommand')
+            ->with(self::callback(static fn ($command): bool => $command->language === 'uk'))
+            ->willReturn(null);
 
         $familyA = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
         $familyB = Family::create('Jones', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
-        $getUserFamiliesHandler = $this->createMock(GetUserFamiliesHandler::class);
-        $getUserFamiliesHandler->expects(self::once())
-            ->method('__invoke')
+        $messageBusDispatcher->expects(self::once())
+            ->method('dispatchQuery')
             ->with(self::callback(static fn (GetUserFamiliesQuery $query): bool => $query->userId->equals($user->getId())))
             ->willReturn([$familyA, $familyB]);
 
@@ -608,8 +585,7 @@ class TelegramFlowHandlersTest extends TestCase
         $mainMenuKeyboard = new MainMenuKeyboard($translator);
         $handler = new SettingsFlowHandler(
             $telegramClient,
-            $changeLanguageHandler,
-            $getUserFamiliesHandler,
+            $messageBusDispatcher,
             $stateRepository,
             $translator,
             $localeAwareTranslator,
@@ -654,7 +630,7 @@ class TelegramFlowHandlersTest extends TestCase
         $translator = $this->createTranslator();
         $handler = $this->createFamilySettingsFlowHandler(
             $telegramClient,
-            $this->createMock(UpdateFamilySettingsHandler::class),
+            $this->createMock(MessageBusDispatcherInterface::class),
             $stateRepo,
             $translator
         );
@@ -698,15 +674,13 @@ class TelegramFlowHandlersTest extends TestCase
             );
         $stateRepo->expects($this->exactly(2))->method('set');
 
-        $familyRepo = $this->createMock(FamilyRepositoryInterface::class);
-        $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
-        $createFamilyHandler = new CreateFamilyHandler($familyRepo, $memberRepo);
+        $commandBus = $this->createMock(MessageBusDispatcherInterface::class);
         $translator = $this->createTranslator();
         $exceptionMapper = new MapExceptionToTranslatableMessage([]);
         $handler = new FamilyCreationWizardHandler(
             $telegramClient,
             $stateRepo,
-            $createFamilyHandler,
+            $commandBus,
             new MainMenuKeyboard($translator),
             new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
             $translator,
@@ -733,7 +707,7 @@ class TelegramFlowHandlersTest extends TestCase
 
     private function createFamilySettingsFlowHandler(
         TelegramApiClientInterface&MockObject $telegramClient,
-        UpdateFamilySettingsHandler&MockObject $updateFamilySettingsHandler,
+        MessageBusDispatcherInterface&MockObject $messageBus,
         UserInteractionStateRepository&MockObject $stateRepo,
         LocaleAwareInterface&TranslatorInterface $translator
     ): FamilySettingsFlowHandler {
@@ -744,7 +718,7 @@ class TelegramFlowHandlersTest extends TestCase
             $telegramClient,
             new FamilySettingsNameStep(
                 $telegramClient,
-                $updateFamilySettingsHandler,
+                $messageBus,
                 $stateRepo,
                 $translator,
                 $exceptionMapper,
@@ -752,20 +726,20 @@ class TelegramFlowHandlersTest extends TestCase
             ),
             new FamilySettingsTimezoneStep(
                 $telegramClient,
-                $updateFamilySettingsHandler,
+                $messageBus,
                 $stateRepo,
                 new TimezoneSelector(new TimezoneOptions(), new InlineOptionSelector(), $translator),
                 $translator
             ),
             new FamilySettingsCurrencyStep(
                 $telegramClient,
-                $updateFamilySettingsHandler,
+                $messageBus,
                 $translator,
                 $familySettingsRenderer
             ),
             new FamilySettingsProviderStep(
                 $telegramClient,
-                $updateFamilySettingsHandler,
+                $messageBus,
                 $translator,
                 $familySettingsRenderer
             ),

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Telegram\Flow\FamilyInvitations;
 
-use App\Family\Application\Query\GetFamilyInvitationsHandler;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Application\Query\GetFamilyInvitationsQuery;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Presentation\Telegram\CallbackActions;
@@ -16,7 +16,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class ListInvitationScreen
 {
     public function __construct(
-        private GetFamilyInvitationsHandler $getFamilyInvitationsHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private InvitationUseRepositoryInterface $invitationUseRepository,
         private GetInvitationStatusLabel $getStatusLabel,
         private TelegramApiClientInterface $telegramClient,
@@ -26,7 +26,7 @@ final readonly class ListInvitationScreen
     public function renderList(TelegramFamilyMemberContext $context): void
     {
         $activeFamily = $context->activeFamily;
-        $invitations = ($this->getFamilyInvitationsHandler)(new GetFamilyInvitationsQuery(
+        $invitations = $this->messageBusDispatcher->dispatchQuery(new GetFamilyInvitationsQuery(
             $activeFamily->getId(),
             $context->user->getId()
         ));
@@ -75,4 +75,5 @@ final readonly class ListInvitationScreen
             replyMarkup: $builder->toArray()
         );
     }
+
 }

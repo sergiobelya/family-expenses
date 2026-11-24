@@ -3,8 +3,8 @@
 namespace App\Presentation\Telegram\Flow\FamilyInvitations;
 
 use App\Core\Domain\ValueObject\InvitationId;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Application\Command\RevokeInvitationCommand;
-use App\Family\Application\Command\RevokeInvitationHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -14,7 +14,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class RevokeInvitationStep implements FamilyInvitationsStepInterface
 {
     public function __construct(
-        private RevokeInvitationHandler $revokeInvitationHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private ListInvitationScreen $listInvitationScreen,
         private TelegramApiClientInterface $telegramClient,
         private TranslatorInterface $translator
@@ -28,7 +28,7 @@ final readonly class RevokeInvitationStep implements FamilyInvitationsStepInterf
 
         $invitationId = InvitationId::fromString(substr($update->callbackData ?? '', strlen(CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX)));
 
-        ($this->revokeInvitationHandler)(new RevokeInvitationCommand(
+        $this->messageBusDispatcher->dispatchCommand(new RevokeInvitationCommand(
             familyId: $activeFamily->getId(),
             invitationId: $invitationId,
             revokedByUserId: $context->user->getId()
@@ -41,4 +41,5 @@ final readonly class RevokeInvitationStep implements FamilyInvitationsStepInterf
 
         $this->listInvitationScreen->renderList($context);
     }
+
 }

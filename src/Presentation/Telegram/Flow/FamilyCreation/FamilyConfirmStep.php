@@ -3,10 +3,10 @@
 namespace App\Presentation\Telegram\Flow\FamilyCreation;
 
 use App\Core\Domain\Exception\InvalidValueException;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\CreateFamilyCommand;
-use App\Family\Application\Command\CreateFamilyHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
@@ -21,7 +21,7 @@ final class FamilyConfirmStep implements FamilyCreationStepInterface
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
         private UserInteractionStateRepository $stateRepository,
-        private CreateFamilyHandler $createFamilyHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private MainMenuKeyboard $mainMenuKeyboard,
         private TranslatorInterface $translator,
         private MapExceptionToTranslatableMessage $exceptionToTranslation
@@ -39,7 +39,7 @@ final class FamilyConfirmStep implements FamilyCreationStepInterface
         $data = $state->data;
 
         try {
-            $family = ($this->createFamilyHandler)(new CreateFamilyCommand(
+            $family = $this->messageBusDispatcher->dispatchCommand(new CreateFamilyCommand(
                 userId: $context->user->getId(),
                 name: (string) $data['name'],
                 timezone: (string) $data['timezone'],

@@ -2,9 +2,9 @@
 
 namespace App\Presentation\Telegram\Flow\FamilySettings;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
-use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -17,7 +17,7 @@ final class FamilySettingsProviderStep implements FamilySettingsStepInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private UpdateFamilySettingsHandler $updateFamilySettingsHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private TranslatorInterface $translator,
         private FamilySettingsRenderer $familySettingsRenderer
     ) {}
@@ -44,7 +44,7 @@ final class FamilySettingsProviderStep implements FamilySettingsStepInterface
                 return null;
             }
 
-            ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
+            $this->messageBusDispatcher->dispatchCommand(new UpdateFamilySettingsCommand(
                 familyId: $context->activeFamily->getId(),
                 defaultExchangeRateProvider: $prov,
                 userId: $context->user->getId()
@@ -80,4 +80,5 @@ final class FamilySettingsProviderStep implements FamilySettingsStepInterface
             replyMarkup: $kb
         );
     }
+
 }

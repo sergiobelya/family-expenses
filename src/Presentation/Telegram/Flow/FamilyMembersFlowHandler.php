@@ -2,7 +2,7 @@
 
 namespace App\Presentation\Telegram\Flow;
 
-use App\Family\Application\Query\GetFamilyMembersHandler;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Application\Query\GetFamilyMembersQuery;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
@@ -16,7 +16,7 @@ final readonly class FamilyMembersFlowHandler implements FamilyContextFlowHandle
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private GetFamilyMembersHandler $getFamilyMembersHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private TranslatorInterface $translator
     ) {}
 
@@ -41,7 +41,7 @@ final readonly class FamilyMembersFlowHandler implements FamilyContextFlowHandle
 
         $activeFamily = $context->activeFamily;
 
-        $members = ($this->getFamilyMembersHandler)(new GetFamilyMembersQuery(
+        $members = $this->messageBusDispatcher->dispatchQuery(new GetFamilyMembersQuery(
             $activeFamily->getId(),
             $context->user->getId()
         ));
@@ -77,4 +77,5 @@ final readonly class FamilyMembersFlowHandler implements FamilyContextFlowHandle
             replyMarkup: $kb
         );
     }
+
 }

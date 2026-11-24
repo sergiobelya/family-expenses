@@ -2,8 +2,7 @@
 
 namespace App\Presentation\Telegram\Flow;
 
-use App\Family\Application\Command\CreateInvitationHandler;
-use App\Family\Application\Command\RevokeInvitationHandler;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Domain\Repository\InvitationRepositoryInterface;
 use App\Family\Domain\Repository\InvitationUseRepositoryInterface;
 use App\Presentation\Telegram\CallbackActions;
@@ -23,8 +22,7 @@ final readonly class FamilyInvitationsFlowHandler implements FamilyContextFlowHa
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private CreateInvitationHandler $createInvitationHandler,
-        private RevokeInvitationHandler $revokeInvitationHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private InvitationRepositoryInterface $invitationRepository,
         private InvitationUseRepositoryInterface $invitationUseRepository,
         private ListInvitationScreen $listInvitationScreen,
@@ -59,7 +57,7 @@ final readonly class FamilyInvitationsFlowHandler implements FamilyContextFlowHa
         // Create invitation
         if ($update->callbackData === CallbackActions::FAMILY_INVITE_CREATE) {
             $step = new CreateInvitationStep(
-                $this->createInvitationHandler,
+                $this->messageBusDispatcher,
                 $this->telegramClient,
                 $this->translator,
                 $this->botUsername,
@@ -71,7 +69,7 @@ final readonly class FamilyInvitationsFlowHandler implements FamilyContextFlowHa
         // Revoke invitation
         if (str_starts_with($update->callbackData ?? '', CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX)) {
             $step = new RevokeInvitationStep(
-                $this->revokeInvitationHandler,
+                $this->messageBusDispatcher,
                 $this->listInvitationScreen,
                 $this->telegramClient,
                 $this->translator
