@@ -100,6 +100,6 @@ readonly class TelegramUpdateRouter
         }
 
         return $this->mainMenuKeyboard->isMenuButton($update->text)
-            || in_array($update->text, ['/menu', '/start', '/settings', '/switch'], true);
+            || in_array($update->text, ['/add', '/menu', '/start', '/settings', '/switch'], true);
     }
 }

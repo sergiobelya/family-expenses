@@ -67,9 +67,9 @@
 
 - **Add Expense Telegram Flow — Subtask 1: Infrastructure** — Create the foundation for the expense flow: `AddExpenseFlowHandler` (implements `FamilyContextFlowHandlerInterface`), `AddExpenseStepInterface`, callback action constants in `CallbackActions`, shared utilities (`ExpenseCardRenderer` for card text/keyboard rendering, `AmountParser` for amount validation per §6.1, `DateParser` for date validation per §6.3), and `ExpenseFlowUtils` for draft management (create/resume/pause/restore). Register the handler in `TelegramUpdateRouter`. Add English translations for all `expense.add.*` keys from the spec.
 
-### Pending
-
 - **Add Expense Telegram Flow — Subtask 2: Entry & Draft (AE-00, AE-01, AE-02, AE-17, AE-18)** — Implement entry point from menu and `/add`, family context check (AE-01), draft resume (AE-02), expired draft handling (AE-17), and stale callback/unexpected input handling (AE-18). Integrate with `ExpenseDraftRepository` for draft lifecycle. Handle the one-card model: send initial card or re-anchor existing card.
+
+### Pending
 
 - **Add Expense Telegram Flow — Subtask 3: Store Selection (AE-03, AE-04, AE-05)** — Implement store picker with pagination (8 per page, recently used first), store search (AE-04) using `PgTrgmCatalogSearch`, and draft-paused store creation detour (AE-05) redirecting to Catalog flow. On store selection, preselect default category in draft and advance to AE-06.
 

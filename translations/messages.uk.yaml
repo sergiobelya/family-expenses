@@ -184,6 +184,10 @@ expense:
         prompt: "💰 Надішліть суму в %{currency}. Приклад: %{example_amount}"
     add:
         card_header: "🧾 Нова витрата · 👪 %{family_name}"
+        card:
+            moved: "↓ Ця чернетка продовжується в новішому повідомленні."
+        amount:
+            label: "Сума"
         store:
             label: "Магазин"
             empty: "не обрано"

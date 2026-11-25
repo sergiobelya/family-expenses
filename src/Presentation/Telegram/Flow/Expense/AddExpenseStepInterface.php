@@ -15,10 +15,18 @@ use App\Presentation\Telegram\DTO\TelegramUpdate;
  */
 interface AddExpenseStepInterface
 {
+    public function supports(ExpenseDraft $draft): bool;
+
     public function handle(
         TelegramUpdate $update,
         TelegramFamilyMemberContext $context,
         ExpenseDraft $draft
-    ): ?ExpenseDraft;
-}
+    ): ExpenseDraft;
 
+    public function render(
+        TelegramFamilyMemberContext $context,
+        ExpenseDraft $draft,
+        ?int $messageId,
+        ?string $errorKey = null
+    ): int;
+}

@@ -8,6 +8,7 @@ use App\Core\Domain\ValueObject\UserId;
 use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
+use App\Expense\Domain\Repository\ExpenseDraftRepositoryInterface;
 use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Entity\Invitation;
@@ -34,6 +35,14 @@ use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsProviderStep;
 use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsRenderer;
 use App\Presentation\Telegram\Flow\FamilySettings\FamilySettingsTimezoneStep;
 use App\Presentation\Telegram\Flow\FamilySettingsFlowHandler;
+use App\Presentation\Telegram\Flow\Expense\AddExpenseStepRouter;
+use App\Presentation\Telegram\Flow\Expense\ExpenseCardRenderer;
+use App\Presentation\Telegram\Flow\Expense\ExpenseDraftCallbackData;
+use App\Presentation\Telegram\Flow\Expense\ExpenseDraftCard;
+use App\Presentation\Telegram\Flow\Expense\ExpenseDraftEntry;
+use App\Presentation\Telegram\Flow\Expense\ExpenseDraftScreen;
+use App\Presentation\Telegram\Flow\Expense\ExpenseFlowUtils;
+use App\Presentation\Telegram\Flow\Expense\MoneyAmountFormatter;
 use App\Presentation\Telegram\Flow\JoinFamilyFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
 use App\Presentation\Telegram\Flow\SettingsFlowHandler;
@@ -80,7 +89,13 @@ class TelegramFlowHandlersTest extends TestCase
         $memberRepo = $this->createMock(FamilyMemberRepositoryInterface::class);
         $memberRepo->method('findByUserId')->willReturn([]);
 
-        $handler = new MainMenuFlowHandler($telegramClient, $mainMenuKb, $memberRepo, $translator);
+        $handler = new MainMenuFlowHandler(
+            $telegramClient,
+            $mainMenuKb,
+            $memberRepo,
+            $translator,
+            new ExpenseFlowUtils($this->createMock(ExpenseDraftRepositoryInterface::class))
+        );
 
         $user = new User(123456);
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
@@ -168,12 +183,15 @@ class TelegramFlowHandlersTest extends TestCase
         $messageBusDispatcher->method('dispatchQuery')->willReturn([]);
         $translator = $this->createTranslator();
         $mainMenuKb = new MainMenuKeyboard($translator);
+        $draftRepository = $this->createMock(ExpenseDraftRepositoryInterface::class);
 
         $handler = new FamilySelectorFlowHandler(
             $telegramClient,
             $messageBusDispatcher,
             $mainMenuKb,
-            $translator
+            $translator,
+            new ExpenseFlowUtils($draftRepository),
+            $this->createExpenseDraftEntry($telegramClient, $draftRepository, $translator)
         );
 
         $user = new User(123456);
@@ -194,17 +212,21 @@ class TelegramFlowHandlersTest extends TestCase
         $telegramClient = $this->createMock(TelegramApiClientInterface::class);
         $telegramClient->expects(self::once())
             ->method('sendMessage')
-            ->with(111, 'family.selector.title', self::anything());
+            ->with(111, 'family.onboarding.title' . "\n\n" . 'family.onboarding.text', self::anything());
 
         $messageBusDispatcher = $this->createMock(MessageBusDispatcherInterface::class);
         $messageBusDispatcher->expects(self::once())->method('dispatchQuery')->willReturn([]);
 
         $translator = $this->createTranslator();
+        $mainMenuKeyboard = new MainMenuKeyboard($translator);
+        $draftRepository = $this->createMock(ExpenseDraftRepositoryInterface::class);
         $handler = new FamilySelectorFlowHandler(
             $telegramClient,
             $messageBusDispatcher,
-            new MainMenuKeyboard($translator),
-            $translator
+            $mainMenuKeyboard,
+            $translator,
+            new ExpenseFlowUtils($draftRepository),
+            $this->createExpenseDraftEntry($telegramClient, $draftRepository, $translator)
         );
 
         $user = new User(123456);
@@ -220,6 +242,12 @@ class TelegramFlowHandlersTest extends TestCase
 
         self::assertTrue($handler->supports($update, $context));
         $handler->handle($update, $context);
+
+        $addExpenseUpdate = TelegramUpdate::fromArray([
+            'update_id' => 2,
+            'message' => ['message_id' => 11, 'chat' => ['id' => 111], 'text' => '/add'],
+        ]);
+        self::assertTrue($handler->supports($addExpenseUpdate, $context));
 
         $family = Family::create('Smiths', new Timezone('UTC'), new CurrencyCode('USD'), new CurrencyCode('USD'));
         $familyContext = new TelegramFamilyMemberContext($context, $family);
@@ -528,7 +556,8 @@ class TelegramFlowHandlersTest extends TestCase
             $this->createTranslator(),
             $this->createTranslator(),
             new SettingsMenuRenderer($telegramClient, $this->createTranslator()),
-            new MainMenuKeyboard($this->createTranslator())
+            new MainMenuKeyboard($this->createTranslator()),
+            new ExpenseFlowUtils($this->createMock(ExpenseDraftRepositoryInterface::class))
         );
 
         $user = new User(123456);
@@ -590,7 +619,8 @@ class TelegramFlowHandlersTest extends TestCase
             $translator,
             $localeAwareTranslator,
             new SettingsMenuRenderer($telegramClient, $translator),
-            $mainMenuKeyboard
+            $mainMenuKeyboard,
+            new ExpenseFlowUtils($this->createMock(ExpenseDraftRepositoryInterface::class))
         );
 
         $context = new TelegramUserContext($user, 'en', 123456, 111);
@@ -703,6 +733,25 @@ class TelegramFlowHandlersTest extends TestCase
         $buttons = $messages[1]['reply_markup']['inline_keyboard'];
         $this->assertSame('America/New_York', $buttons[2][0]['text']);
         $this->assertSame('family:create:timezone:set:America/New_York', $buttons[2][0]['callback_data']);
+    }
+
+    private function createExpenseDraftEntry(
+        TelegramApiClientInterface $telegramClient,
+        ExpenseDraftRepositoryInterface $draftRepository,
+        TranslatorInterface $translator
+    ): ExpenseDraftEntry {
+        $callbackData = new ExpenseDraftCallbackData();
+        $screen = new ExpenseDraftScreen(
+            new ExpenseCardRenderer($telegramClient, $translator, new MoneyAmountFormatter()),
+            $callbackData,
+            $telegramClient,
+            $translator
+        );
+        $stepRouter = new AddExpenseStepRouter([]);
+        $flowUtils = new ExpenseFlowUtils($draftRepository);
+        $draftCard = new ExpenseDraftCard($screen, $stepRouter, $draftRepository);
+
+        return new ExpenseDraftEntry($flowUtils, $screen, $draftCard, $draftRepository);
     }
 
     private function createFamilySettingsFlowHandler(

@@ -7,6 +7,7 @@ use App\Core\Domain\ValueObject\UserId;
 use App\Expense\Domain\ExpenseDraft;
 use App\Expense\Domain\ExpenseDraftStatus;
 use App\Expense\Domain\Repository\ExpenseDraftRepositoryInterface;
+use DateTimeImmutable;
 
 /**
  * Manages expense draft lifecycle for the Add Expense flow.
@@ -46,7 +47,9 @@ final readonly class ExpenseFlowUtils
         UserId $userId,
         FamilyId $familyId,
         int $telegramUserId,
-        int $chatId
+        int $chatId,
+        string $initialStep,
+        DateTimeImmutable $purchaseDate
     ): ExpenseDraft {
         $draft = ExpenseDraft::createNew(
             userId: $userId,
@@ -55,6 +58,8 @@ final readonly class ExpenseFlowUtils
             chatId: $chatId,
             now: new \DateTimeImmutable(),
         );
+        $draft->setStep($initialStep);
+        $draft->setPurchaseDate($purchaseDate);
         $this->draftRepository->save($draft);
         return $draft;
     }

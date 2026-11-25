@@ -37,6 +37,9 @@ final readonly class CallbackActions
 
     public const string FAMILY_SELECTOR = 'family:selector';
     public const string FAMILY_SELECT_PREFIX = 'family:select:';
+    public const string FAMILY_SELECT_FOR_EXPENSE_PREFIX = 'family:expense:select:';
+    public const string FAMILY_SELECT_FOR_EXPENSE_ADD_PREFIX = 'family:expense:add:';
+    public const string FAMILY_SELECT_FOR_EXPENSE_CONTINUE_PREFIX = 'family:expense:continue:';
 
     // ── Family Members ────────────────────────────────────────────────────────
 
@@ -180,6 +183,11 @@ final readonly class CallbackActions
     // Expired (AE-17)
     public const string EXPENSE_EXPIRED_RESTART = 'exp:expired:restart';
     public const string EXPENSE_EXPIRED_CLOSE = 'exp:expired:close';
+    public const string EXPENSE_SHOW_CARD_ACTION = 'sc';
+    public const string EXPENSE_EXPIRED_RESTART_ACTION = 'er';
+    public const string EXPENSE_EXPIRED_CLOSE_ACTION = 'ec';
+    public const string EXPENSE_RETRY_ACTION = 'r';
+    public const string EXPENSE_REVIEW_DRAFT_ACTION = 'v';
 
     // Shared
     public const string EXPENSE_BACK = 'exp:back';

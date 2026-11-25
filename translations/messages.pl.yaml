@@ -184,6 +184,10 @@ expense:
         prompt: "💰 Wyślij kwotę w %{currency}. Przykład: %{example_amount}"
     add:
         card_header: "🧾 Nowy wydatek · 👪 %{family_name}"
+        card:
+            moved: "↓ Ten szkic jest kontynuowany w nowszej wiadomości."
+        amount:
+            label: "Kwota"
         store:
             label: "Sklep"
             empty: "nie wybrano"

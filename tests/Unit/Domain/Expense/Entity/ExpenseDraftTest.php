@@ -58,6 +58,17 @@ final class ExpenseDraftTest extends TestCase
         self::assertSame(1, $draft->cardRevision);
     }
 
+    public function testSettingCardMessageDoesNotInvalidateDraftCallbacks(): void
+    {
+        $draft = $this->createDraft();
+        $draft->setStep('store');
+        $revision = $draft->cardRevision;
+        $draft->setCardMessage(123);
+
+        self::assertSame(123, $draft->cardMessageId);
+        self::assertSame($revision, $draft->cardRevision);
+    }
+
     public function testSetStore(): void
     {
         $draft = $this->createDraft();

@@ -95,11 +95,12 @@ final class ExpenseDraft
         $this->updatedAt = new DateTimeImmutable();
     }
 
+    /**
+     * Keep callbacks on a re-rendered card valid without changing the draft revision when its Telegram message changes.
+     */
     public function setCardMessage(int $messageId): void
     {
         $this->cardMessageId = $messageId;
-        $this->cardRevision++;
-        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function setStore(StoreId $storeId): void

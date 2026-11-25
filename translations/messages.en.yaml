@@ -185,6 +185,10 @@ expense:
     add:
         # Card anatomy
         card_header: "🧾 New expense · 👪 %{family_name}"
+        card:
+            moved: "↓ This draft continues in a newer message."
+        amount:
+            label: "Amount"
         store:
             label: "Store"
             empty: "not selected yet"

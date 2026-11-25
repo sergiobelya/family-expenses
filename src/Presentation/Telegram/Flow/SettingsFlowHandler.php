@@ -11,6 +11,7 @@ use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
+use App\Presentation\Telegram\Flow\Expense\ExpenseFlowUtils;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\SupportedLanguages;
@@ -26,7 +27,8 @@ final readonly class SettingsFlowHandler implements UserContextFlowHandlerInterf
         private TranslatorInterface $translator,
         private LocaleAwareInterface $localeAwareTranslator,
         private SettingsMenuRenderer $settingsMenuRenderer,
-        private MainMenuKeyboard $mainMenuKeyboard
+        private MainMenuKeyboard $mainMenuKeyboard,
+        private ExpenseFlowUtils $expenseFlowUtils,
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
@@ -84,10 +86,15 @@ final readonly class SettingsFlowHandler implements UserContextFlowHandlerInterf
 
         $this->localeAwareTranslator->setLocale($language);
         $families = $this->messageBusDispatcher->dispatchQuery(new GetUserFamiliesQuery($context->user->getId()));
+        $activeFamilyId = $context instanceof TelegramFamilyMemberContext
+            ? $context->activeFamily->getId()
+            : $context->user->getActiveFamilyId();
+        $hasActiveDraft = $activeFamilyId !== null
+            && $this->expenseFlowUtils->hasActiveDraft($context->user->getId(), $activeFamilyId);
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,
             text: $this->translator->trans('settings.lang_changed', ['%{language}' => strtoupper($language)]),
-            replyMarkup: $this->mainMenuKeyboard->build(count($families) > 1)
+            replyMarkup: $this->mainMenuKeyboard->build(count($families) > 1, $hasActiveDraft)
         );
         $this->settingsMenuRenderer->render($context);
     }

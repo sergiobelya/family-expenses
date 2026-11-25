@@ -13,6 +13,8 @@ services:
             tags: ['app.telegram_flow_handler']
         App\Presentation\Telegram\ExceptionMapper\ExceptionMapperInterface:
             tags: ['app.exception_mapper']
+        App\Presentation\Telegram\Flow\Expense\AddExpenseStepInterface:
+            tags: ['app.expense_add_step']
 
     App\:
         resource: '../src/'

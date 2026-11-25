@@ -8,6 +8,9 @@ use App\Expense\Domain\Entity\ExpenseCategory;
 use App\Family\Domain\Entity\Family;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
+use DateTimeImmutable;
+use DateTimeZone;
+use RuntimeException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -45,26 +48,28 @@ final readonly class ExpenseCardRenderer
                     chatId: $chatId,
                     messageId: $messageId,
                     text: $text,
-                    replyMarkup: $keyboard,
+                    replyMarkup: $keyboard ?? ['inline_keyboard' => []],
                 );
+
+                if (($response['ok'] ?? true) === false) {
+                    if (str_contains(strtolower((string) ($response['description'] ?? '')), 'message is not modified')) {
+                        return $messageId;
+                    }
+
+                    return $this->sendReplacementCard($chatId, $messageId, $text, $keyboard);
+                }
+
                 return (int) ($response['result']['message_id'] ?? $messageId);
-            } catch (\Throwable) {
-                // If edit fails (e.g., message not found), send a new one
-                $response = $this->telegramClient->sendMessage(
-                    chatId: $chatId,
-                    text: $text,
-                    replyMarkup: $keyboard,
-                );
-                return (int) $response['result']['message_id'];
+            } catch (\Throwable $exception) {
+                if (str_contains(strtolower($exception->getMessage()), 'message is not modified')) {
+                    return $messageId;
+                }
+
+                return $this->sendReplacementCard($chatId, $messageId, $text, $keyboard);
             }
         }
 
-        $response = $this->telegramClient->sendMessage(
-            chatId: $chatId,
-            text: $text,
-            replyMarkup: $keyboard,
-        );
-        return (int) $response['result']['message_id'];
+        return $this->sendNewCard($chatId, $text, $keyboard);
     }
 
     /**
@@ -81,32 +86,36 @@ final readonly class ExpenseCardRenderer
         ?string $error,
     ): string {
         $lines = [];
+        $familyName = (string) $family->getName();
         $lines[] = $this->translator->trans('expense.add.card_header', [
-            'family_name' => (string) $family->getName(),
+            'family_name' => $this->escape($familyName),
         ]);
         $lines[] = '';
 
         // Store line
-        $storeText = $store?->getName() ?? $this->translator->trans('expense.add.store.empty');
+        $storeText = $store === null
+            ? $this->translator->trans('expense.add.store.empty')
+            : $this->escape($store->getName());
         $lines[] = '🏪 ' . $this->translator->trans('expense.add.store.label') . ': ' . $storeText;
 
         // Amount line
         if ($draft->amount !== null && $draft->currency !== null) {
-            $lines[] = '💰 ' . $this->amountFormatter->format($draft->amount, $draft->currency);
+            $amountText = $this->amountFormatter->format($draft->amount, $draft->currency);
         } else {
-            $lines[] = '💰 ' . $this->translator->trans('expense.amount.empty');
+            $amountText = $this->translator->trans('expense.amount.empty');
         }
+        $lines[] = '💰 ' . $this->translator->trans('expense.add.amount.label') . ': ' . $amountText;
 
         // Category line
         if ($allocations !== null && count($allocations) > 0) {
             if (count($allocations) === 1) {
                 $a = $allocations[0];
                 $lines[] = '🏷 ' . $this->translator->trans('expense.add.category.label') . ': '
-                    . $a['category']->getName();
+                    . $this->escape($a['category']->getName());
             } else {
                 $lines[] = '🏷 ' . $this->translator->trans('expense.add.category.label') . ':';
                 foreach ($allocations as $a) {
-                    $lines[] = '  • ' . $a['category']->getName()
+                    $lines[] = '  • ' . $this->escape($a['category']->getName())
                         . ' — ' . $this->amountFormatter->format($a['amount'], $draft->currency ?? 'PLN');
                 }
             }
@@ -116,7 +125,7 @@ final readonly class ExpenseCardRenderer
         }
 
         // Date line
-        $dateText = $this->formatDate($draft->purchaseDate);
+        $dateText = $this->formatDate($draft->purchaseDate, (string) $family->getTimezone());
         $lines[] = '📅 ' . $dateText;
         $lines[] = '';
 
@@ -135,17 +144,19 @@ final readonly class ExpenseCardRenderer
     /**
      * Formats a date for display: "26 Oct 2026 (today)".
      */
-    public function formatDate(?\DateTimeImmutable $date): string
+    public function formatDate(?DateTimeImmutable $date, ?string $timezone = null): string
     {
         if ($date === null) {
             return $this->translator->trans('expense.add.date.empty');
         }
 
+        $dateTimezone = new DateTimeZone($timezone ?? date_default_timezone_get());
+        $date = $date->setTimezone($dateTimezone);
         $text = $date->format('j M Y');
 
         // Check if today or yesterday
-        $today = new \DateTimeImmutable('today');
-        $yesterday = (clone $today)->modify('-1 day');
+        $today = new DateTimeImmutable('today', $dateTimezone);
+        $yesterday = $today->modify('-1 day');
 
         if ($date->format('Y-m-d') === $today->format('Y-m-d')) {
             $text .= ' (' . $this->translator->trans('expense.add.date.today') . ')';
@@ -154,6 +165,47 @@ final readonly class ExpenseCardRenderer
         }
 
         return $text;
+    }
+
+    public function closeMovedCard(int $chatId, int $messageId): void
+    {
+        try {
+            $this->telegramClient->editMessageText(
+                chatId: $chatId,
+                messageId: $messageId,
+                text: $this->translator->trans('expense.add.card.moved'),
+                replyMarkup: ['inline_keyboard' => []],
+            );
+        } catch (\Throwable) {
+        }
+    }
+
+    /** @param array<string, mixed>|null $keyboard */
+    private function sendReplacementCard(int $chatId, int $previousMessageId, string $text, ?array $keyboard): int
+    {
+        $newMessageId = $this->sendNewCard($chatId, $text, $keyboard);
+        if ($newMessageId !== $previousMessageId) {
+            $this->closeMovedCard($chatId, $previousMessageId);
+        }
+
+        return $newMessageId;
+    }
+
+    /** @param array<string, mixed>|null $keyboard */
+    private function sendNewCard(int $chatId, string $text, ?array $keyboard): int
+    {
+        $response = $this->telegramClient->sendMessage(
+            chatId: $chatId,
+            text: $text,
+            replyMarkup: $keyboard,
+        );
+        $messageId = $response['result']['message_id'] ?? null;
+
+        if (!is_int($messageId) && !(is_string($messageId) && ctype_digit($messageId))) {
+            throw new RuntimeException('Telegram did not return the sent message ID.');
+        }
+
+        return (int) $messageId;
     }
 
     /**
@@ -171,5 +223,10 @@ final readonly class ExpenseCardRenderer
             $builder->button($btn['text'], $btn['callback']);
         }
         return $builder->toArray();
+    }
+
+    private function escape(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 }
