@@ -5,13 +5,13 @@ namespace App\Presentation\Telegram\Flow;
 use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Query\GetUserFamiliesQuery;
+use App\Expense\Application\ExpenseDraftService;
 use App\Identity\Application\Command\ChangeUserLanguageCommand;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
-use App\Presentation\Telegram\Flow\Expense\ExpenseFlowUtils;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\Keyboard\SupportedLanguages;
@@ -28,7 +28,7 @@ final readonly class SettingsFlowHandler implements UserContextFlowHandlerInterf
         private LocaleAwareInterface $localeAwareTranslator,
         private SettingsMenuRenderer $settingsMenuRenderer,
         private MainMenuKeyboard $mainMenuKeyboard,
-        private ExpenseFlowUtils $expenseFlowUtils,
+        private ExpenseDraftService $expenseDraftService,
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
@@ -90,7 +90,7 @@ final readonly class SettingsFlowHandler implements UserContextFlowHandlerInterf
             ? $context->activeFamily->getId()
             : $context->user->getActiveFamilyId();
         $hasActiveDraft = $activeFamilyId !== null
-            && $this->expenseFlowUtils->hasActiveDraft($context->user->getId(), $activeFamilyId);
+            && $this->expenseDraftService->hasActiveDraft($context->user->getId(), $activeFamilyId);
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,
             text: $this->translator->trans('settings.lang_changed', ['%{language}' => strtoupper($language)]),

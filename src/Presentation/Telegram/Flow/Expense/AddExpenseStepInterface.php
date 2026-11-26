@@ -17,6 +17,7 @@ interface AddExpenseStepInterface
 {
     public function supports(ExpenseDraft $draft): bool;
 
+    /** A step handling a callback query is responsible for answering it. */
     public function handle(
         TelegramUpdate $update,
         TelegramFamilyMemberContext $context,

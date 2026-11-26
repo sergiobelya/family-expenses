@@ -2,8 +2,8 @@
 
 namespace App\Presentation\Telegram\Flow\Expense;
 
+use App\Expense\Application\ExpenseDraftService;
 use App\Expense\Domain\ExpenseDraft;
-use App\Expense\Domain\Repository\ExpenseDraftRepositoryInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use LogicException;
 
@@ -12,7 +12,7 @@ final readonly class ExpenseDraftCard
     public function __construct(
         private ExpenseDraftScreen $screen,
         private AddExpenseStepRouter $stepRouter,
-        private ExpenseDraftRepositoryInterface $draftRepository,
+        private ExpenseDraftService $draftService,
     ) {
     }
 
@@ -37,12 +37,14 @@ final readonly class ExpenseDraftCard
             $renderedMessageId = $step->render($context, $draft, $messageId, $errorKey);
         } elseif ($draft->currentStep === 'store') {
             $renderedMessageId = $this->screen->renderDraft($context, $draft, $messageId, $errorKey);
+        } elseif ($draft->currentStep === 'amount') {
+            $renderedMessageId = $this->screen->renderAmountPrompt($context, $draft, $messageId, $errorKey);
         } else {
             throw new LogicException('No renderer is registered for the current expense draft step.');
         }
 
         $draft->setCardMessage($renderedMessageId);
-        $this->draftRepository->save($draft);
+        $this->draftService->saveDraft($draft, $context->user->getId(), $context->activeFamily->getId());
 
         return $renderedMessageId;
     }
@@ -52,7 +54,7 @@ final readonly class ExpenseDraftCard
         $messageId = $this->screen->showSaveUnknown($context, $draft);
         if ($draft->cardMessageId !== $messageId) {
             $draft->setCardMessage($messageId);
-            $this->draftRepository->save($draft);
+            $this->draftService->saveDraft($draft, $context->user->getId(), $context->activeFamily->getId());
         }
     }
 }

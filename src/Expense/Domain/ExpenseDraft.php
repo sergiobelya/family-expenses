@@ -2,8 +2,9 @@
 
 namespace App\Expense\Domain;
 
-use App\Core\Domain\ValueObject\StoreId;
+use App\Core\Domain\ValueObject\CategoryId;
 use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Domain\ValueObject\UserId;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -31,6 +32,8 @@ final class ExpenseDraft
         public ?int $cardMessageId,
         public int $cardRevision,
         public ?StoreId $storeId,
+        public ?CategoryId $defaultCategoryId,
+        public ?string $storeSearchQuery,
         public ?string $amount,
         public ?string $currency,
         /** @var list<array{category_id: string, amount: string}> */
@@ -67,6 +70,8 @@ final class ExpenseDraft
             cardMessageId: null,
             cardRevision: 0,
             storeId: null,
+            defaultCategoryId: null,
+            storeSearchQuery: null,
             amount: null,
             currency: null,
             categoryAllocations: [],
@@ -103,9 +108,17 @@ final class ExpenseDraft
         $this->cardMessageId = $messageId;
     }
 
-    public function setStore(StoreId $storeId): void
+    public function setStore(StoreId $storeId, ?CategoryId $defaultCategoryId = null): void
     {
         $this->storeId = $storeId;
+        $this->defaultCategoryId = $defaultCategoryId;
+        $this->cardRevision++;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function setStoreSearchQuery(?string $query): void
+    {
+        $this->storeSearchQuery = $query;
         $this->cardRevision++;
         $this->updatedAt = new DateTimeImmutable();
     }
@@ -167,6 +180,8 @@ final class ExpenseDraft
             'card_message_id' => $this->cardMessageId,
             'card_revision' => $this->cardRevision,
             'store_id' => $this->storeId?->toRfc4122(),
+            'default_category_id' => $this->defaultCategoryId?->toRfc4122(),
+            'store_search_query' => $this->storeSearchQuery,
             'amount' => $this->amount,
             'currency' => $this->currency,
             'category_allocations' => $this->categoryAllocations,
@@ -196,6 +211,10 @@ final class ExpenseDraft
             cardMessageId: $payload['card_message_id'] ?? null,
             cardRevision: (int) ($payload['card_revision'] ?? 0),
             storeId: isset($payload['store_id']) ? StoreId::fromString((string) $payload['store_id']) : null,
+            defaultCategoryId: isset($payload['default_category_id'])
+                ? CategoryId::fromString((string) $payload['default_category_id'])
+                : null,
+            storeSearchQuery: isset($payload['store_search_query']) ? (string) $payload['store_search_query'] : null,
             amount: $payload['amount'] ?? null,
             currency: $payload['currency'] ?? null,
             categoryAllocations: self::parseAllocations($payload),

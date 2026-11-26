@@ -3,6 +3,7 @@
 namespace App\Tests\Unit\Domain\Expense\Entity;
 
 use App\Core\Domain\ValueObject\FamilyId;
+use App\Core\Domain\ValueObject\CategoryId;
 use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Domain\ValueObject\UserId;
 use App\Expense\Domain\ExpenseDraft;
@@ -73,9 +74,11 @@ final class ExpenseDraftTest extends TestCase
     {
         $draft = $this->createDraft();
         $storeId = StoreId::generate();
-        $draft->setStore($storeId);
+        $defaultCategoryId = CategoryId::generate();
+        $draft->setStore($storeId, $defaultCategoryId);
 
         self::assertSame($storeId, $draft->storeId);
+        self::assertSame($defaultCategoryId, $draft->defaultCategoryId);
         self::assertSame(1, $draft->cardRevision);
     }
 
@@ -153,8 +156,10 @@ final class ExpenseDraftTest extends TestCase
     public function testToArrayAndFromArrayRoundTrip(): void
     {
         $storeId = StoreId::generate();
+        $defaultCategoryId = CategoryId::generate();
         $draft = $this->createDraft();
-        $draft->setStore($storeId);
+        $draft->setStore($storeId, $defaultCategoryId);
+        $draft->setStoreSearchQuery('market');
         $draft->setAmount('125.50', 'PLN');
         $draft->setStep('AE-08');
         $draft->setPurchaseDate(new DateTimeImmutable('2026-06-15', new DateTimeZone('UTC')));
@@ -164,6 +169,8 @@ final class ExpenseDraftTest extends TestCase
         self::assertSame('125.50', $array['amount']);
         self::assertSame('PLN', $array['currency']);
         self::assertSame($storeId->toRfc4122(), $array['store_id']);
+        self::assertSame($defaultCategoryId->toRfc4122(), $array['default_category_id']);
+        self::assertSame('market', $array['store_search_query']);
 
         $restored = ExpenseDraft::fromArray($array);
         self::assertSame($draft->status, $restored->status);
@@ -172,6 +179,9 @@ final class ExpenseDraftTest extends TestCase
         self::assertNotNull($draft->storeId);
         self::assertNotNull($restored->storeId);
         self::assertTrue($draft->storeId->equals($restored->storeId));
+        self::assertNotNull($restored->defaultCategoryId);
+        self::assertTrue($defaultCategoryId->equals($restored->defaultCategoryId));
+        self::assertSame('market', $restored->storeSearchQuery);
         self::assertSame($draft->amount, $restored->amount);
         self::assertSame($draft->currency, $restored->currency);
         self::assertSame($draft->currentStep, $restored->currentStep);

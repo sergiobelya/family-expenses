@@ -2,6 +2,9 @@
 
 namespace App\Presentation\Telegram\Flow\Expense;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
+use App\Expense\Application\Query\GetExpenseStoreQuery;
+use App\Expense\Domain\Entity\ExpenseStore;
 use App\Expense\Domain\ExpenseDraft;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
@@ -16,6 +19,7 @@ final readonly class ExpenseDraftScreen
         private ExpenseDraftCallbackData $callbackData,
         private TelegramApiClientInterface $telegramClient,
         private TranslatorInterface $translator,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
     ) {
     }
 
@@ -38,6 +42,41 @@ final readonly class ExpenseDraftScreen
         $renderedMessageId = $this->cardRenderer->render($context->chatId, $messageId, $text, []);
 
         return $renderedMessageId;
+    }
+
+    public function renderAmountPrompt(
+        TelegramFamilyMemberContext $context,
+        ExpenseDraft $draft,
+        ?int $messageId,
+        ?string $errorKey = null
+    ): int {
+        $store = null;
+        if ($draft->storeId !== null) {
+            /** @var ExpenseStore|null $store */
+            $store = $this->messageBusDispatcher->dispatchQuery(new GetExpenseStoreQuery(
+                $context->activeFamily->getId(),
+                $context->user->getId(),
+                $draft->storeId
+            ));
+        }
+        $currency = $draft->currency ?? (string) $context->activeFamily->getDefaultExpenseCurrency();
+        $prompt = $this->translator->trans(
+            'expense.amount.prompt',
+            ['%{currency}' => $currency, '%{example_amount}' => '125.50'],
+            null,
+            $context->language
+        );
+        $error = $errorKey === null ? null : $this->trans($errorKey, $context);
+        $text = $this->cardRenderer->buildCardText(
+            $context->activeFamily,
+            $draft,
+            $store,
+            null,
+            $prompt,
+            $error
+        );
+
+        return $this->cardRenderer->render($context->chatId, $messageId, $text, []);
     }
 
     public function showExpired(

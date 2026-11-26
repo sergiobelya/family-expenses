@@ -2,9 +2,9 @@
 
 namespace App\Presentation\Telegram\Flow\Expense;
 
+use App\Expense\Application\ExpenseDraftService;
 use App\Expense\Domain\ExpenseDraft;
 use App\Expense\Domain\ExpenseDraftStatus;
-use App\Expense\Domain\Repository\ExpenseDraftRepositoryInterface;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -28,7 +28,7 @@ final readonly class AddExpenseFlowHandler implements FamilyContextFlowHandlerIn
         private ExpenseDraftCallbackData $callbackData,
         private AddExpenseStepRouter $stepRouter,
         private TelegramApiClientInterface $telegramClient,
-        private ExpenseDraftRepositoryInterface $draftRepository,
+        private ExpenseDraftService $draftService,
         private MainMenuKeyboard $mainMenuKeyboard,
     ) {
     }
@@ -57,7 +57,7 @@ final readonly class AddExpenseFlowHandler implements FamilyContextFlowHandlerIn
             return false;
         }
 
-        $draft = $this->draftRepository->find($context->user->getId(), $context->activeFamily->getId());
+        $draft = $this->draftService->findDraft($context->user->getId(), $context->activeFamily->getId());
 
         return $draft !== null
             && in_array(
@@ -87,7 +87,7 @@ final readonly class AddExpenseFlowHandler implements FamilyContextFlowHandlerIn
         }
 
         if ($draft->isExpired()) {
-            $this->draftRepository->remove($context->user->getId(), $context->activeFamily->getId());
+            $this->draftService->removeDraft($context->user->getId(), $context->activeFamily->getId());
             $this->screen->showExpired($context, null, null, null);
             return;
         }
@@ -113,7 +113,11 @@ final readonly class AddExpenseFlowHandler implements FamilyContextFlowHandlerIn
 
         $step = $this->stepRouter->resolve($draft);
         if ($step !== null) {
-            $this->draftRepository->save($step->handle($update, $context, $draft));
+            $this->draftService->saveDraft(
+                $step->handle($update, $context, $draft),
+                $context->user->getId(),
+                $context->activeFamily->getId()
+            );
             return;
         }
 
@@ -133,7 +137,7 @@ final readonly class AddExpenseFlowHandler implements FamilyContextFlowHandlerIn
         $callback = $this->callbackData->parse($update->callbackData ?? '');
 
         if ($draft !== null && $draft->isExpired()) {
-            $this->draftRepository->remove($context->user->getId(), $context->activeFamily->getId());
+            $this->draftService->removeDraft($context->user->getId(), $context->activeFamily->getId());
             $draft = null;
         }
 
@@ -200,8 +204,11 @@ final readonly class AddExpenseFlowHandler implements FamilyContextFlowHandlerIn
 
         $step = $this->stepRouter->resolve($draft);
         if ($step !== null) {
-            $this->telegramClient->answerCallbackQuery($callbackQueryId);
-            $this->draftRepository->save($step->handle($update, $context, $draft));
+            $this->draftService->saveDraft(
+                $step->handle($update, $context, $draft),
+                $context->user->getId(),
+                $context->activeFamily->getId()
+            );
             return;
         }
 

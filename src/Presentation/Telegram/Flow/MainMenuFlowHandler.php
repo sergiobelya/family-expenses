@@ -3,12 +3,12 @@
 namespace App\Presentation\Telegram\Flow;
 
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
+use App\Expense\Application\ExpenseDraftService;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
-use App\Presentation\Telegram\Flow\Expense\ExpenseFlowUtils;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -19,7 +19,7 @@ final readonly class MainMenuFlowHandler implements FamilyContextFlowHandlerInte
         private MainMenuKeyboard $mainMenuKeyboard,
         private FamilyMemberRepositoryInterface $familyMemberRepository,
         private TranslatorInterface $translator,
-        private ExpenseFlowUtils $expenseFlowUtils,
+        private ExpenseDraftService $expenseDraftService,
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
@@ -55,7 +55,7 @@ final readonly class MainMenuFlowHandler implements FamilyContextFlowHandlerInte
 
         $memberships = $this->familyMemberRepository->findByUserId($context->user->getId());
         $hasMultipleFamilies = count($memberships) > 1;
-        $hasActiveDraft = $this->expenseFlowUtils->hasActiveDraft(
+        $hasActiveDraft = $this->expenseDraftService->hasActiveDraft(
             $context->user->getId(),
             $activeFamily->getId()
         );

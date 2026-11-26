@@ -5,6 +5,8 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
 use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
+use App\Expense\Application\ExpenseAuthorizationService;
+use App\Expense\Application\ExpenseDraftService;
 use App\Expense\Domain\Repository\ExpenseDraftRepositoryInterface;
 use App\Family\Application\Query\GetUserFamiliesQuery;
 use App\Family\Domain\Entity\Family;
@@ -19,7 +21,6 @@ use App\Presentation\Telegram\Flow\Expense\ExpenseDraftCallbackData;
 use App\Presentation\Telegram\Flow\Expense\ExpenseDraftCard;
 use App\Presentation\Telegram\Flow\Expense\ExpenseDraftEntry;
 use App\Presentation\Telegram\Flow\Expense\ExpenseDraftScreen;
-use App\Presentation\Telegram\Flow\Expense\ExpenseFlowUtils;
 use App\Presentation\Telegram\Flow\Expense\MoneyAmountFormatter;
 use App\Presentation\Telegram\Flow\FamilySelectorFlowHandler;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
@@ -59,11 +60,12 @@ final class FamilySelectorFlowHandlerTest extends TestCase
         $draftRepository = $this->createMock(ExpenseDraftRepositoryInterface::class);
         $draftRepository->method('find')->willReturn(null);
         $draftRepository->expects(self::atLeastOnce())->method('save');
+        $draftService = $this->createDraftService($draftRepository);
 
         $mainMenuKeyboard = new MainMenuKeyboard($translator);
         $expenseDraftEntry = $this->createExpenseDraftEntry(
             $telegramClient,
-            $draftRepository,
+            $draftService,
             $translator
         );
         $handler = new FamilySelectorFlowHandler(
@@ -71,7 +73,7 @@ final class FamilySelectorFlowHandlerTest extends TestCase
             $messageBus,
             $mainMenuKeyboard,
             $translator,
-            new ExpenseFlowUtils($draftRepository),
+            $draftService,
             $expenseDraftEntry,
         );
 
@@ -115,11 +117,12 @@ final class FamilySelectorFlowHandlerTest extends TestCase
         $draftRepository = $this->createMock(ExpenseDraftRepositoryInterface::class);
         $draftRepository->method('find')->willReturn(null);
         $draftRepository->expects(self::never())->method('save');
+        $draftService = $this->createDraftService($draftRepository);
 
         $mainMenuKeyboard = new MainMenuKeyboard($translator);
         $expenseDraftEntry = $this->createExpenseDraftEntry(
             $telegramClient,
-            $draftRepository,
+            $draftService,
             $translator
         );
         $handler = new FamilySelectorFlowHandler(
@@ -127,7 +130,7 @@ final class FamilySelectorFlowHandlerTest extends TestCase
             $messageBus,
             $mainMenuKeyboard,
             $translator,
-            new ExpenseFlowUtils($draftRepository),
+            $draftService,
             $expenseDraftEntry,
         );
 
@@ -150,7 +153,7 @@ final class FamilySelectorFlowHandlerTest extends TestCase
 
     private function createExpenseDraftEntry(
         TelegramApiClientInterface $telegramClient,
-        ExpenseDraftRepositoryInterface $draftRepository,
+        ExpenseDraftService $draftService,
         TranslatorInterface $translator
     ): ExpenseDraftEntry {
         $callbackData = new ExpenseDraftCallbackData();
@@ -158,13 +161,21 @@ final class FamilySelectorFlowHandlerTest extends TestCase
             new ExpenseCardRenderer($telegramClient, $translator, new MoneyAmountFormatter()),
             $callbackData,
             $telegramClient,
-            $translator
+            $translator,
+            $this->createMock(MessageBusDispatcherInterface::class)
         );
         $stepRouter = new AddExpenseStepRouter([]);
-        $flowUtils = new ExpenseFlowUtils($draftRepository);
-        $draftCard = new ExpenseDraftCard($screen, $stepRouter, $draftRepository);
+        $draftCard = new ExpenseDraftCard($screen, $stepRouter, $draftService);
 
-        return new ExpenseDraftEntry($flowUtils, $screen, $draftCard, $draftRepository);
+        return new ExpenseDraftEntry($draftService, $screen, $draftCard);
+    }
+
+    private function createDraftService(ExpenseDraftRepositoryInterface $draftRepository): ExpenseDraftService
+    {
+        return new ExpenseDraftService(
+            $draftRepository,
+            $this->createMock(ExpenseAuthorizationService::class)
+        );
     }
 
     private function callbackUpdate(string $data): TelegramUpdate

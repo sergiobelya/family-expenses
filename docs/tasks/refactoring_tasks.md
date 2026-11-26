@@ -24,5 +24,7 @@
 
 - **Telegram HTML escaping** — Replace direct `htmlspecialchars()` calls in `Presentation/Telegram` with a dedicated escape method or class.
 
+- **Shared Telegram pagination** — Extract reusable pagination logic from `ExpenseStorePickerScreen::renderList()`, `CategoryEntryScreen::renderList()`, and other paginated screens into a shared service/component. First assess whether a library paginator, such as Doctrine's or Symfony's, can be reused or adapted; keep screen-specific rendering and callback behavior in the screens.
+
 - **Thread-local locale** — `TranslatorInterface::setLocale()` is called on every request in `TelegramUserContextResolver`. In multi-threaded environments (e.g., RoadRunner) this can cause race conditions. Use `LocaleAwareInterface` with thread-local storage or pass locale explicitly instead of mutating a shared translator instance.
 

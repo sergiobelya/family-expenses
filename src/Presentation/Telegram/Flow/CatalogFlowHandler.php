@@ -34,6 +34,10 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
     {
+        if ($update->callbackData === CallbackActions::CATALOG_RETURN_PREFIX . 'expense') {
+            return false;
+        }
+
         if (str_starts_with($update->callbackData ?? '', CallbackActions::CATALOG_PREFIX)) {
             return true;
         }
@@ -265,7 +269,10 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
                     'create',
                     null,
                     null,
-                    (string) ($state->data['value'] ?? '')
+                    (string) ($state->data['value'] ?? ''),
+                    is_array($state->data['expense_return_context'] ?? null)
+                        ? $state->data['expense_return_context']
+                        : null
                 );
             }
             return;

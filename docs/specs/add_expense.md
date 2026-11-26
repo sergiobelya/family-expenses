@@ -269,7 +269,7 @@ Entered by AE-00 when an Active or Paused draft exists for `(user_id, active_fam
 | Button | Key | Action |
 |--------|-----|--------|
 | Store buttons (2 per row, 8 per page) | — | Select the store. |
-| `‹ Previous` / `Page {n}/{m}` / `Next ›` | `btn.page_prev`, `btn.page_next` | Pagination. |
+| `‹ Previous` / `Next ›` | `btn.page_prev`, `btn.page_next` | Pagination. |
 | `🔎 Search` | `btn.search` | AE-04. |
 | `➕ Add new store` | `btn.store_add` | AE-05. |
 | `👪 Change family` | `btn.change_family` | Only as described in AE-01. |
@@ -278,7 +278,8 @@ Entered by AE-00 when an Active or Paused draft exists for `(user_id, active_fam
 **Rules**
 
 - Only stores of the active family are listed. Archiving is out of scope for MVP, so every store of the family is listed.
-- Order: recently used stores first, then alphabetical. Show 8 stores per page; long names are truncated on the button only.
+- Order by each store's latest non-deleted expense across the full history, newest first; break ties by case-insensitive name, then store ID. Stores without expenses come last, ordered by name and ID. Show 8 stores per page; long names are truncated on the button only.
+- When there is more than one page, show the localized `Page {current}/{total}` (`pagination.page`) in the card text; it is informational, not a button. Omit it when all stores fit on one page.
 - Selecting a store sets it in the draft. If the user has not customized the category allocation (`category_customized = false`), the store's default category is preselected in the draft and shown in AE-08. Then go to AE-06, or back to AE-10 when opened from review.
 - If the family has no stores, show `store.empty` with `➕ Add first store` and `✖️ Cancel`. `Add first store` opens the Stores section's create form with no prefilled name.
 - If the tapped store no longer exists, show a toast with `store.unavailable` and refresh the list.

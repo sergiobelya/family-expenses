@@ -154,12 +154,14 @@ final class CategoryEntryScreen implements CatalogEntryScreen
         $this->renderList($context, 0, 'catalog.category_deleted');
     }
 
+    /** @param array<string, mixed>|null $expenseReturnContext */
     public function startNameInput(
         TelegramFamilyMemberContext $context,
         string $operation,
         ?Uuid $id = null,
         ?string $returnStoreId = null,
-        ?string $prefill = null
+        ?string $prefill = null,
+        ?array $expenseReturnContext = null
     ): void {
         $value = $prefill ?? '';
         if ($id !== null) {

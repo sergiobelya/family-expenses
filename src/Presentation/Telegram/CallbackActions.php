@@ -121,6 +121,11 @@ final readonly class CallbackActions
     public const string EXPENSE_STORE_PAGE_PREFIX = 'exp:store:page:';
     public const string EXPENSE_STORE_ADD = 'exp:store:add';
     public const string EXPENSE_STORE_CREATE_QUERY = 'exp:store:create:';
+    public const string EXPENSE_STORE_SELECT_ACTION_PREFIX = 's:';
+    public const string EXPENSE_STORE_PAGE_ACTION_PREFIX = 'p:';
+    public const string EXPENSE_STORE_SEARCH_ACTION = 'q';
+    public const string EXPENSE_STORE_SEARCH_BACK_ACTION = 'b';
+    public const string EXPENSE_STORE_CREATE_ACTION = 'c';
 
     // Amount (AE-06)
     public const string EXPENSE_CURRENCY_PREFIX = 'exp:curr:';

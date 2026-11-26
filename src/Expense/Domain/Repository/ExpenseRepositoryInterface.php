@@ -16,5 +16,4 @@ interface ExpenseRepositoryInterface
      * @return Expense[]
      */
     public function findByFamilyId(FamilyId $familyId): array;
-
 }

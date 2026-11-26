@@ -5,6 +5,7 @@ namespace App\Presentation\Telegram\Flow;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Application\Query\GetUserFamiliesQuery;
+use App\Expense\Application\ExpenseDraftService;
 use App\Identity\Application\Command\SwitchActiveFamilyCommand;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
@@ -13,7 +14,6 @@ use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Flow\Expense\ExpenseDraftEntry;
 use App\Presentation\Telegram\Flow\Expense\ExpenseEntryIntent;
-use App\Presentation\Telegram\Flow\Expense\ExpenseFlowUtils;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -25,7 +25,7 @@ final readonly class FamilySelectorFlowHandler implements UserContextFlowHandler
         private MessageBusDispatcherInterface $messageBusDispatcher,
         private MainMenuKeyboard $mainMenuKeyboard,
         private TranslatorInterface $translator,
-        private ExpenseFlowUtils $expenseFlowUtils,
+        private ExpenseDraftService $expenseDraftService,
         private ExpenseDraftEntry $expenseDraftEntry,
     ) {}
 
@@ -183,7 +183,7 @@ final readonly class FamilySelectorFlowHandler implements UserContextFlowHandler
             text: $message,
             replyMarkup: $this->mainMenuKeyboard->build(
                 count($families) > 1,
-                $this->expenseFlowUtils->hasActiveDraft($context->user->getId(), $familyId)
+                $this->expenseDraftService->hasActiveDraft($context->user->getId(), $familyId)
             )
         );
 

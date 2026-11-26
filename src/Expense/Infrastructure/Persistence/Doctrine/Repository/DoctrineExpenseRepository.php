@@ -48,4 +48,5 @@ final readonly class DoctrineExpenseRepository implements ExpenseRepositoryInter
             ->getQuery()
             ->getResult();
     }
+
 }

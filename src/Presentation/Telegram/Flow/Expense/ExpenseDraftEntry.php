@@ -2,19 +2,18 @@
 
 namespace App\Presentation\Telegram\Flow\Expense;
 
+use App\Expense\Application\ExpenseDraftService;
 use App\Expense\Domain\ExpenseDraft;
 use App\Expense\Domain\ExpenseDraftStatus;
-use App\Expense\Domain\Repository\ExpenseDraftRepositoryInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use DateTimeImmutable;
 
 final readonly class ExpenseDraftEntry
 {
     public function __construct(
-        private ExpenseFlowUtils $flowUtils,
+        private ExpenseDraftService $draftService,
         private ExpenseDraftScreen $screen,
         private ExpenseDraftCard $draftCard,
-        private ExpenseDraftRepositoryInterface $draftRepository,
     ) {
     }
 
@@ -25,27 +24,17 @@ final readonly class ExpenseDraftEntry
 
     public function findDraft(TelegramFamilyMemberContext $context): ?ExpenseDraft
     {
-        $draft = $this->draftRepository->find($context->user->getId(), $context->activeFamily->getId());
-        if ($draft === null) {
-            return null;
-        }
-
-        if (
-            !$draft->userId->equals($context->user->getId())
-            || !$draft->familyId->equals($context->activeFamily->getId())
-            || $draft->telegramUserId !== $context->telegramUserId
-            || $draft->chatId !== $context->chatId
-        ) {
-            $this->draftRepository->remove($context->user->getId(), $context->activeFamily->getId());
-            return null;
-        }
-
-        return $draft;
+        return $this->draftService->findDraft(
+            $context->user->getId(),
+            $context->activeFamily->getId(),
+            $context->telegramUserId,
+            $context->chatId
+        );
     }
 
     public function startDraft(TelegramFamilyMemberContext $context, ?int $messageId = null): void
     {
-        $draft = $this->flowUtils->createDraft(
+        $draft = $this->draftService->createDraft(
             $context->user->getId(),
             $context->activeFamily->getId(),
             $context->telegramUserId,
@@ -62,7 +51,7 @@ final readonly class ExpenseDraftEntry
         ?ExpenseDraft $draft
     ): void {
         if ($draft !== null && $draft->isExpired()) {
-            $this->draftRepository->remove($context->user->getId(), $context->activeFamily->getId());
+            $this->draftService->removeDraft($context->user->getId(), $context->activeFamily->getId());
             $draft = null;
 
             if ($intent === ExpenseEntryIntent::CONTINUE) {
@@ -88,7 +77,7 @@ final readonly class ExpenseDraftEntry
 
         if ($draft !== null && in_array($draft->status, [ExpenseDraftStatus::ACTIVE, ExpenseDraftStatus::PAUSED], true)) {
             if ($draft->status === ExpenseDraftStatus::PAUSED) {
-                $this->flowUtils->resumeDraft($draft);
+                $this->draftService->resumeDraft($draft, $context->user->getId());
             }
             $this->draftCard->reanchor($context, $draft);
             return;

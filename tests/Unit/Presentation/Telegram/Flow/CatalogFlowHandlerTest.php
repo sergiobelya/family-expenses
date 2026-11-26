@@ -16,6 +16,8 @@ use App\Core\Domain\ValueObject\{
 };
 use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
+use App\Expense\Application\ExpenseAuthorizationService;
+use App\Expense\Application\ExpenseDraftService;
 use App\Expense\Domain\Repository\ExpenseDraftRepositoryInterface;
 use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
@@ -31,7 +33,6 @@ use App\Presentation\Telegram\Flow\Catalog\StoreDefaultCategoryScreen;
 use App\Presentation\Telegram\Flow\Catalog\StoreEntryScreen;
 use App\Presentation\Telegram\Flow\CatalogFlowHandler;
 use App\Presentation\Telegram\Flow\MainMenuFlowHandler;
-use App\Presentation\Telegram\Flow\Expense\ExpenseFlowUtils;
 use App\Presentation\Telegram\Keyboard\InlineOptionSelector;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
@@ -255,7 +256,10 @@ final class CatalogFlowHandlerTest extends TestCase
             new MainMenuKeyboard($translator),
             $members,
             $translator,
-            new ExpenseFlowUtils($this->createMock(ExpenseDraftRepositoryInterface::class))
+            new ExpenseDraftService(
+                $this->createMock(ExpenseDraftRepositoryInterface::class),
+                $this->createMock(ExpenseAuthorizationService::class)
+            )
         );
         $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
         $update = TelegramUpdate::fromArray([

@@ -4,6 +4,9 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow\Expense;
 
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\Timezone;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
+use App\Expense\Application\ExpenseAuthorizationService;
+use App\Expense\Application\ExpenseDraftService;
 use App\Expense\Domain\ExpenseDraft;
 use App\Expense\Domain\ExpenseDraftStatus;
 use App\Expense\Domain\Repository\ExpenseDraftRepositoryInterface;
@@ -22,7 +25,6 @@ use App\Presentation\Telegram\Flow\Expense\ExpenseDraftCallbackData;
 use App\Presentation\Telegram\Flow\Expense\ExpenseDraftCard;
 use App\Presentation\Telegram\Flow\Expense\ExpenseDraftEntry;
 use App\Presentation\Telegram\Flow\Expense\ExpenseDraftScreen;
-use App\Presentation\Telegram\Flow\Expense\ExpenseFlowUtils;
 use App\Presentation\Telegram\Flow\Expense\MoneyAmountFormatter;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
 use PHPUnit\Framework\TestCase;
@@ -445,24 +447,25 @@ final class AddExpenseFlowHandlerTest extends TestCase
         array $steps = []
     ): AddExpenseFlowHandler {
         $callbackData = new ExpenseDraftCallbackData();
+        $draftService = new ExpenseDraftService($repository, $this->createMock(ExpenseAuthorizationService::class));
         $screen = new ExpenseDraftScreen(
             new ExpenseCardRenderer($telegram, $translator, new MoneyAmountFormatter()),
             $callbackData,
             $telegram,
-            $translator
+            $translator,
+            $this->createMock(MessageBusDispatcherInterface::class)
         );
         $stepRouter = new AddExpenseStepRouter($steps);
-        $flowUtils = new ExpenseFlowUtils($repository);
-        $draftCard = new ExpenseDraftCard($screen, $stepRouter, $repository);
+        $draftCard = new ExpenseDraftCard($screen, $stepRouter, $draftService);
 
         return new AddExpenseFlowHandler(
-            new ExpenseDraftEntry($flowUtils, $screen, $draftCard, $repository),
+            new ExpenseDraftEntry($draftService, $screen, $draftCard),
             $draftCard,
             $screen,
             $callbackData,
             $stepRouter,
             $telegram,
-            $repository,
+            $draftService,
             new MainMenuKeyboard($translator)
         );
     }

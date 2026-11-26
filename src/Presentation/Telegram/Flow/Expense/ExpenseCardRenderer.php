@@ -209,7 +209,7 @@ final readonly class ExpenseCardRenderer
     }
 
     /**
-     * @param list<array{text: string, callback: string}> $buttons
+     * @param list<array{text: string, callback: string, row?: int}> $buttons
      * @return array{inline_keyboard: list<list<array{text: string, callback_data?: string, url?: string}>>}|null
      */
     private function buildKeyboard(array $buttons): ?array
@@ -219,8 +219,16 @@ final readonly class ExpenseCardRenderer
         }
 
         $builder = new InlineKeyboardBuilder();
+        $lastRow = null;
         foreach ($buttons as $btn) {
+            $row = $btn['row'] ?? null;
+            if ($row !== null && $lastRow !== null && $row !== $lastRow) {
+                $builder->row();
+            }
             $builder->button($btn['text'], $btn['callback']);
+            if ($row !== null) {
+                $lastRow = $row;
+            }
         }
         return $builder->toArray();
     }

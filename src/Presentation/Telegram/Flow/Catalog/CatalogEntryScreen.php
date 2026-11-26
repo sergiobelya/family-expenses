@@ -15,12 +15,14 @@ interface CatalogEntryScreen
 
     public function deleteEntry(TelegramFamilyMemberContext $context, Uuid $id): void;
 
+    /** @param array<string, mixed>|null $expenseReturnContext */
     public function startNameInput(
         TelegramFamilyMemberContext $context,
         string $operation,
         ?Uuid $id = null,
         ?string $returnStoreId = null,
-        ?string $prefill = null
+        ?string $prefill = null,
+        ?array $expenseReturnContext = null
     ): void;
 
     /**

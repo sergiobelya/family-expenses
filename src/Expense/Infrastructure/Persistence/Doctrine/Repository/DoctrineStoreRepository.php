@@ -28,4 +28,28 @@ final readonly class DoctrineStoreRepository implements StoreRepositoryInterface
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /** @return list<StoreId> */
+    public function findIdsByLastPurchase(FamilyId $familyId): array
+    {
+        $rows = $this->entityManager->getConnection()->executeQuery(
+            <<<'SQL'
+                SELECT s.id
+                FROM stores AS s
+                LEFT JOIN expenses AS e
+                    ON e.store_id = s.id
+                    AND e.family_id = s.family_id
+                    AND e.deleted_at IS NULL
+                WHERE s.family_id = CAST(:familyId AS UUID)
+                GROUP BY s.id, s.name, s.family_id
+                ORDER BY MAX(e.purchase_date) DESC NULLS LAST, LOWER(s.name) ASC, s.name ASC, s.id ASC
+                SQL,
+            ['familyId' => (string) $familyId]
+        )->fetchAllAssociative();
+
+        return array_map(
+            static fn (array $row): StoreId => StoreId::fromString((string) $row['id']),
+            $rows
+        );
+    }
 }
