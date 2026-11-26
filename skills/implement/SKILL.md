@@ -1,3 +1,7 @@
+---
+name: implement
+description: Agent Skill for implementing tasks from `docs/tasks`, other sources or user requests.
+---
 # implement
 
 Agent Skill for implementing tasks from `docs/tasks`, other sources or user requests.
@@ -65,23 +69,9 @@ docker compose run --rm php-app bin/console lint:translations --locale=ru
 - If any check fails, fix the issues and re-run until **all pass**.
 - Do not proceed to review until tests, static analysis, and container/translations lint are clean.
 
-### 5. Review uncommitted changes
+### 5. Review the current task
 
-After tests pass, perform a thorough review of all uncommitted changes:
-
-- Check for adherence to `src/Agents.md` rules.
-- Check for code quality, naming consistency, and architecture compliance.
-- Identify **critical issues** (must fix before marking task as done):
-  - Rule violations in `src/Agents.md`
-  - Broken tests or PHPStan errors
-  - Architecture violations (e.g., cross-context dependency, Domain depends on Infrastructure)
-  - Missing cascade/orphan-removal in Doctrine mappings
-  - Incorrect exception handling
-- Identify **minor observations** (nice to have, but not blocking):
-  - Naming inconsistencies
-  - Code style improvements
-  - Missing tests for edge cases
-  - Documentation updates
+After checks pass, review the changes for this task using [`skills/review/SKILL.md`](../review/SKILL.md). Keep the review scoped to the current task; include relevant staged, unstaged, and untracked files, but exclude unrelated working-tree changes. Record the findings and requirement-coverage results before proceeding to §6.
 
 ### 6. Fix issues found in review
 
@@ -115,7 +105,7 @@ After completing the task, report all decisions made during implementation to th
 
 - **Always read `src/Agents.md` before implementing code changes.** It is the authoritative source for architecture rules.
 - **Always run all checks after any code changes:** PHPUnit, PHPStan, `lint:container`, and `lint:translations`. Do not skip any of them.
-- **The review step is mandatory** — do not skip it. A task is not complete until review finds no critical issues.
+- **The review step is mandatory** — use `skills/review/SKILL.md` and do not skip it. A task is not complete until review finds no critical issues.
 - **Critical issues must be fixed** before marking a task as done.
 - **Keep a running list of decisions** made during implementation and report them at the end.
 - **Propose short commit message** using conventional commit format (e.g., `feat:`, `fix:`, `refactor:`).

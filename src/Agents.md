@@ -51,6 +51,7 @@ Code is organized by Bounded Contexts in `src/`:
 
 ## 5. Application Layer
 
+- For Presentation → Application boundaries, follow [System Design §4](../docs/system_design.md#4-application-boundaries).
 - Application Command and Query DTOs are `final readonly` classes with `public` properties. They use identifier value objects (e.g., `FamilyId`, `UserId`) for entity references, and scalar types for other input fields. Convert raw UUIDs into identifier value objects at transport boundaries before creating commands or queries.
 - Value objects are instantiated at the Application layer boundary (command/query handlers). Handlers convert scalar input from commands to value objects before passing them to domain entity factory methods.
 
