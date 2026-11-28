@@ -3,21 +3,22 @@
 namespace App\Tests\Unit\Application\Expense\Command;
 
 use App\Core\Domain\Exception\InvalidValueException;
+use App\Core\Domain\Exception\NotFamilyMemberException;
 use App\Core\Domain\ValueObject\CategoryId;
 use App\Core\Domain\ValueObject\FamilyId;
 use App\Core\Domain\ValueObject\StoreId;
 use App\Core\Domain\ValueObject\UserId;
-use App\Expense\Application\ExpenseAuthorizationService;
 use App\Expense\Application\Command\AddExpenseCommand;
 use App\Expense\Application\Command\AddExpenseHandler;
 use App\Expense\Application\Command\AllocationItem;
+use App\Expense\Application\ExpenseAuthorizationService;
+use App\Expense\Application\Validation\ExpenseAmountValidator;
 use App\Expense\Domain\Entity\Expense;
 use App\Expense\Domain\Entity\ExpenseCategory;
 use App\Expense\Domain\Entity\ExpenseStore;
 use App\Expense\Domain\Exception\CategoryNotFoundException;
 use App\Expense\Domain\Exception\StoreNotFoundException;
 use App\Expense\Domain\Repository\CategoryRepositoryInterface;
-use App\Core\Domain\Exception\NotFamilyMemberException;
 use App\Expense\Domain\Repository\ExpenseRepositoryInterface;
 use App\Expense\Domain\Repository\StoreRepositoryInterface;
 use DateTimeImmutable;
@@ -54,6 +55,7 @@ final class AddExpenseHandlerTest extends TestCase
             $this->expenseRepository,
             $this->storeRepository,
             $this->categoryRepository,
+            new ExpenseAmountValidator(),
             $this->authorization
         );
 
@@ -218,6 +220,30 @@ final class AddExpenseHandlerTest extends TestCase
 
         $this->expectException(InvalidValueException::class);
         $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
+        ($this->handler)($command);
+    }
+
+    #[Test]
+    public function testRejectsAmountAboveConfiguredMaximum(): void
+    {
+        $this->storeRepository->expects($this->never())->method('findById');
+        $this->categoryRepository->expects($this->never())->method('findById');
+        $this->expenseRepository->expects($this->never())->method('save');
+
+        $command = new AddExpenseCommand(
+            familyId: $this->familyId,
+            userId: $this->userId,
+            storeId: $this->storeId,
+            amount: '100000001',
+            currency: 'PLN',
+            allocations: [
+                new AllocationItem($this->categoryId, '100000001'),
+            ],
+            purchaseDate: new DateTimeImmutable('2026-01-15 12:00:00', new DateTimeZone('UTC')),
+        );
+
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_too_large');
         ($this->handler)($command);
     }
 

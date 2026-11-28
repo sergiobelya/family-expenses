@@ -69,10 +69,9 @@
 
 - **Add Expense Telegram Flow — Subtask 2: Entry & Draft (AE-00, AE-01, AE-02, AE-17, AE-18)** — Implement entry point from menu and `/add`, family context check (AE-01), draft resume (AE-02), expired draft handling (AE-17), and stale callback/unexpected input handling (AE-18). Integrate with `ExpenseDraftRepository` for draft lifecycle. Handle the one-card model: send initial card or re-anchor existing card.
 - **Add Expense Telegram Flow — Subtask 3: Store Selection (AE-03, AE-04, AE-05)** — ✓ Done. Added an 8-store paginated picker ordered by latest purchase across the full expense history, with a non-interactive in-card page indicator, family-scoped store search with a limited fallback, default-category preselection, and a paused-draft detour to Catalog store creation that resumes at amount entry.
+- **Add Expense Telegram Flow — Subtask 4: Amount & Currency (AE-06, AE-07)** — ✓ Done. Added exact decimal amount parsing and formatting, default/quick currency chips, currency-change preservation with precision-conflict validation, and a paginated searchable currency list.
 
 ### Pending
-
-- **Add Expense Telegram Flow — Subtask 4: Amount & Currency (AE-06, AE-07)** — Implement amount entry with currency chips (PLN, UAH, EUR, USD + family default), amount parsing per §6.1, currency change rules (keep amount, precision conflict), and extended currency list with search (AE-07). On valid amount, advance to AE-08.
 
 - **Add Expense Telegram Flow — Subtask 5: Category & Split (AE-08, AE-09)** — Implement category picker with store default preselection, category search, draft-paused category creation detour, and split editor (AE-09) with add/remove rows, amount entry per row, remaining/over summary, and validation. On single category or valid split, advance to AE-10.
 

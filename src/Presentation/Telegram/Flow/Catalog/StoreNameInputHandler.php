@@ -39,7 +39,8 @@ final class StoreNameInputHandler
         array $data,
         string $value,
         callable $renderList,
-        callable $renderDetails
+        callable $renderDetails,
+        bool $similarityConfirmed = false
     ): void {
         try {
             $name = CatalogName::fromString($value);
@@ -66,7 +67,7 @@ final class StoreNameInputHandler
         }
         $id = isset($data['id']) ? $this->utils->parseUuid((string) $data['id']) : null;
         $storeId = $id === null ? null : new StoreId($id);
-        $matches = array_filter(
+        $matches = $similarityConfirmed ? [] : array_filter(
             $this->search->stores($familyId, $name->getValue()),
             fn (Store $store): bool => $store->getDedupeKey() !== $name->getDedupeKey()
                 && ($storeId === null || !$store->getId()->equals($storeId))

@@ -187,8 +187,12 @@ final class CategoryEntryScreen implements CatalogEntryScreen
         $this->utils->render($context, $this->utils->namePrompt($value), $this->utils->formKeyboard($this->getListCallback()));
     }
 
-    public function processNameInput(TelegramFamilyMemberContext $context, array $data, string $value): void
-    {
+    public function processNameInput(
+        TelegramFamilyMemberContext $context,
+        array $data,
+        string $value,
+        bool $similarityConfirmed = false
+    ): void {
         $returnStoreId = isset($data['return_store_id']) ? (string) $data['return_store_id'] : null;
         $this->nameInput->process(
             $context,
@@ -196,7 +200,8 @@ final class CategoryEntryScreen implements CatalogEntryScreen
             $value,
             $returnStoreId,
             fn (TelegramFamilyMemberContext $ctx, int $page, ?string $notice) => $this->renderList($ctx, $page, $notice),
-            fn (TelegramFamilyMemberContext $ctx, Uuid $id, ?string $notice) => $this->renderDetails($ctx, $id, $notice)
+            fn (TelegramFamilyMemberContext $ctx, Uuid $id, ?string $notice) => $this->renderDetails($ctx, $id, $notice),
+            $similarityConfirmed
         );
     }
 

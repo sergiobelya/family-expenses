@@ -16,103 +16,74 @@ class MoneyAmountFormatterTest extends TestCase
         $this->formatter = new MoneyAmountFormatter();
     }
 
-    // --- format: standard precision 2 ---
-
     public function testFormatWithTwoDecimals(): void
     {
-        $result = $this->formatter->format('125.50', 'USD');
-
-        $this->assertSame('125.50 USD', $result);
+        self::assertSame('125.50 USD', $this->formatter->format('125.50', 'USD'));
     }
 
     public function testFormatIntegerValueWithTwoDecimals(): void
     {
-        $result = $this->formatter->format('500', 'PLN');
-
-        $this->assertSame('500.00 PLN', $result);
+        self::assertSame('500.00 PLN', $this->formatter->format('500', 'PLN'));
     }
 
     public function testFormatTrimsExcessDecimals(): void
     {
-        // Input has more decimals than currency precision; bcadd truncates
-        $result = $this->formatter->format('10.123', 'EUR');
-
-        $this->assertSame('10.12 EUR', $result);
+        self::assertSame('10.12 EUR', $this->formatter->format('10.123', 'EUR'));
     }
 
     public function testFormatWithTrailingZeros(): void
     {
-        $result = $this->formatter->format('100.10', 'GBP');
-
-        $this->assertSame('100.10 GBP', $result);
+        self::assertSame('100.10 GBP', $this->formatter->format('100.10', 'GBP'));
     }
 
     public function testFormatZero(): void
     {
-        $result = $this->formatter->format('0', 'USD');
-
-        $this->assertSame('0.00 USD', $result);
+        self::assertSame('0.00 USD', $this->formatter->format('0', 'USD'));
     }
-
-    // --- format: zero precision currencies ---
 
     public function testFormatZeroPrecisionCurrency(): void
     {
-        $result = $this->formatter->format('500', 'ISK');
-
-        $this->assertSame('500 ISK', $result);
+        self::assertSame('500 ISK', $this->formatter->format('500', 'ISK'));
     }
 
     public function testFormatZeroPrecisionDropsFractionalPart(): void
     {
-        $result = $this->formatter->format('500.99', 'ISK');
-
-        $this->assertSame('500 ISK', $result);
+        self::assertSame('500 ISK', $this->formatter->format('500.99', 'ISK'));
     }
-
-    // --- format: unknown currency fallback to precision 2 ---
 
     public function testFormatUnknownCurrencyDefaultsToTwoDecimals(): void
     {
-        $result = $this->formatter->format('99.5', 'XXX');
-
-        $this->assertSame('99.50 XXX', $result);
+        self::assertSame('99.50 XXX', $this->formatter->format('99.5', 'XXX'));
     }
-
-    // --- format: large amounts ---
 
     public function testFormatLargeValueDropsFractionalPart(): void
     {
-        $result = $this->formatter->format('99999999.5', 'ISK');
-
-        $this->assertSame('99999999 ISK', $result);
+        self::assertSame('99999999 ISK', $this->formatter->format('99999999.5', 'ISK'));
     }
 
     public function testFormatLargeValue(): void
     {
-        $result = $this->formatter->format('99999999.99', 'USD');
-
-        $this->assertSame('99999999.99 USD', $result);
+        self::assertSame('99999999.99 USD', $this->formatter->format('99999999.99', 'USD'));
     }
 
     public function testFormatMaxValue(): void
     {
-        $result = $this->formatter->format('100000000', 'UAH');
-
-        $this->assertSame('100000000.00 UAH', $result);
+        self::assertSame('100000000.00 UAH', $this->formatter->format('100000000', 'UAH'));
     }
 
     public function testFormatVeryLargeValue(): void
     {
-        $result = $this->formatter->format('999999999999999.99', 'UAH');
-
-        $this->assertSame('999999999999999.99 UAH', $result);
+        self::assertSame('999999999999999.99 UAH', $this->formatter->format('999999999999999.99', 'UAH'));
     }
 
     public function testFormatVeryLargeInteger(): void
     {
-        $result = $this->formatter->format('9999999999999999', 'ISK');
+        self::assertSame('9999999999999999 ISK', $this->formatter->format('9999999999999999', 'ISK'));
+    }
 
-        $this->assertSame('9999999999999999 ISK', $result);
+    public function testFormatUsesLocaleDecimalSeparator(): void
+    {
+        self::assertSame('125,50 EUR', $this->formatter->format('125.5', 'EUR', 'uk'));
+        self::assertSame('12.345', $this->formatter->formatNumber('12.345', 'ISK', 'en'));
     }
 }

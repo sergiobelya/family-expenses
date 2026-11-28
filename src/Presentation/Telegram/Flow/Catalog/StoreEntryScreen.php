@@ -236,14 +236,19 @@ final class StoreEntryScreen implements CatalogEntryScreen
         $this->utils->render($context, $prompt, $this->utils->formKeyboard($this->getListCallback()));
     }
 
-    public function processNameInput(TelegramFamilyMemberContext $context, array $data, string $value): void
-    {
+    public function processNameInput(
+        TelegramFamilyMemberContext $context,
+        array $data,
+        string $value,
+        bool $similarityConfirmed = false
+    ): void {
         $this->nameInput->process(
             $context,
             $data,
             $value,
             fn (TelegramFamilyMemberContext $ctx, int $page, ?string $notice) => $this->renderList($ctx, $page, $notice),
-            fn (TelegramFamilyMemberContext $ctx, Uuid $id, ?string $notice) => $this->renderDetails($ctx, $id, $notice)
+            fn (TelegramFamilyMemberContext $ctx, Uuid $id, ?string $notice) => $this->renderDetails($ctx, $id, $notice),
+            $similarityConfirmed
         );
     }
 

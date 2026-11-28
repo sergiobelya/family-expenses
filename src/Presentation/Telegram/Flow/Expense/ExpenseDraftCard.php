@@ -39,6 +39,8 @@ final readonly class ExpenseDraftCard
             $renderedMessageId = $this->screen->renderDraft($context, $draft, $messageId, $errorKey);
         } elseif ($draft->currentStep === 'amount') {
             $renderedMessageId = $this->screen->renderAmountPrompt($context, $draft, $messageId, $errorKey);
+        } elseif ($draft->currentStep === 'category') {
+            $renderedMessageId = $this->screen->renderCategoryPrompt($context, $draft, $messageId, $errorKey);
         } else {
             throw new LogicException('No renderer is registered for the current expense draft step.');
         }

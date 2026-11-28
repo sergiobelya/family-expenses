@@ -253,9 +253,19 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
         // Confirm name despite fuzzy conflict warning
         if ($data === CallbackActions::CATALOG_WARNING_CONFIRM) {
             $state = $this->stateRepository->get($context->telegramUserId);
-            if ($state !== null && $state->flow === self::FLOW_NAME) {
+            if (
+                $state !== null
+                && $state->flow === self::FLOW_NAME
+                && $state->step === 'warning'
+                && $this->isCurrentWarningCard($update, $state)
+            ) {
                 $type = (string) ($state->data['type'] ?? 'store');
-                $this->getScreen($type)->processNameInput($context, $state->data, (string) ($state->data['value'] ?? ''));
+                $this->getScreen($type)->processNameInput(
+                    $context,
+                    $state->data,
+                    (string) ($state->data['value'] ?? ''),
+                    true
+                );
             }
             return;
         }
@@ -451,6 +461,15 @@ final readonly class CatalogFlowHandler implements FamilyContextFlowHandlerInter
     private function trans(string $key, array $parameters = []): string
     {
         return $this->utils->trans($key, $parameters);
+    }
+
+    private function isCurrentWarningCard(TelegramUpdate $update, UserInteractionState $state): bool
+    {
+        $messageId = $state->data['message_id'] ?? null;
+
+        return $update->callbackMessageId !== null
+            && is_numeric($messageId)
+            && (int) $messageId === $update->callbackMessageId;
     }
 
     private function getScreen(string $type): CatalogEntryScreen

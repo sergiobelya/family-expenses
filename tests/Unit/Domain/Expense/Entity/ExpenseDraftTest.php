@@ -160,6 +160,8 @@ final class ExpenseDraftTest extends TestCase
         $draft = $this->createDraft();
         $draft->setStore($storeId, $defaultCategoryId);
         $draft->setStoreSearchQuery('market');
+        $draft->setCurrencySearchQuery('pound');
+        $draft->setCurrencyPage(1);
         $draft->setAmount('125.50', 'PLN');
         $draft->setStep('AE-08');
         $draft->setPurchaseDate(new DateTimeImmutable('2026-06-15', new DateTimeZone('UTC')));
@@ -171,6 +173,8 @@ final class ExpenseDraftTest extends TestCase
         self::assertSame($storeId->toRfc4122(), $array['store_id']);
         self::assertSame($defaultCategoryId->toRfc4122(), $array['default_category_id']);
         self::assertSame('market', $array['store_search_query']);
+        self::assertSame('pound', $array['currency_search_query']);
+        self::assertSame(1, $array['currency_page']);
 
         $restored = ExpenseDraft::fromArray($array);
         self::assertSame($draft->status, $restored->status);
@@ -182,6 +186,8 @@ final class ExpenseDraftTest extends TestCase
         self::assertNotNull($restored->defaultCategoryId);
         self::assertTrue($defaultCategoryId->equals($restored->defaultCategoryId));
         self::assertSame('market', $restored->storeSearchQuery);
+        self::assertSame('pound', $restored->currencySearchQuery);
+        self::assertSame(1, $restored->currencyPage);
         self::assertSame($draft->amount, $restored->amount);
         self::assertSame($draft->currency, $restored->currency);
         self::assertSame($draft->currentStep, $restored->currentStep);

@@ -28,7 +28,12 @@ interface CatalogEntryScreen
     /**
      * @param array<string, mixed> $data
      */
-    public function processNameInput(TelegramFamilyMemberContext $context, array $data, string $value): void;
+    public function processNameInput(
+        TelegramFamilyMemberContext $context,
+        array $data,
+        string $value,
+        bool $similarityConfirmed = false
+    ): void;
 
     public function startSearch(TelegramFamilyMemberContext $context): void;
 

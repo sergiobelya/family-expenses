@@ -14,6 +14,7 @@ Code is organized by Bounded Contexts in `src/`:
 - Application code follows SOLID principles. Favor composition over inheritance. Prefer open/closed design — extend behavior through interfaces and strategies rather than conditional logic. Keep methods focused so they fit on screen; decompose large classes into smaller, single-responsibility components.
 - Most classes should be `final readonly` to prevent unintended inheritance and mutation. Exceptions: domain entities (Doctrine needs reflection for hydration), abstract base classes, and classes that must be mocked in tests without stub implementations. If a class has a non-readonly dependency (e.g., a mutable service), the class itself may not be `readonly`, but most properties should still be marked `readonly`.
 - Avoid using `Closure` as a dependency injection parameter when the logic can be extracted into a dedicated class. A dedicated class (e.g., a `*Renderer`, `*Builder`, `*Screen`, `*Step`, `*Util`, `*Validator`, etc.) makes the dependency explicit, testable, and reusable.
+- Keep methods and classes short and readable. Methods should be no longer than 30 lines, and classes should be no longer than 350 lines unless they cannot be split by design. Decompose large classes into smaller, single-responsibility components. Use private methods to break up long methods.
 
 ### Layer Responsibilities within a Context
 - **`Domain/`**: Pure domain logic and POPO entities. No framework or ORM dependencies.

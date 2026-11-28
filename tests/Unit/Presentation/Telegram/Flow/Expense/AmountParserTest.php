@@ -5,6 +5,7 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow\Expense;
 use App\Core\Domain\Exception\ErrorType;
 use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Domain\ValueObject\MoneyAmount;
+use App\Expense\Application\Validation\ExpenseAmountValidator;
 use App\Presentation\Telegram\Flow\Expense\AmountParser;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -16,7 +17,7 @@ class AmountParserTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->parser = new AmountParser();
+        $this->parser = new AmountParser(new ExpenseAmountValidator());
     }
 
     // --- Valid amounts ---
@@ -35,6 +36,7 @@ class AmountParserTest extends TestCase
 
         $this->assertInstanceOf(MoneyAmount::class, $amount);
         $this->assertSame('12550', $amount->getMinorUnits());
+        self::assertSame('125.5', $amount->toDecimalString());
     }
 
     public function testParseValidIntegerAmount(): void
@@ -59,6 +61,24 @@ class AmountParserTest extends TestCase
 
         $this->assertInstanceOf(MoneyAmount::class, $amount);
         $this->assertSame('500', $amount->getMinorUnits());
+    }
+
+    public function testCurrencyPrecisionCanBeCheckedWhenCurrencyChanges(): void
+    {
+        self::assertTrue($this->parser->exceedsCurrencyPrecision('12.5', 'ISK'));
+        self::assertFalse($this->parser->exceedsCurrencyPrecision('12.5', 'EUR'));
+    }
+
+    public function testParserUsesTheConfiguredMaximumAmount(): void
+    {
+        $parser = new AmountParser(new ExpenseAmountValidator(1_000));
+
+        try {
+            $parser->parse('1000.01', 'PLN');
+            self::fail('Expected InvalidValueException');
+        } catch (InvalidValueException $exception) {
+            self::assertSame(ErrorType::MONEY_AMOUNT_TOO_LARGE, $exception->errorType);
+        }
     }
 
     // --- Invalid format ---

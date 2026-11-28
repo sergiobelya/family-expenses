@@ -130,12 +130,22 @@ final readonly class CallbackActions
     // Amount (AE-06)
     public const string EXPENSE_CURRENCY_PREFIX = 'exp:curr:';
     public const string EXPENSE_CURRENCY_MORE = 'exp:curr:more';
+    public const string EXPENSE_AMOUNT_CURRENCY_ACTION_PREFIX = 'ac:';
+    public const string EXPENSE_AMOUNT_MORE_CURRENCIES_ACTION = 'am';
+    public const string EXPENSE_AMOUNT_CONTINUE_ACTION = 'an';
+    public const string EXPENSE_AMOUNT_BACK_ACTION = 'ab';
+    public const string EXPENSE_AMOUNT_BACK_REVIEW_ACTION = 'ar';
 
     // More currencies (AE-07)
     public const string EXPENSE_CURRENCY_SELECT_PREFIX = 'exp:currency:set:';
     public const string EXPENSE_CURRENCY_SEARCH = 'exp:currency:search';
     public const string EXPENSE_CURRENCY_SEARCH_CLEAR = 'exp:currency:search:clear';
     public const string EXPENSE_CURRENCY_PAGE_PREFIX = 'exp:currency:page:';
+    public const string EXPENSE_CURRENCY_SELECT_ACTION_PREFIX = 'u:';
+    public const string EXPENSE_CURRENCY_PAGE_ACTION_PREFIX = 'up:';
+    public const string EXPENSE_CURRENCY_SEARCH_ACTION = 'us';
+    public const string EXPENSE_CURRENCY_SEARCH_BACK_ACTION = 'ul';
+    public const string EXPENSE_CURRENCY_BACK_ACTION = 'ub';
 
     // Category (AE-08)
     public const string EXPENSE_CATEGORY_SELECT_PREFIX = 'exp:cat:';

@@ -350,7 +350,8 @@ final class ExpenseStoreSelectionStepTest extends TestCase
             $callbackData,
             $telegram,
             $translator,
-            $dispatcher
+            $dispatcher,
+            new MoneyAmountFormatter()
         );
         $card = new ExpenseDraftCard($screen, new AddExpenseStepRouter([]), $draftService);
         $return = new ExpenseStoreReturn(
@@ -389,7 +390,8 @@ final class ExpenseStoreSelectionStepTest extends TestCase
             new ExpenseDraftCallbackData(),
             $telegram,
             $translator,
-            $this->createMock(MessageBusDispatcherInterface::class)
+            $this->createMock(MessageBusDispatcherInterface::class),
+            new MoneyAmountFormatter()
         );
         $return = new ExpenseStoreReturn(
             $draftService,
@@ -433,7 +435,14 @@ final class ExpenseStoreSelectionStepTest extends TestCase
         });
         $states ??= $this->createMock(UserInteractionStateRepository::class);
         $draftService = $this->createDraftService($draftRepository);
-        $screen = new ExpenseDraftScreen($renderer, $callbackData, $telegram, $translator, $dispatcher);
+        $screen = new ExpenseDraftScreen(
+            $renderer,
+            $callbackData,
+            $telegram,
+            $translator,
+            $dispatcher,
+            new MoneyAmountFormatter()
+        );
         $draftCard = new ExpenseDraftCard($screen, new AddExpenseStepRouter([]), $draftService);
         $catalogSearch = $this->createMock(CatalogSearchInterface::class);
         $picker = new ExpenseStorePickerScreen($renderer, $callbackData, $dispatcher, $translator);

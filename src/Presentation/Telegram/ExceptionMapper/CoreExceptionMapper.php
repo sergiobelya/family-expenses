@@ -39,7 +39,10 @@ final readonly class CoreExceptionMapper implements ExceptionMapperInterface
             ),
             ErrorType::MONEY_AMOUNT_TOO_PRECISE => new TranslatableMessage(
                 'expense.amount.too_precise',
-                ['%{precision}' => $exception->properties['maxPrecision'] ?? 2]
+                [
+                    '%{precision}' => $exception->properties['maxPrecision'] ?? 2,
+                    '%count%' => $exception->properties['maxPrecision'] ?? 2,
+                ]
             ),
             ErrorType::MONEY_AMOUNT_TOO_PRECISE_ZERO => new TranslatableMessage('expense.amount.too_precise_zero'),
             ErrorType::PURCHASE_DATE_IN_FUTURE => new TranslatableMessage('expense.future_date'),

@@ -15,6 +15,7 @@ use App\Core\Domain\ValueObject\{
     UserId
 };
 use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
+use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Expense\Application\ExpenseAuthorizationService;
 use App\Expense\Application\ExpenseDraftService;
@@ -23,6 +24,7 @@ use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Identity\Domain\Entity\User;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
+use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
@@ -46,7 +48,8 @@ final class CatalogFlowHandlerTest extends TestCase
         FamilyMemberRepositoryInterface $members,
         UserInteractionStateRepository $states,
         TelegramApiClientInterface $telegram,
-        TranslatorInterface $translator
+        TranslatorInterface $translator,
+        ?CatalogEntryScreen $storeScreen = null
     ): CatalogFlowHandler {
         $lock = $this->createMock(FamilyCatalogLockInterface::class);
         $access = new CatalogAccess($members, $lock);
@@ -58,7 +61,7 @@ final class CatalogFlowHandlerTest extends TestCase
         $search->method('categories')->willReturn([]);
 
         $utils = new CatalogFlowUtils($telegram, $states, $commandBus, $translator);
-        $storeScreen = $this->createMock(CatalogEntryScreen::class);
+        $storeScreen ??= $this->createMock(CatalogEntryScreen::class);
         $categoryScreen = $this->createMock(CatalogEntryScreen::class);
         $realStoreScreen = new StoreEntryScreen($utils, $repository, $search, $exceptionMapper);
         $aliasScreen = new StoreAliasScreen($utils, $realStoreScreen, $repository, $exceptionMapper);
@@ -111,6 +114,71 @@ final class CatalogFlowHandlerTest extends TestCase
         ]);
 
         self::assertTrue($handler->supports($update, $context));
+        $handler->handle($update, $context);
+    }
+
+    public function testSimilarNameConfirmationProcessesWarningStateAsExplicitConfirmation(): void
+    {
+        $this->assertWarningConfirmationHandled('warning', true);
+    }
+
+    public function testStaleSimilarNameConfirmationDoesNotProcessCurrentState(): void
+    {
+        $this->assertWarningConfirmationHandled('store_name', false);
+    }
+
+    public function testSimilarNameConfirmationFromOldWarningCardDoesNotProcessCurrentWarning(): void
+    {
+        $this->assertWarningConfirmationHandled('warning', false, 10);
+    }
+
+    private function assertWarningConfirmationHandled(string $step, bool $shouldProcess, int $stateMessageId = 9): void
+    {
+        $family = Family::create(
+            'Smiths',
+            Timezone::fromString('UTC'),
+            CurrencyCode::fromString('USD'),
+            CurrencyCode::fromString('USD')
+        );
+        $user = new User(123456);
+        $context = new TelegramFamilyMemberContext(new TelegramUserContext($user, 'en', 123456, 111), $family);
+        $state = new UserInteractionState(123456, CatalogFlowUtils::FLOW_NAME, $step, [
+            'type' => 'store',
+            'operation' => 'create',
+            'value' => 'Apteka Galla',
+            'message_id' => $stateMessageId,
+        ]);
+        $repository = $this->createMock(CatalogRepositoryInterface::class);
+        $members = $this->createMock(FamilyMemberRepositoryInterface::class);
+        $members->expects(self::once())->method('isMember')->with($family->getId(), $user->getId())->willReturn(true);
+        $states = $this->createMock(UserInteractionStateRepository::class);
+        $states->expects(self::once())->method('get')->with(123456)->willReturn($state);
+        $telegram = $this->createMock(TelegramApiClientInterface::class);
+        $telegram->expects(self::once())->method('answerCallbackQuery')->with('callback-id');
+        $translator = $this->createMock(TranslatorInterface::class);
+        $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
+        $storeScreen = $this->createMock(CatalogEntryScreen::class);
+        if ($shouldProcess) {
+            $storeScreen->expects(self::once())->method('processNameInput')->with(
+                $context,
+                $state->data,
+                'Apteka Galla',
+                true
+            );
+        } else {
+            $storeScreen->expects(self::never())->method('processNameInput');
+        }
+        $handler = $this->createHandler($repository, $members, $states, $telegram, $translator, $storeScreen);
+        $update = TelegramUpdate::fromArray([
+            'update_id' => 5,
+            'callback_query' => [
+                'id' => 'callback-id',
+                'from' => ['id' => 123456],
+                'message' => ['message_id' => 9, 'chat' => ['id' => 111]],
+                'data' => CallbackActions::CATALOG_WARNING_CONFIRM,
+            ],
+        ]);
+
         $handler->handle($update, $context);
     }
 

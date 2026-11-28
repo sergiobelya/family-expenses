@@ -44,6 +44,8 @@ final class ExpenseDraft
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
         public DateTimeImmutable $expiresAt,
+        public ?string $currencySearchQuery = null,
+        public int $currencyPage = 0,
     ) {
     }
 
@@ -131,6 +133,36 @@ final class ExpenseDraft
         $this->updatedAt = new DateTimeImmutable();
     }
 
+    public function setCurrency(string $currency): void
+    {
+        $this->currency = $currency;
+        $this->cardRevision++;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function setCurrencySearchQuery(?string $query): void
+    {
+        if ($this->currencySearchQuery === $query) {
+            return;
+        }
+
+        $this->currencySearchQuery = $query;
+        $this->cardRevision++;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function setCurrencyPage(int $page): void
+    {
+        $page = max(0, $page);
+        if ($this->currencyPage === $page) {
+            return;
+        }
+
+        $this->currencyPage = $page;
+        $this->cardRevision++;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
     /**
      * @param list<array{category_id: string, amount: string}> $allocations
      */
@@ -184,6 +216,8 @@ final class ExpenseDraft
             'store_search_query' => $this->storeSearchQuery,
             'amount' => $this->amount,
             'currency' => $this->currency,
+            'currency_search_query' => $this->currencySearchQuery,
+            'currency_page' => $this->currencyPage,
             'category_allocations' => $this->categoryAllocations,
             'category_customized' => $this->categoryCustomized,
             'purchase_date' => $this->purchaseDate?->format(DateTimeImmutable::RFC3339),
@@ -217,6 +251,10 @@ final class ExpenseDraft
             storeSearchQuery: isset($payload['store_search_query']) ? (string) $payload['store_search_query'] : null,
             amount: $payload['amount'] ?? null,
             currency: $payload['currency'] ?? null,
+            currencySearchQuery: isset($payload['currency_search_query'])
+                ? (string) $payload['currency_search_query']
+                : null,
+            currencyPage: max(0, (int) ($payload['currency_page'] ?? 0)),
             categoryAllocations: self::parseAllocations($payload),
             categoryCustomized: (bool) ($payload['category_customized'] ?? false),
             purchaseDate: self::parseDate($payload['purchase_date'] ?? null),

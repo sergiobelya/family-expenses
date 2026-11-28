@@ -9,6 +9,7 @@ use App\Core\Domain\ValueObject\{
     StoreId
 };
 use App\Expense\Application\ExpenseAuthorizationService;
+use App\Expense\Application\Validation\ExpenseAmountValidator;
 use App\Expense\Domain\Entity\{
     Expense,
     ExpenseAllocation,
@@ -33,6 +34,7 @@ final readonly class AddExpenseHandler
         private ExpenseRepositoryInterface $expenseRepository,
         private StoreRepositoryInterface $storeRepository,
         private CategoryRepositoryInterface $categoryRepository,
+        private ExpenseAmountValidator $amountValidator,
         private ExpenseAuthorizationService $authorization,
     ) {
     }
@@ -41,10 +43,9 @@ final readonly class AddExpenseHandler
     {
         $this->authorization->assertMember($command->familyId, $command->userId);
 
-        $currency = $this->assertCurrencyCode($command->currency);
-        /** @var numeric-string $totalAmountStr */
-        $totalAmountStr = $command->amount;
-        $totalAmount = MoneyAmount::fromDecimal($totalAmountStr, $currency);
+        $currency = CurrencyCode::fromString($command->currency);
+        $totalAmount = MoneyAmount::fromDecimalWithValidation($command->amount, $currency);
+        $this->amountValidator->validate($totalAmount);
 
         $store = $this->assertStoreExists($command->familyId, $command->storeId);
         $categories = $this->assertCategoriesExist($command->familyId, $command->allocations);
@@ -61,11 +62,6 @@ final readonly class AddExpenseHandler
         $this->expenseRepository->save($expense);
 
         return $expense;
-    }
-
-    private function assertCurrencyCode(string $currency): CurrencyCode
-    {
-        return CurrencyCode::fromString($currency);
     }
 
     private function assertStoreExists(
@@ -111,9 +107,8 @@ final readonly class AddExpenseHandler
         $result = [];
         foreach ($allocations as $item) {
             $category = $categories[(string) $item->categoryId];
-            /** @var numeric-string $itemAmount */
-            $itemAmount = $item->amount;
-            $amount = MoneyAmount::fromDecimal($itemAmount, $currency);
+            $amount = MoneyAmount::fromDecimalWithValidation($item->amount, $currency);
+            $this->amountValidator->validate($amount);
             $result[] = new ExpenseAllocation($category, $amount);
         }
         return $result;

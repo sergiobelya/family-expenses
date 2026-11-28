@@ -84,20 +84,15 @@ final readonly class MoneyAmount
     }
 
     /**
-     * Create from a decimal string with precision and maximum validation.
-     * Validates that the input respects the currency's minor-unit precision
-     * and does not exceed the configured maximum amount.
+     * Create from a decimal string after validating currency precision.
      *
      * @param string $amount A decimal string (e.g. "125.50")
-     * @param int $maxAmount Maximum allowed amount in major units (default 100,000,000)
      * @throws InvalidValueException if precision exceeds currency's minor units
-     * @throws InvalidValueException if amount exceeds maximum
      * @throws InvalidValueException if the amount is zero, negative, or not a valid number
      */
     public static function fromDecimalWithValidation(
         string $amount,
-        CurrencyCode $currency,
-        int $maxAmount = 100_000_000
+        CurrencyCode $currency
     ): self {
         $maxPrecision = self::getMaxPrecision($currency->value);
 
@@ -113,12 +108,6 @@ final readonly class MoneyAmount
                     ['maxPrecision' => $maxPrecision]
                 );
             }
-        }
-
-        // Check maximum amount
-        // @phpstan-ignore argument.type
-        if (bccomp($amount, (string) $maxAmount, 0) > 0) {
-            throw new InvalidValueException(ErrorType::MONEY_AMOUNT_TOO_LARGE, ['maxAmount' => $maxAmount]);
         }
 
         // At this point $amount is validated as a proper decimal string
@@ -145,6 +134,21 @@ final readonly class MoneyAmount
     public function getMinorUnits(): string
     {
         return $this->money->getAmount();
+    }
+
+    public function toDecimalString(): string
+    {
+        $minorUnits = $this->getMinorUnits();
+        $precision = self::getMaxPrecision($this->getCurrency()->value);
+        if ($precision === 0) {
+            return $minorUnits;
+        }
+
+        $digits = str_pad($minorUnits, $precision + 1, '0', STR_PAD_LEFT);
+        $integer = substr($digits, 0, -$precision);
+        $fraction = rtrim(substr($digits, -$precision), '0');
+
+        return $integer . ($fraction === '' ? '' : '.' . $fraction);
     }
 
     public function getCurrency(): CurrencyCode

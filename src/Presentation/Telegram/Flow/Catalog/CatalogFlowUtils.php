@@ -59,15 +59,13 @@ final readonly class CatalogFlowUtils
                     throw new RuntimeException('Unable to render catalog card: ' . ($response['description'] ?? 'unknown Telegram API error'));
                 }
                 if (!$this->telegramClient->deleteMessage($context->chatId, $messageId)) {
-                    $closed = $this->telegramClient->editMessageText(
+                    // Cleanup is best-effort; the replacement card must remain usable.
+                    $this->telegramClient->editMessageText(
                         $context->chatId,
                         $messageId,
                         $text,
                         ['inline_keyboard' => []]
                     );
-                    if (!($closed['ok'] ?? false)) {
-                        throw new RuntimeException('Unable to close the previous catalog card after sending a replacement.');
-                    }
                 }
                 $messageId = null;
             }
@@ -102,7 +100,7 @@ final readonly class CatalogFlowUtils
     public function state(TelegramFamilyMemberContext $context, string $step, array $data): UserInteractionState
     {
         $old = $this->stateRepository->get($context->telegramUserId);
-        if (isset($old?->data['message_id'])) {
+        if (!array_key_exists('message_id', $data) && isset($old?->data['message_id'])) {
             $data['message_id'] = $old->data['message_id'];
         }
 

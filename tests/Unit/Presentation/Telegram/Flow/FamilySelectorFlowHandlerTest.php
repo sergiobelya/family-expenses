@@ -162,7 +162,8 @@ final class FamilySelectorFlowHandlerTest extends TestCase
             $callbackData,
             $telegramClient,
             $translator,
-            $this->createMock(MessageBusDispatcherInterface::class)
+            $this->createMock(MessageBusDispatcherInterface::class),
+            new MoneyAmountFormatter()
         );
         $stepRouter = new AddExpenseStepRouter([]);
         $draftCard = new ExpenseDraftCard($screen, $stepRouter, $draftService);

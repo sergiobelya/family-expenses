@@ -6,13 +6,15 @@ use App\Core\Domain\Exception\ErrorType;
 use App\Core\Domain\Exception\InvalidValueException;
 use App\Core\Domain\ValueObject\CurrencyCode;
 use App\Core\Domain\ValueObject\MoneyAmount;
+use App\Expense\Application\Validation\ExpenseAmountValidator;
 
 /**
  * Parses raw user input into a validated MoneyAmount.
  *
  * Handles only the presentation-layer concerns: trimming, comma normalization,
- * and regex-based format validation. Domain validation (precision, max amount,
- * positive check) is delegated to {@see MoneyAmount::fromDecimalWithValidation}.
+ * and regex-based format validation. Domain amount rules are enforced by the
+ * MoneyAmount value object; the configured maximum is checked by the shared
+ * Application validator.
  *
  * Per add_expense.md §6.1: accepts ASCII digits with one optional decimal
  * separator (. or ,) followed by at least one digit. No thousands separators,
@@ -23,10 +25,14 @@ use App\Core\Domain\ValueObject\MoneyAmount;
  */
 final readonly class AmountParser
 {
+    public function __construct(private ExpenseAmountValidator $amountValidator)
+    {
+    }
+
     /**
      * Parses a raw text input and returns a validated MoneyAmount.
      *
-     * @throws InvalidValueException if the input is empty, malformed, or fails domain validation
+     * @throws InvalidValueException if the input is malformed or fails amount validation
      */
     public function parse(string $raw, string $currencyCode): MoneyAmount
     {
@@ -45,9 +51,22 @@ final readonly class AmountParser
         }
 
         // After regex check, $normalized is guaranteed to be a numeric-string (digits with optional decimal)
-        return MoneyAmount::fromDecimalWithValidation(
+        $amount = MoneyAmount::fromDecimalWithValidation(
             $normalized,
             CurrencyCode::fromString($currencyCode)
+        );
+        $this->amountValidator->validate($amount);
+
+        return $amount;
+    }
+
+    public function exceedsCurrencyPrecision(string $amount, string $currencyCode): bool
+    {
+        $normalized = str_replace(',', '.', trim($amount));
+        $fraction = explode('.', $normalized, 2)[1] ?? '';
+
+        return strlen($fraction) > MoneyAmount::getMaxPrecision(
+            (string) CurrencyCode::fromString($currencyCode)
         );
     }
 }

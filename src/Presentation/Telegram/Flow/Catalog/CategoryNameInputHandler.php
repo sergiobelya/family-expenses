@@ -40,7 +40,8 @@ final class CategoryNameInputHandler
         string $value,
         ?string $returnStoreId,
         callable $renderList,
-        callable $renderDetails
+        callable $renderDetails,
+        bool $similarityConfirmed = false
     ): void {
         try {
             $name = CatalogName::fromString($value);
@@ -67,7 +68,7 @@ final class CategoryNameInputHandler
         }
         $id = isset($data['id']) ? $this->utils->parseUuid((string) $data['id']) : null;
         $categoryId = $id === null ? null : new CategoryId($id);
-        $matches = array_filter(
+        $matches = $similarityConfirmed ? [] : array_filter(
             $this->search->categories($familyId, $name->getValue()),
             fn (Category $category): bool => $category->getDedupeKey() !== $name->getDedupeKey()
                 && ($categoryId === null || !$category->getId()->equals($categoryId))

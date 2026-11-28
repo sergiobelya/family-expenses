@@ -177,9 +177,9 @@ expense:
     amount:
         invalid_format: "Enter a positive number. Example: 125.50"
         not_positive: "Amount must be greater than zero."
-        too_large: "Amount exceeds the maximum of %{maxAmount}."
-        too_precise: "This currency does not use more than %{precision} decimal places."
-        too_precise_zero: "This currency has no decimal places."
+        too_large: "Amount exceeds the maximum of %{maxAmount} %{currency}."
+        too_precise: "This currency allows up to %{precision} decimal place.|This currency allows up to %{precision} decimal places."
+        too_precise_zero: "%{currency} does not use decimal places."
         empty: "not entered yet"
         prompt: "💰 Send the amount in %{currency}. Example: %{example_amount}"
     add:
@@ -189,6 +189,8 @@ expense:
             moved: "↓ This draft continues in a newer message."
         amount:
             label: "Amount"
+            edit_prompt: "Current amount: %{amount}. Send a replacement amount, or use Continue to keep it."
+            continue: "✅ Continue"
         store:
             label: "Store"
             empty: "not selected yet"
@@ -229,9 +231,18 @@ expense:
             too_old: "Purchase date cannot be before 2020."
         currency:
             more: "💱 More currencies"
+            more_prompt: "💱 Choose a currency, or send a code or name (for example GBP or British pound)."
+            changed_keep_amount: "Currency changed to %{currency}. The amount stays %{amount}."
+            precision_conflict: "%{currency} allows fewer decimal places than %{amount}. Edit the amount before continuing."
             search:
+                button: "🔎 Search currencies"
                 prompt: "🔎 Send a currency code or name to search."
-                none: "No currencies found for “%{query}”."
+                results: "Currencies matching “%{query}”:"
+                none: "I couldn't find a supported currency for “%{query}”. Send a 3-letter code (for example GBP) or a currency name."
+                empty: "Send a currency code or name to search."
+                list: "⬅️ Back to currency list"
+        btn:
+            back_to_review: "⬅️ Back to review"
         split:
             title: "🧩 Split between categories"
             prompt: "Send the amount for %{category}."

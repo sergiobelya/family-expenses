@@ -84,6 +84,8 @@ final readonly class ExpenseCardRenderer
         ?array $allocations,
         string $prompt,
         ?string $error,
+        string $locale = 'en',
+        bool $preserveAmountPrecision = false,
     ): string {
         $lines = [];
         $familyName = (string) $family->getName();
@@ -100,7 +102,9 @@ final readonly class ExpenseCardRenderer
 
         // Amount line
         if ($draft->amount !== null && $draft->currency !== null) {
-            $amountText = $this->amountFormatter->format($draft->amount, $draft->currency);
+            $amountText = $preserveAmountPrecision
+                ? $this->amountFormatter->formatNumber($draft->amount, $draft->currency, $locale) . ' ' . $draft->currency
+                : $this->amountFormatter->format($draft->amount, $draft->currency, $locale);
         } else {
             $amountText = $this->translator->trans('expense.amount.empty');
         }
@@ -116,7 +120,7 @@ final readonly class ExpenseCardRenderer
                 $lines[] = '🏷 ' . $this->translator->trans('expense.add.category.label') . ':';
                 foreach ($allocations as $a) {
                     $lines[] = '  • ' . $this->escape($a['category']->getName())
-                        . ' — ' . $this->amountFormatter->format($a['amount'], $draft->currency ?? 'PLN');
+                        . ' — ' . $this->amountFormatter->format($a['amount'], $draft->currency ?? 'PLN', $locale);
                 }
             }
         } else {

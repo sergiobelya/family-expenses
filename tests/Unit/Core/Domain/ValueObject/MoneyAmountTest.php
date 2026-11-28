@@ -19,6 +19,14 @@ final class MoneyAmountTest extends TestCase
         $this->assertTrue($amount->getCurrency()->equals(CurrencyCode::fromString('PLN')));
     }
 
+    public function testToDecimalStringPreservesExactAmountAndRemovesRedundantZeros(): void
+    {
+        $amount = MoneyAmount::fromDecimal('100.50', CurrencyCode::fromString('PLN'));
+
+        self::assertSame('100.5', $amount->toDecimalString());
+        self::assertSame('500', MoneyAmount::fromDecimal('500', CurrencyCode::fromString('ISK'))->toDecimalString());
+    }
+
     public function testFromIntCreatesAmountFromInteger(): void
     {
         $amount = MoneyAmount::fromInt(10050, CurrencyCode::fromString('EUR'));
@@ -180,17 +188,10 @@ final class MoneyAmountTest extends TestCase
         $this->assertSame('500', $amount->getMinorUnits());
     }
 
-    public function testFromDecimalWithValidationRejectsTooLarge(): void
+    public function testFromDecimalWithValidationDoesNotApplyApplicationMaximum(): void
     {
-        $this->expectException(InvalidValueException::class);
-        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_too_large');
-        MoneyAmount::fromDecimalWithValidation('100000001', CurrencyCode::fromString('PLN'));
-    }
-
-    public function testFromDecimalWithValidationAcceptsMaxAmount(): void
-    {
-        $amount = MoneyAmount::fromDecimalWithValidation('100000000', CurrencyCode::fromString('PLN'));
-        $this->assertSame('10000000000', $amount->getMinorUnits());
+        $amount = MoneyAmount::fromDecimalWithValidation('100000001', CurrencyCode::fromString('PLN'));
+        $this->assertSame('10000000100', $amount->getMinorUnits());
     }
 
     public function testFromDecimalWithValidationRejectsZero(): void
@@ -205,12 +206,5 @@ final class MoneyAmountTest extends TestCase
         $this->expectException(InvalidValueException::class);
         $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_not_positive');
         MoneyAmount::fromDecimalWithValidation('-10.00', CurrencyCode::fromString('PLN'));
-    }
-
-    public function testFromDecimalWithValidationWithCustomMaxAmount(): void
-    {
-        $this->expectException(InvalidValueException::class);
-        $this->expectExceptionMessage('An invalid value was provided for a domain field: money_amount_too_large');
-        MoneyAmount::fromDecimalWithValidation('500', CurrencyCode::fromString('PLN'), 100);
     }
 }

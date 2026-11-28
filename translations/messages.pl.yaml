@@ -177,9 +177,9 @@ expense:
     amount:
         invalid_format: "Wpisz dodatnią liczbę. Przykład: 125.50"
         not_positive: "Kwota musi być większa od zera."
-        too_large: "Kwota przekracza maksimum %{maxAmount}."
-        too_precise: "Ta waluta nie używa więcej niż %{precision} miejsc po przecinku."
-        too_precise_zero: "Ta waluta nie ma miejsc po przecinku."
+        too_large: "Kwota przekracza maksimum %{maxAmount} %{currency}."
+        too_precise: "Ta waluta pozwala na maksymalnie %{precision} miejsce po przecinku.|Ta waluta pozwala na maksymalnie %{precision} miejsca po przecinku.|Ta waluta pozwala na maksymalnie %{precision} miejsc po przecinku."
+        too_precise_zero: "%{currency} nie używa miejsc po przecinku."
         empty: "nie wprowadzono"
         prompt: "💰 Wyślij kwotę w %{currency}. Przykład: %{example_amount}"
     add:
@@ -188,6 +188,8 @@ expense:
             moved: "↓ Ten szkic jest kontynuowany w nowszej wiadomości."
         amount:
             label: "Kwota"
+            edit_prompt: "Aktualna kwota: %{amount}. Wyślij nową kwotę lub wybierz Kontynuuj, aby ją zachować."
+            continue: "✅ Kontynuuj"
         store:
             label: "Sklep"
             empty: "nie wybrano"
@@ -228,9 +230,18 @@ expense:
             too_old: "Data zakupu nie może być wcześniejsza niż 2020."
         currency:
             more: "💱 Więcej walut"
+            more_prompt: "💱 Wybierz walutę albo wyślij jej kod lub nazwę (np. GBP lub British pound)."
+            changed_keep_amount: "Zmieniono walutę na %{currency}. Kwota pozostaje %{amount}."
+            precision_conflict: "%{currency} obsługuje mniej miejsc po przecinku niż kwota %{amount}. Zmień kwotę przed kontynuowaniem."
             search:
+                button: "🔎 Szukaj walut"
                 prompt: "🔎 Wyślij kod lub nazwę waluty do wyszukania."
-                none: "Nie znaleziono walut dla „%{query}”."
+                results: "Waluty pasujące do „%{query}”:"
+                none: "Nie znaleziono obsługiwanej waluty dla „%{query}”. Wyślij 3-literowy kod (np. GBP) lub nazwę waluty."
+                empty: "Wyślij kod lub nazwę waluty do wyszukania."
+                list: "⬅️ Wróć do listy walut"
+        btn:
+            back_to_review: "⬅️ Wróć do podsumowania"
         split:
             title: "🧩 Podział między kategorie"
             prompt: "Wyślij kwotę dla %{category}."

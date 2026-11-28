@@ -20,6 +20,7 @@ final readonly class ExpenseDraftScreen
         private TelegramApiClientInterface $telegramClient,
         private TranslatorInterface $translator,
         private MessageBusDispatcherInterface $messageBusDispatcher,
+        private MoneyAmountFormatter $amountFormatter,
     ) {
     }
 
@@ -37,7 +38,8 @@ final readonly class ExpenseDraftScreen
             null,
             null,
             $prompt,
-            $error
+            $error,
+            $context->language
         );
         $renderedMessageId = $this->cardRenderer->render($context->chatId, $messageId, $text, []);
 
@@ -73,7 +75,46 @@ final readonly class ExpenseDraftScreen
             $store,
             null,
             $prompt,
-            $error
+            $error,
+            $context->language
+        );
+
+        return $this->cardRenderer->render($context->chatId, $messageId, $text, []);
+    }
+
+    public function renderCategoryPrompt(
+        TelegramFamilyMemberContext $context,
+        ExpenseDraft $draft,
+        ?int $messageId,
+        ?string $errorKey = null
+    ): int {
+        $store = null;
+        if ($draft->storeId !== null) {
+            /** @var ExpenseStore|null $store */
+            $store = $this->messageBusDispatcher->dispatchQuery(new GetExpenseStoreQuery(
+                $context->activeFamily->getId(),
+                $context->user->getId(),
+                $draft->storeId
+            ));
+        }
+
+        $currency = $draft->currency ?? (string) $context->activeFamily->getDefaultExpenseCurrency();
+        $amount = $draft->amount === null
+            ? ''
+            : $this->amountFormatter->formatNumber($draft->amount, $currency, $context->language);
+        $prompt = $this->trans('expense.add.category.prompt', $context, [
+            '%{amount}' => $amount,
+            '%{currency}' => $currency,
+        ]);
+        $error = $errorKey === null ? null : $this->trans($errorKey, $context);
+        $text = $this->cardRenderer->buildCardText(
+            $context->activeFamily,
+            $draft,
+            $store,
+            null,
+            $prompt,
+            $error,
+            $context->language
         );
 
         return $this->cardRenderer->render($context->chatId, $messageId, $text, []);
@@ -174,8 +215,9 @@ final readonly class ExpenseDraftScreen
         return $messageId;
     }
 
-    public function trans(string $key, TelegramUserContext $context): string
+    /** @param array<string, mixed> $parameters */
+    public function trans(string $key, TelegramUserContext $context, array $parameters = []): string
     {
-        return $this->translator->trans($key, [], null, $context->language);
+        return $this->translator->trans($key, $parameters, null, $context->language);
     }
 }

@@ -453,7 +453,8 @@ final class AddExpenseFlowHandlerTest extends TestCase
             $callbackData,
             $telegram,
             $translator,
-            $this->createMock(MessageBusDispatcherInterface::class)
+            $this->createMock(MessageBusDispatcherInterface::class),
+            new MoneyAmountFormatter()
         );
         $stepRouter = new AddExpenseStepRouter($steps);
         $draftCard = new ExpenseDraftCard($screen, $stepRouter, $draftService);

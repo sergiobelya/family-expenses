@@ -3,12 +3,13 @@
 namespace App\Presentation\Telegram\Flow\Expense;
 
 use App\Core\Domain\ValueObject\MoneyAmount;
+use NumberFormatter;
 
 /**
  * Formats a decimal money amount string for display.
  *
- * Truncates to currency precision using bcmath and pads trailing zeros
- * without float cast, which loses precision for numbers > 15 digits.
+ * Preserves integer precision using decimal strings and applies the locale's
+ * decimal separator without converting amounts to floating-point numbers.
  *
  * Example output: "125.50 USD", "500 ISK".
  */
@@ -17,23 +18,42 @@ final readonly class MoneyAmountFormatter
     /**
      * Formats an amount for display: "125.50 PLN".
      */
-    public function format(string $amount, string $currencyCode): string
+    public function format(string $amount, string $currencyCode, string $locale = 'en'): string
     {
         $precision = MoneyAmount::getMaxPrecision($currencyCode);
-        if ($precision === 0) {
-            // bcadd with scale 0 truncates the integer part incorrectly, so drop
-            // the fractional part manually for zero-precision currencies.
-            $formatted = explode('.', $amount)[0];
+        [$integer, $fraction] = array_pad(explode('.', str_replace(',', '.', $amount), 2), 2, '');
+        $formatted = $precision === 0
+            ? $integer
+            : $integer . '.' . str_pad(substr($fraction, 0, $precision), $precision, '0');
+
+        return $this->localizeDecimalSeparator($formatted, $locale) . ' ' . $currencyCode;
+    }
+
+    /**
+     * Preserves excess fractional digits and returns only the localized number, unlike format() which applies currency precision and appends the currency code.
+     */
+    public function formatNumber(string $amount, string $currencyCode, string $locale = 'en'): string
+    {
+        $precision = MoneyAmount::getMaxPrecision($currencyCode);
+        [$integer, $fraction] = array_pad(explode('.', str_replace(',', '.', $amount), 2), 2, '');
+        $significantFraction = rtrim($fraction, '0');
+
+        if (strlen($significantFraction) > $precision) {
+            $formatted = $integer . ($fraction === '' ? '' : '.' . $fraction);
+        } elseif ($precision === 0) {
+            $formatted = $integer;
         } else {
-            // @phpstan-ignore argument.type
-            $formatted = rtrim(rtrim(bcadd($amount, '0', $precision), '0'), '.');
-            // Pad trailing zeros to match currency precision without using float cast,
-            // which loses precision for numbers > 15 digits (IEEE 754 double limit).
-            $parts = explode('.', $formatted);
-            $decimal = $parts[1] ?? '';
-            $decimal = str_pad($decimal, $precision, '0');
-            $formatted = $parts[0] . '.' . $decimal;
+            $formatted = $integer . '.' . str_pad(substr($fraction, 0, $precision), $precision, '0');
         }
-        return $formatted . ' ' . $currencyCode;
+
+        return $this->localizeDecimalSeparator($formatted, $locale);
+    }
+
+    private function localizeDecimalSeparator(string $amount, string $locale): string
+    {
+        $formatter = new NumberFormatter($locale, NumberFormatter::DECIMAL);
+        $decimalSeparator = $formatter->getSymbol(NumberFormatter::DECIMAL_SEPARATOR_SYMBOL);
+
+        return str_replace('.', $decimalSeparator, $amount);
     }
 }
