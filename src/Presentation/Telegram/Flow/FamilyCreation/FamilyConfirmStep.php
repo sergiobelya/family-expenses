@@ -3,13 +3,13 @@
 namespace App\Presentation\Telegram\Flow\FamilyCreation;
 
 use App\Core\Domain\Exception\InvalidValueException;
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Application\Command\CreateFamilyCommand;
-use App\Family\Application\Command\CreateFamilyHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
@@ -21,10 +21,10 @@ final class FamilyConfirmStep implements FamilyCreationStepInterface
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
         private UserInteractionStateRepository $stateRepository,
-        private CreateFamilyHandler $createFamilyHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private MainMenuKeyboard $mainMenuKeyboard,
         private TranslatorInterface $translator,
-        private MapExceptionToTranslationKey $exceptionToTranslation
+        private MapExceptionToTranslatableMessage $exceptionToTranslation
     ) {}
 
     public function handle(
@@ -39,7 +39,7 @@ final class FamilyConfirmStep implements FamilyCreationStepInterface
         $data = $state->data;
 
         try {
-            $family = ($this->createFamilyHandler)(new CreateFamilyCommand(
+            $family = $this->messageBusDispatcher->dispatchCommand(new CreateFamilyCommand(
                 userId: $context->user->getId(),
                 name: (string) $data['name'],
                 timezone: (string) $data['timezone'],
@@ -68,7 +68,7 @@ final class FamilyConfirmStep implements FamilyCreationStepInterface
             ));
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
-                text: $this->translator->trans(($this->exceptionToTranslation)($e))
+                text: ($this->exceptionToTranslation)($e)->trans($this->translator, $context->language)
             );
         }
 

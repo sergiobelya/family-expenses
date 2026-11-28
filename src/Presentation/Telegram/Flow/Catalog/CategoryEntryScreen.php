@@ -12,7 +12,7 @@ use App\Core\Domain\ValueObject\FamilyId;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use Symfony\Component\Uid\Uuid;
 
 final class CategoryEntryScreen implements CatalogEntryScreen
@@ -23,7 +23,7 @@ final class CategoryEntryScreen implements CatalogEntryScreen
         private CatalogFlowUtils $utils,
         private CatalogRepositoryInterface $catalog,
         private CatalogSearchInterface $search,
-        private MapExceptionToTranslationKey $exceptionToTranslation,
+        private MapExceptionToTranslatableMessage $exceptionToTranslation,
     ) {
         $this->nameInput = new CategoryNameInputHandler(
             $this->utils,
@@ -154,12 +154,14 @@ final class CategoryEntryScreen implements CatalogEntryScreen
         $this->renderList($context, 0, 'catalog.category_deleted');
     }
 
+    /** @param array<string, mixed>|null $expenseReturnContext */
     public function startNameInput(
         TelegramFamilyMemberContext $context,
         string $operation,
         ?Uuid $id = null,
         ?string $returnStoreId = null,
-        ?string $prefill = null
+        ?string $prefill = null,
+        ?array $expenseReturnContext = null
     ): void {
         $value = $prefill ?? '';
         if ($id !== null) {
@@ -185,8 +187,12 @@ final class CategoryEntryScreen implements CatalogEntryScreen
         $this->utils->render($context, $this->utils->namePrompt($value), $this->utils->formKeyboard($this->getListCallback()));
     }
 
-    public function processNameInput(TelegramFamilyMemberContext $context, array $data, string $value): void
-    {
+    public function processNameInput(
+        TelegramFamilyMemberContext $context,
+        array $data,
+        string $value,
+        bool $similarityConfirmed = false
+    ): void {
         $returnStoreId = isset($data['return_store_id']) ? (string) $data['return_store_id'] : null;
         $this->nameInput->process(
             $context,
@@ -194,7 +200,8 @@ final class CategoryEntryScreen implements CatalogEntryScreen
             $value,
             $returnStoreId,
             fn (TelegramFamilyMemberContext $ctx, int $page, ?string $notice) => $this->renderList($ctx, $page, $notice),
-            fn (TelegramFamilyMemberContext $ctx, Uuid $id, ?string $notice) => $this->renderDetails($ctx, $id, $notice)
+            fn (TelegramFamilyMemberContext $ctx, Uuid $id, ?string $notice) => $this->renderDetails($ctx, $id, $notice),
+            $similarityConfirmed
         );
     }
 

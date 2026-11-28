@@ -16,7 +16,7 @@ use App\Core\Domain\ValueObject\StoreId;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
@@ -26,7 +26,7 @@ final class StoreNameInputHandler
         private CatalogFlowUtils $utils,
         private CatalogRepositoryInterface $catalog,
         private CatalogSearchInterface $search,
-        private MapExceptionToTranslationKey $exceptionToTranslation,
+        private MapExceptionToTranslatableMessage $exceptionToTranslation,
         private string $listCallback,
     ) {
     }
@@ -39,14 +39,15 @@ final class StoreNameInputHandler
         array $data,
         string $value,
         callable $renderList,
-        callable $renderDetails
+        callable $renderDetails,
+        bool $similarityConfirmed = false
     ): void {
         try {
             $name = CatalogName::fromString($value);
         } catch (InvalidValueException $e) {
             $this->utils->render(
                 $context,
-                ($this->exceptionToTranslation)($e),
+                $this->utils->translateMessage(($this->exceptionToTranslation)($e), $context->language),
                 $this->utils->backKeyboard($this->listCallback)
             );
             return;
@@ -66,7 +67,7 @@ final class StoreNameInputHandler
         }
         $id = isset($data['id']) ? $this->utils->parseUuid((string) $data['id']) : null;
         $storeId = $id === null ? null : new StoreId($id);
-        $matches = array_filter(
+        $matches = $similarityConfirmed ? [] : array_filter(
             $this->search->stores($familyId, $name->getValue()),
             fn (Store $store): bool => $store->getDedupeKey() !== $name->getDedupeKey()
                 && ($storeId === null || !$store->getId()->equals($storeId))

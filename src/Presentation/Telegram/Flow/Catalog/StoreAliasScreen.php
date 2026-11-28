@@ -14,7 +14,7 @@ use App\Core\Domain\ValueObject\StoreId;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use Symfony\Component\Uid\Uuid;
 
 final class StoreAliasScreen
@@ -23,7 +23,7 @@ final class StoreAliasScreen
         private CatalogFlowUtils $utils,
         private StoreEntryScreen $storeScreen,
         private CatalogRepositoryInterface $catalog,
-        private MapExceptionToTranslationKey $exceptionToTranslation,
+        private MapExceptionToTranslatableMessage $exceptionToTranslation,
     ) {
     }
 
@@ -139,7 +139,11 @@ final class StoreAliasScreen
         try {
             $name = CatalogName::fromString($value);
         } catch (InvalidValueException $e) {
-            $this->utils->render($context, ($this->exceptionToTranslation)($e), $this->utils->backKeyboard(CallbackActions::CATALOG_ALIASES_PREFIX . ($data['store_id'] ?? '')));
+            $this->utils->render(
+                $context,
+                $this->utils->translateMessage(($this->exceptionToTranslation)($e), $context->language),
+                $this->utils->backKeyboard(CallbackActions::CATALOG_ALIASES_PREFIX . ($data['store_id'] ?? ''))
+            );
             return;
         }
         $familyId = $context->activeFamily->getId();

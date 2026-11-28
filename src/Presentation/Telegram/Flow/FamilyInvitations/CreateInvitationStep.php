@@ -2,8 +2,8 @@
 
 namespace App\Presentation\Telegram\Flow\FamilyInvitations;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Family\Application\Command\CreateInvitationCommand;
-use App\Family\Application\Command\CreateInvitationHandler;
 use App\Family\Domain\Entity\Invitation;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
@@ -16,7 +16,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class CreateInvitationStep implements FamilyInvitationsStepInterface
 {
     public function __construct(
-        private CreateInvitationHandler $createInvitationHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private TelegramApiClientInterface $telegramClient,
         private TranslatorInterface $translator,
         #[Autowire('%app.telegram_bot_username%')]
@@ -29,7 +29,7 @@ final readonly class CreateInvitationStep implements FamilyInvitationsStepInterf
     ): void {
         $activeFamily = $context->activeFamily;
 
-        $result = ($this->createInvitationHandler)(new CreateInvitationCommand(
+        $result = $this->messageBusDispatcher->dispatchCommand(new CreateInvitationCommand(
             familyId: $activeFamily->getId(),
             maxUses: 1,
             expiresInHours: 48,

@@ -2,9 +2,9 @@
 
 namespace App\Family\Application\Query;
 
+use App\Core\Domain\Exception\NotFamilyMemberException;
 use App\Family\Domain\Entity\Family;
 use App\Family\Domain\Exception\FamilyNotFoundException;
-use App\Family\Domain\Exception\NotFamilyMemberException;
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
 use App\Family\Domain\Repository\FamilyRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;

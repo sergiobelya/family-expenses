@@ -44,9 +44,19 @@ class CallbackDataLengthTest extends TestCase
         CallbackActions::CATALOG_PAGE_PREFIX,
         CallbackActions::CATALOG_RETURN_PREFIX,
         CallbackActions::FAMILY_SELECT_PREFIX,
+        CallbackActions::FAMILY_SELECT_FOR_EXPENSE_PREFIX,
+        CallbackActions::FAMILY_SELECT_FOR_EXPENSE_ADD_PREFIX,
+        CallbackActions::FAMILY_SELECT_FOR_EXPENSE_CONTINUE_PREFIX,
         CallbackActions::FAMILY_INVITATION_REVOKE_PREFIX,
         CallbackActions::FAMILY_INVITATION_VIEW_PREFIX,
         CallbackActions::FAMILY_JOIN_CONFIRM_PREFIX,
+        // Expense flow
+        CallbackActions::EXPENSE_STORE_SELECT_PREFIX,
+        CallbackActions::EXPENSE_STORE_SEARCH_PREFIX,
+        CallbackActions::EXPENSE_STORE_PAGE_PREFIX,
+        CallbackActions::EXPENSE_STORE_CREATE_QUERY,
+        CallbackActions::EXPENSE_CURRENCY_PAGE_PREFIX,
+        CallbackActions::EXPENSE_CATEGORY_PAGE_PREFIX,
         // Dynamic patterns (built by concatenating CATALOG_PREFIX with action suffixes)
         'catalog:select:store:',  // StoreEntryScreen::buildListKeyboard
         'catalog:select:category:', // CategoryEntryScreen::buildListKeyboard

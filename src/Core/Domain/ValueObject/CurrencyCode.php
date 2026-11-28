@@ -4,12 +4,14 @@ namespace App\Core\Domain\ValueObject;
 
 use App\Core\Domain\Exception\ErrorType;
 use App\Core\Domain\Exception\InvalidValueException;
+use Money\Currency;
 
 final readonly class CurrencyCode
 {
     private const array SUPPORTED = [
-        'PLN', 'UAH', 'EUR', 'USD', 'GBP', 'CZK', 'CHF', 'SEK', 'NOK', 'DKK',
-        'RON', 'BGN', 'HUF', 'TRY', 'GEL', 'CAD', 'AUD', 'JPY'
+        'ALL', 'AMD', 'AZN', 'BAM', 'CAD', 'CHF', 'CZK', 'DKK', 'EUR', 'GBP',
+        'GEL', 'HUF', 'ISK', 'KZT', 'MDL', 'MKD', 'NOK', 'PLN', 'RON', 'RSD',
+        'SEK', 'TRY', 'UAH', 'USD'
     ];
 
     public string $value;
@@ -43,5 +45,10 @@ final readonly class CurrencyCode
     public static function supportedCodes(): array
     {
         return self::SUPPORTED;
+    }
+
+    public function toMoneyCurrency(): Currency
+    {
+        return new Currency($this->value);
     }
 }

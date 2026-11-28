@@ -1,0 +1,32 @@
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Expense\Domain\Entity\Expense" table="expenses">
+        <indexes>
+            <index name="idx_expenses_family_purchase_date" columns="family_id,purchase_date"/>
+        </indexes>
+        <unique-constraints>
+            <unique-constraint name="uniq_expenses_family_id_id" columns="family_id,id"/>
+        </unique-constraints>
+        <id name="id" type="expense_id"/>
+        <field name="familyId" column="family_id" type="family_id"/>
+        <field name="authorUserId" column="author_user_id" type="user_id"/>
+        <many-to-one field="store" target-entity="App\Expense\Domain\Entity\ExpenseStore">
+            <join-column name="store_id" referenced-column-name="id" nullable="false"/>
+        </many-to-one>
+        <field name="amount" column="amount" type="string"/>
+        <field name="currency" column="currency" type="string" length="3"/>
+        <field name="purchaseDate" column="purchase_date" type="datetime_immutable"/>
+        <field name="deletedAt" column="deleted_at" type="datetime_immutable" nullable="true"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
+        <one-to-many field="allocations" target-entity="App\Expense\Domain\Entity\ExpenseAllocation" mapped-by="expense" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+            </cascade>
+        </one-to-many>
+    </entity>
+
+</doctrine-mapping>

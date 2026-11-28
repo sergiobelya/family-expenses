@@ -48,7 +48,7 @@ Keep auditing as a cross-cutting application capability, not part of any aggrega
 
 Expense Management owns expenses and category allocations. An `Expense` is the aggregate root; its allocations are children because their amounts must reconcile exactly to the expense total.
 
-The family-scoped Catalog owns stores, store aliases, and categories. They are separate aggregates from expenses. Expense records refer to them by IDs, not ORM associations. Catalog search is a query capability; it must not become an alternate source of truth for names or family ownership.
+The family-scoped Catalog owns stores, store aliases, and categories. They are separate aggregates from expenses. Expense records refer to Catalog entities by IDs. When a bounded context needs display names or other fields from an upstream context, create a lightweight read-only entity in the current context with the required fields, rather than referencing entities from another context directly. Use this approach only when genuinely needed (e.g., for display in expense cards, domain events). Catalog search is a query capability; it must not become an alternate source of truth for names or family ownership.
 
 Paginated history, expense details, and the Phase 2 search/filter behavior are Expense Management queries. Exchange-rate providers, saved conversions, amount search across currencies, reports, and recurring-expense scheduling are designed in later phases.
 
@@ -72,11 +72,12 @@ Active-family selection is a navigation preference, not authorization. Resolve i
 
 ### Expense persistence and consistency
 
-- Keep the original amount, currency, purchase date, creator, family, and store on `Expense`. Persist category allocations separately, with the expense ID, category ID, and allocation amount. Store money as exact decimals, enforce currency precision, and never use binary floating point.
+- Keep the original amount, currency, purchase date, creator, family, and store on `Expense`. Persist category allocations separately, with the expense ID, category ID, and allocation amount. Store money as exact decimals, enforce currency precision, and never use binary floating point. Use the `moneyphp/money` library for all monetary calculations, wrapped in a domain `MoneyAmount` value object that integrates with the project's `CurrencyCode` value object.
+- `ExpenseStore` and `ExpenseCategory` are read-only entities in the Expense context, containing `id`, `name`, and `family_id`. They are populated from the Catalog repository when creating or editing an expense. The name in the entity reflects the current database value; the historical name is preserved in domain event snapshots.
 - Keep the database authoritative. Enforce family ownership of expense, store, category, and default-category references using composite foreign keys where practical; also validate the active member and referenced records in the application transaction. Index family-scoped history by purchase date and exclude soft-deleted expenses from normal queries.
 - Save an expense, all allocations, its audit snapshot, and the completion result for its save attempt atomically. Validate allocation reconciliation in the domain/application layer; reject incomplete or non-positive rows before persistence.
 - Persist an `ExpenseSaveAttempt` and immutable snapshot before the first save transaction, with a unique idempotency key. Use the key to return the same committed expense after retries or an ambiguous result. Do not expire unresolved attempts; an unresolved attempt is reconciled before the draft can be replaced.
-- Keep original expense amount and currency authoritative. Conversion entities, provider-rate caching, and reporting-currency behavior are Phase 3 design; do not make Phase 2 expense writes depend on an exchange-rate service.
+- Keep original expense amount and currency authoritative. The `MoneyAmount` value object uses `moneyphp/money` internally and provides `allocate()` with the largest-remainder rule for proportional allocation rounding (§6.4.1). Conversion entities, provider-rate caching, and reporting-currency behavior are Phase 3 design; do not make Phase 2 expense writes depend on an exchange-rate service.
 
 ### Draft and save lifecycle
 
@@ -102,7 +103,9 @@ Treat `Family` as the aggregate for its settings. Treat each membership and invi
 
 Organize application use cases by bounded context. Each state-changing use case has a Command handler; reads have Query handlers. Keep validation and authorization in application/domain services, not Telegram handlers.
 
-Domain value objects validate their invariants in factory methods (e.g., `FamilyName::fromString()`, `CatalogName::fromString()`). When validation fails, throw a typed domain exception (e.g., `InvalidValueException`) with an `ErrorType` enum that identifies the error. The presentation layer maps the exception to a translation key via a centralized mapper (`MapExceptionToTranslationKey`), keeping the domain layer independent of presentation concerns.
+Presentation adapters delegate business operations through Application commands, queries, or services; they do not call business repositories directly. An adapter may use a narrowly scoped port for technical interaction state it owns (for example, Telegram conversation state), but this is not a general exception for business data or workflow drafts.
+
+Domain value objects validate their invariants in factory methods (e.g., `FamilyName::fromString()`, `CatalogName::fromString()`). When validation fails, throw a typed domain exception (e.g., `InvalidValueException`) with an `ErrorType` enum that identifies the error. The presentation layer maps the exception to a translation key via a centralized mapper (`MapExceptionToTranslatableMessage`), keeping the domain layer independent of presentation concerns.
 
 Phase 1 commands include creating a family, changing family settings, creating/revoking invitations, and joining a family. Queries include listing the user's families, viewing members/invitations, and reading settings.
 

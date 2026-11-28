@@ -2,6 +2,7 @@
 
 namespace App\Presentation\Telegram\Flow\Catalog;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Presentation\Telegram\CallbackActions;
@@ -9,12 +10,11 @@ use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
 use RuntimeException;
-use Symfony\Component\Messenger\Stamp\HandledStamp;
-use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final class CatalogFlowUtils
+final readonly class CatalogFlowUtils
 {
     public const string FLOW_NAME = 'catalog';
     public const int PAGE_SIZE = 8;
@@ -22,7 +22,7 @@ final class CatalogFlowUtils
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
         private UserInteractionStateRepository $stateRepository,
-        private MessageBusInterface $commandBus,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private TranslatorInterface $translator,
     ) {
     }
@@ -34,14 +34,16 @@ final class CatalogFlowUtils
 
     /**
      * @param array<string, mixed> $markup
+     * @param array<string, mixed> $params
      */
     public function render(
         TelegramFamilyMemberContext $context,
         string $textOrKey,
         array $markup,
-        ?UserInteractionState $previousState = null
+        ?UserInteractionState $previousState = null,
+        array $params = []
     ): void {
-        $text = str_starts_with($textOrKey, 'catalog.') ? $this->trans($textOrKey) : $textOrKey;
+        $text = str_starts_with($textOrKey, 'catalog.') ? $this->trans($textOrKey, $params) : $textOrKey;
         $state = $previousState ?? $this->stateRepository->get($context->telegramUserId);
         $messageId = isset($state?->data['message_id']) ? (int) $state->data['message_id'] : null;
         if ($messageId !== null) {
@@ -57,15 +59,13 @@ final class CatalogFlowUtils
                     throw new RuntimeException('Unable to render catalog card: ' . ($response['description'] ?? 'unknown Telegram API error'));
                 }
                 if (!$this->telegramClient->deleteMessage($context->chatId, $messageId)) {
-                    $closed = $this->telegramClient->editMessageText(
+                    // Cleanup is best-effort; the replacement card must remain usable.
+                    $this->telegramClient->editMessageText(
                         $context->chatId,
                         $messageId,
                         $text,
                         ['inline_keyboard' => []]
                     );
-                    if (!($closed['ok'] ?? false)) {
-                        throw new RuntimeException('Unable to close the previous catalog card after sending a replacement.');
-                    }
                 }
                 $messageId = null;
             }
@@ -91,10 +91,7 @@ final class CatalogFlowUtils
 
     public function runCommand(object $command): mixed
     {
-        $envelope = $this->commandBus->dispatch($command);
-        $handledStamp = $envelope->last(HandledStamp::class);
-
-        return $handledStamp?->getResult();
+        return $this->messageBusDispatcher->dispatchCommand($command);
     }
 
     /**
@@ -103,7 +100,7 @@ final class CatalogFlowUtils
     public function state(TelegramFamilyMemberContext $context, string $step, array $data): UserInteractionState
     {
         $old = $this->stateRepository->get($context->telegramUserId);
-        if (isset($old?->data['message_id'])) {
+        if (!array_key_exists('message_id', $data) && isset($old?->data['message_id'])) {
             $data['message_id'] = $old->data['message_id'];
         }
 
@@ -150,8 +147,13 @@ final class CatalogFlowUtils
     }
 
     /** @param array<string|int, mixed> $parameters */
-    public function trans(string $key, array $parameters = []): string
+    public function trans(string $key, array $parameters = [], ?string $locale = null): string
     {
-        return $this->translator->trans($key, $parameters);
+        return $this->translator->trans($key, $parameters, $locale);
+    }
+
+    public function translateMessage(TranslatableMessage $message, string $locale): string
+    {
+        return $message->trans($this->translator, $locale);
     }
 }

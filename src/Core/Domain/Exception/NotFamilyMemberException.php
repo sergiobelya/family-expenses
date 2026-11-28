@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Family\Domain\Exception;
+namespace App\Core\Domain\Exception;
 
 use RuntimeException;
 
@@ -22,5 +22,4 @@ class NotFamilyMemberException extends RuntimeException
     {
         return new self($familyId, $userId, $previous);
     }
-
 }

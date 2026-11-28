@@ -2,10 +2,9 @@
 
 namespace App\Presentation\Telegram\Flow\FamilySettings;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionState;
 use App\Family\Application\Command\UpdateFamilySettingsCommand;
-use Closure;
-use App\Family\Application\Command\UpdateFamilySettingsHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -17,9 +16,9 @@ final class FamilySettingsCurrencyStep implements FamilySettingsStepInterface
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private UpdateFamilySettingsHandler $updateFamilySettingsHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private TranslatorInterface $translator,
-        private Closure $renderFamilySettings
+        private FamilySettingsRenderer $familySettingsRenderer
     ) {}
 
     public function handle(
@@ -57,18 +56,18 @@ final class FamilySettingsCurrencyStep implements FamilySettingsStepInterface
         ?string $defaultExpenseCurrency = null,
         ?string $reportingCurrency = null
     ): void {
-        ($this->updateFamilySettingsHandler)(new UpdateFamilySettingsCommand(
+        $this->messageBusDispatcher->dispatchCommand(new UpdateFamilySettingsCommand(
             familyId: $context->activeFamily->getId(),
-            userId: $context->user->getId(),
             defaultExpenseCurrency: $defaultExpenseCurrency,
-            reportingCurrency: $reportingCurrency
+            reportingCurrency: $reportingCurrency,
+            userId: $context->user->getId()
         ));
 
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,
             text: $this->translator->trans('settings.saved')
         );
-        ($this->renderFamilySettings)($context);
+        $this->familySettingsRenderer->render($context);
     }
 
     private function renderCurrencySelector(

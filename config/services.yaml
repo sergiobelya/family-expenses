@@ -1,4 +1,5 @@
 parameters:
+    app.expense.amount.max: 100000000
     app.telegram_bot_token: '%env(TELEGRAM_BOT_TOKEN)%'
     app.telegram_bot_username: '%env(TELEGRAM_BOT_USERNAME)%'
     app.telegram_webhook_secret: '%env(TELEGRAM_WEBHOOK_SECRET)%'
@@ -11,6 +12,10 @@ services:
     _instanceof:
         App\Presentation\Telegram\Flow\FlowHandlerInterface:
             tags: ['app.telegram_flow_handler']
+        App\Presentation\Telegram\ExceptionMapper\ExceptionMapperInterface:
+            tags: ['app.exception_mapper']
+        App\Presentation\Telegram\Flow\Expense\AddExpenseStepInterface:
+            tags: ['app.expense_add_step']
 
     App\:
         resource: '../src/'
@@ -21,6 +26,7 @@ services:
             - '../src/**/Domain/Exception/'
             - '../src/**/Application/Command/*Command.php'
             - '../src/**/Application/Query/*Query.php'
+            - '../src/Core/Application/Currency.php'
             - '../src/Core/Infrastructure/Outbox/OutboxEnvelope.php'
             - '../src/Core/Infrastructure/Persistence/Doctrine/Entity/'
             - '../src/Core/Infrastructure/Persistence/Redis/UserInteractionState.php'

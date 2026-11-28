@@ -2,8 +2,8 @@
 
 namespace App\Presentation\Telegram\Context;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Identity\Application\Command\EnsureUserExistsCommand;
-use App\Identity\Application\Command\EnsureUserExistsHandler;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
 use App\Presentation\Telegram\Keyboard\SupportedLanguages;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
@@ -11,7 +11,7 @@ use Symfony\Contracts\Translation\LocaleAwareInterface;
 readonly class TelegramUserContextResolver
 {
     public function __construct(
-        private EnsureUserExistsHandler $ensureUserExistsHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private ResolveActiveFamilyForUser $resolveActiveFamily,
         private LocaleAwareInterface $translator
     ) {}
@@ -24,7 +24,7 @@ readonly class TelegramUserContextResolver
 
         $detectedLanguage = $this->detectTelegramUserLanguage($update);
 
-        $user = ($this->ensureUserExistsHandler)(new EnsureUserExistsCommand(
+        $user = $this->messageBusDispatcher->dispatchCommand(new EnsureUserExistsCommand(
             telegramUserId: $update->fromUserId,
             language: $detectedLanguage
         ));

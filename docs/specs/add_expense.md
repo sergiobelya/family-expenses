@@ -269,7 +269,7 @@ Entered by AE-00 when an Active or Paused draft exists for `(user_id, active_fam
 | Button | Key | Action |
 |--------|-----|--------|
 | Store buttons (2 per row, 8 per page) | — | Select the store. |
-| `‹ Previous` / `Page {n}/{m}` / `Next ›` | `btn.page_prev`, `btn.page_next` | Pagination. |
+| `‹ Previous` / `Next ›` | `btn.page_prev`, `btn.page_next` | Pagination. |
 | `🔎 Search` | `btn.search` | AE-04. |
 | `➕ Add new store` | `btn.store_add` | AE-05. |
 | `👪 Change family` | `btn.change_family` | Only as described in AE-01. |
@@ -278,7 +278,8 @@ Entered by AE-00 when an Active or Paused draft exists for `(user_id, active_fam
 **Rules**
 
 - Only stores of the active family are listed. Archiving is out of scope for MVP, so every store of the family is listed.
-- Order: recently used stores first, then alphabetical. Show 8 stores per page; long names are truncated on the button only.
+- Order by each store's latest non-deleted expense across the full history, newest first; break ties by case-insensitive name, then store ID. Stores without expenses come last, ordered by name and ID. Show 8 stores per page; long names are truncated on the button only.
+- When there is more than one page, show the localized `Page {current}/{total}` (`pagination.page`) in the card text; it is informational, not a button. Omit it when all stores fit on one page.
 - Selecting a store sets it in the draft. If the user has not customized the category allocation (`category_customized = false`), the store's default category is preselected in the draft and shown in AE-08. Then go to AE-06, or back to AE-10 when opened from review.
 - If the family has no stores, show `store.empty` with `➕ Add first store` and `✖️ Cancel`. `Add first store` opens the Stores section's create form with no prefilled name.
 - If the tapped store no longer exists, show a toast with `store.unavailable` and refresh the list.
@@ -624,25 +625,25 @@ Callbacks must carry an opaque draft token and the card revision. Callback data 
 |-----|---------|
 | `amount.invalid_format` | I couldn't read that amount. Send a positive number such as 125.50 or 125,50, without spaces or thousands separators. |
 | `amount.not_positive` | The amount must be greater than zero. |
-| `amount.too_precise` | {currency} allows up to {precision} decimal places. |
-| `amount.too_precise_zero` | {currency} doesn't use decimal places. |
-| `amount.too_large` | That amount is too large. The maximum is {max} {currency}. |
-| `currency.precision_conflict` | {currency} allows fewer decimal places than {amount}. Edit the amount before continuing. |
-| `currency.changed_keep_amount` | Currency changed to {currency}. The amount stays {amount}. |
-| `split.error.remaining` | {remaining} {currency} is still unallocated. Allocate the whole amount to continue. |
-| `split.error.over` | The allocations exceed the expense by {excess} {currency}. Adjust the amounts. |
+| `amount.too_precise` | %{currency} allows up to %precision% decimal places. |
+| `amount.too_precise_zero` | %{currency} doesn't use decimal places. |
+| `amount.too_large` | That amount is too large. The maximum is %{max} %{currency}. |
+| `currency.precision_conflict` | %{currency} allows fewer decimal places than %{amount}. Edit the amount before continuing. |
+| `currency.changed_keep_amount` | Currency changed to %{currency}. The amount stays %{amount}. |
+| `split.error.remaining` | %{remaining} %{currency} is still unallocated. Allocate the whole amount to continue. |
+| `split.error.over` | The allocations exceed the expense by %{excess} %{currency}. Adjust the amounts. |
 | `split.error.empty` | Add at least one category. |
 | `split.error.row_incomplete` | Every row needs a category and an amount. |
-| `date.invalid` | I couldn't read that date. Send it as {example_date_iso} or {example_date_dmy}. |
+| `date.invalid` | I couldn't read that date. Send it as %{example_date_iso} or %{example_date_dmy}. |
 | `date.future` | The purchase date can't be in the future. |
-| `date.too_old` | The purchase date can't be earlier than {min_date}. |
+| `date.too_old` | The purchase date can't be earlier than %{min_date}. |
 | `rate.invalid` | I couldn't read that rate. Send a positive number such as 4.25 or 4,25. |
-| `rate.too_precise` | Use at most {max_decimals} decimal places for the rate. |
+| `rate.too_precise` | Use at most %max_decimals% decimal places for the rate. |
 | `rate.too_large` | That rate is too large. |
 | `store.unavailable` | “{store_name}” is no longer available. Choose another store. |
 | `category.unavailable` | “{category_name}” is no longer available. Choose another category. |
 
-Strings with counts (`amount.too_precise`) need ICU plural rules, especially for Ukrainian, Polish, and Russian.
+Strings with counts (`amount.too_precise`, `rate.too_precise`) need plural forms for Ukrainian, Polish, Russian (three forms) and English (two forms); pass the number as `%count%`.
 
 ### 6.3 Purchase date
 
@@ -745,7 +746,7 @@ No note field exists in MVP.
 
 - UI strings live in localization resources keyed as `expense.add.*`; handlers contain no literal text.
 - English is the source. Ukrainian, Polish, and Russian are translated from the approved English; Telegram's locale selects the initial language and the user may change it in Settings.
-- Use ICU MessageFormat placeholders (`{name}`) and plural rules; never concatenate fragments.
+- Use named placeholders (`%{name}`) and plural forms (`%count%`); never concatenate fragments.
 - Example key across languages:
 
 | Key | EN | UK | PL | RU |

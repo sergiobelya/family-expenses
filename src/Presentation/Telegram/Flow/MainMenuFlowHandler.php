@@ -3,6 +3,7 @@
 namespace App\Presentation\Telegram\Flow;
 
 use App\Family\Domain\Repository\FamilyMemberRepositoryInterface;
+use App\Expense\Application\ExpenseDraftService;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -17,7 +18,8 @@ final readonly class MainMenuFlowHandler implements FamilyContextFlowHandlerInte
         private TelegramApiClientInterface $telegramClient,
         private MainMenuKeyboard $mainMenuKeyboard,
         private FamilyMemberRepositoryInterface $familyMemberRepository,
-        private TranslatorInterface $translator
+        private TranslatorInterface $translator,
+        private ExpenseDraftService $expenseDraftService,
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
@@ -32,8 +34,6 @@ final readonly class MainMenuFlowHandler implements FamilyContextFlowHandlerInte
 
         if ($update->text !== null) {
             $knownButtons = [
-                $this->translator->trans('main_menu.add_expense'),
-                $this->translator->trans('main_menu.continue_expense'),
                 $this->translator->trans('main_menu.reports'),
                 $this->translator->trans('main_menu.history'),
                 $this->translator->trans('main_menu.recurring'),
@@ -55,13 +55,17 @@ final readonly class MainMenuFlowHandler implements FamilyContextFlowHandlerInte
 
         $memberships = $this->familyMemberRepository->findByUserId($context->user->getId());
         $hasMultipleFamilies = count($memberships) > 1;
+        $hasActiveDraft = $this->expenseDraftService->hasActiveDraft(
+            $context->user->getId(),
+            $activeFamily->getId()
+        );
 
         if ($update->text !== null && !in_array($update->text, ['/start', '/menu'], true)) {
-            // Expense, reports, history, and recurring flows are implemented in later phases.
+            // Reports, history, and recurring flows are implemented in later phases.
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
                 text: $this->translator->trans('main_menu.feature_coming_soon'),
-                replyMarkup: $this->mainMenuKeyboard->build($hasMultipleFamilies)
+                replyMarkup: $this->mainMenuKeyboard->build($hasMultipleFamilies, $hasActiveDraft)
             );
             return;
         }
@@ -73,7 +77,7 @@ final readonly class MainMenuFlowHandler implements FamilyContextFlowHandlerInte
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,
             text: $welcomeText,
-            replyMarkup: $this->mainMenuKeyboard->build($hasMultipleFamilies)
+            replyMarkup: $this->mainMenuKeyboard->build($hasMultipleFamilies, $hasActiveDraft)
         );
     }
 }

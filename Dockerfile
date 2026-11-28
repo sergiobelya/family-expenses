@@ -9,6 +9,7 @@ RUN apt-get update \
         libpq-dev \
         libzip-dev \
     && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
         intl \
         pcntl \
         pdo_pgsql \

@@ -12,7 +12,7 @@ use App\Core\Domain\ValueObject\StoreId;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use Symfony\Component\Uid\Uuid;
 
 final class StoreEntryScreen implements CatalogEntryScreen
@@ -23,7 +23,7 @@ final class StoreEntryScreen implements CatalogEntryScreen
         private CatalogFlowUtils $utils,
         private CatalogRepositoryInterface $catalog,
         private CatalogSearchInterface $search,
-        private MapExceptionToTranslationKey $exceptionToTranslation,
+        private MapExceptionToTranslatableMessage $exceptionToTranslation,
     ) {
         $this->nameInput = new StoreNameInputHandler(
             $this->utils,
@@ -124,6 +124,8 @@ final class StoreEntryScreen implements CatalogEntryScreen
     public function renderDetails(TelegramFamilyMemberContext $context, Uuid $id, ?string $notice = null): void
     {
         $familyId = $context->activeFamily->getId();
+        $state = $this->utils->getStateRepository()->get($context->telegramUserId);
+        $returnContext = $state?->data['expense_return_context'] ?? null;
         $entry = $this->catalog->findStore($familyId, new StoreId($id));
         if ($entry === null) {
             $this->renderList($context, 0, 'catalog.unavailable');
@@ -146,7 +148,15 @@ final class StoreEntryScreen implements CatalogEntryScreen
             ->button($this->utils->trans('catalog.aliases'), CallbackActions::CATALOG_ALIASES_PREFIX . $id)->row()
             ->button($this->utils->trans('catalog.delete'), CallbackActions::CATALOG_PREFIX . 'confirm:store:' . $id)->row()
             ->button($this->utils->trans('common.back'), CallbackActions::CATALOG_PREFIX . 'list:store');
-        $this->utils->getStateRepository()->set($this->utils->state($context, 'store_details', ['store_id' => (string) $id]));
+        $stateData = ['store_id' => (string) $id];
+        if (is_array($returnContext)) {
+            $stateData['expense_return_context'] = $returnContext;
+            $builder->row()->button(
+                $this->utils->trans('expense.add.draft.return'),
+                CallbackActions::CATALOG_RETURN_PREFIX . 'expense'
+            );
+        }
+        $this->utils->getStateRepository()->set($this->utils->state($context, 'store_details', $stateData));
         if ($notice !== null) {
             $text .= "\n\n" . $this->utils->trans($notice);
         }
@@ -186,12 +196,14 @@ final class StoreEntryScreen implements CatalogEntryScreen
         $this->renderList($context, 0, 'catalog.store_deleted');
     }
 
+    /** @param array<string, mixed>|null $expenseReturnContext */
     public function startNameInput(
         TelegramFamilyMemberContext $context,
         string $operation,
         ?Uuid $id = null,
         ?string $returnStoreId = null,
-        ?string $prefill = null
+        ?string $prefill = null,
+        ?array $expenseReturnContext = null
     ): void {
         $value = $prefill ?? '';
         if ($id !== null) {
@@ -213,18 +225,30 @@ final class StoreEntryScreen implements CatalogEntryScreen
         if ($returnStoreId !== null) {
             $data['return_store_id'] = $returnStoreId;
         }
+        if ($expenseReturnContext !== null) {
+            $data['expense_return_context'] = $expenseReturnContext;
+        }
         $this->utils->getStateRepository()->set($this->utils->state($context, 'store_name', $data));
-        $this->utils->render($context, $this->utils->namePrompt($value), $this->utils->formKeyboard($this->getListCallback()));
+        $prompt = $this->utils->namePrompt($value);
+        if (is_string($expenseReturnContext['pause_message'] ?? null)) {
+            $prompt = $expenseReturnContext['pause_message'] . "\n\n" . $prompt;
+        }
+        $this->utils->render($context, $prompt, $this->utils->formKeyboard($this->getListCallback()));
     }
 
-    public function processNameInput(TelegramFamilyMemberContext $context, array $data, string $value): void
-    {
+    public function processNameInput(
+        TelegramFamilyMemberContext $context,
+        array $data,
+        string $value,
+        bool $similarityConfirmed = false
+    ): void {
         $this->nameInput->process(
             $context,
             $data,
             $value,
             fn (TelegramFamilyMemberContext $ctx, int $page, ?string $notice) => $this->renderList($ctx, $page, $notice),
-            fn (TelegramFamilyMemberContext $ctx, Uuid $id, ?string $notice) => $this->renderDetails($ctx, $id, $notice)
+            fn (TelegramFamilyMemberContext $ctx, Uuid $id, ?string $notice) => $this->renderDetails($ctx, $id, $notice),
+            $similarityConfirmed
         );
     }
 

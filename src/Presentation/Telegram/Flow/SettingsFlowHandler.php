@@ -2,11 +2,11 @@
 
 namespace App\Presentation\Telegram\Flow;
 
+use App\Core\Infrastructure\Messenger\MessageBusDispatcherInterface;
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
-use App\Family\Application\Query\GetUserFamiliesHandler;
 use App\Family\Application\Query\GetUserFamiliesQuery;
+use App\Expense\Application\ExpenseDraftService;
 use App\Identity\Application\Command\ChangeUserLanguageCommand;
-use App\Identity\Application\Command\ChangeUserLanguageHandler;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
@@ -22,13 +22,13 @@ final readonly class SettingsFlowHandler implements UserContextFlowHandlerInterf
 {
     public function __construct(
         private TelegramApiClientInterface $telegramClient,
-        private ChangeUserLanguageHandler $changeUserLanguageHandler,
-        private GetUserFamiliesHandler $getUserFamiliesHandler,
+        private MessageBusDispatcherInterface $messageBusDispatcher,
         private UserInteractionStateRepository $stateRepository,
         private TranslatorInterface $translator,
         private LocaleAwareInterface $localeAwareTranslator,
         private SettingsMenuRenderer $settingsMenuRenderer,
-        private MainMenuKeyboard $mainMenuKeyboard
+        private MainMenuKeyboard $mainMenuKeyboard,
+        private ExpenseDraftService $expenseDraftService,
     ) {}
 
     public function supports(TelegramUpdate $update, TelegramUserContext $context): bool
@@ -79,17 +79,22 @@ final readonly class SettingsFlowHandler implements UserContextFlowHandlerInterf
         }
 
         $this->stateRepository->clear($context->telegramUserId);
-        ($this->changeUserLanguageHandler)(new ChangeUserLanguageCommand(
+        $this->messageBusDispatcher->dispatchCommand(new ChangeUserLanguageCommand(
             userId: $context->user->getId(),
             language: $language
         ));
 
         $this->localeAwareTranslator->setLocale($language);
-        $families = ($this->getUserFamiliesHandler)(new GetUserFamiliesQuery($context->user->getId()));
+        $families = $this->messageBusDispatcher->dispatchQuery(new GetUserFamiliesQuery($context->user->getId()));
+        $activeFamilyId = $context instanceof TelegramFamilyMemberContext
+            ? $context->activeFamily->getId()
+            : $context->user->getActiveFamilyId();
+        $hasActiveDraft = $activeFamilyId !== null
+            && $this->expenseDraftService->hasActiveDraft($context->user->getId(), $activeFamilyId);
         $this->telegramClient->sendMessage(
             chatId: $context->chatId,
             text: $this->translator->trans('settings.lang_changed', ['%{language}' => strtoupper($language)]),
-            replyMarkup: $this->mainMenuKeyboard->build(count($families) > 1)
+            replyMarkup: $this->mainMenuKeyboard->build(count($families) > 1, $hasActiveDraft)
         );
         $this->settingsMenuRenderer->render($context);
     }
@@ -109,4 +114,5 @@ final readonly class SettingsFlowHandler implements UserContextFlowHandlerInterf
             replyMarkup: $builder->toArray()
         );
     }
+
 }

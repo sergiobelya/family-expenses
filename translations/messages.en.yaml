@@ -76,6 +76,14 @@ family:
         switch_to_family: "Switch to %{family_name}"
         joined_success: "🎉 You have joined <b>%{family_name}</b>!"
         invalid_or_expired: "This invitation link is invalid, expired, revoked, or fully used."
+    not_found: "Family was not found."
+    not_member: "You are not a member of this family."
+    already_member: "You are already a member of this family."
+    invitation:
+        expired: "This invitation has expired."
+        revoked: "This invitation has been revoked."
+        not_found: "Invitation was not found."
+        limit_exceeded: "This invitation has reached its maximum usage limit."
 
 settings:
     title: "⚙️ <b>Settings</b>"
@@ -99,6 +107,9 @@ settings:
     saved: "Settings updated successfully."
     name_too_short: "Family name must be at least 2 characters."
     name_too_long: "Family name must not exceed 100 characters."
+    invalid_currency: "That currency is not supported."
+    invalid_country: "That country code is not valid."
+    invalid_timezone: "That time zone is not valid."
 
 catalog:
     stores_title: "🏪 Stores"
@@ -150,7 +161,157 @@ catalog:
     alias_conflict: "This name is already used by %{name}."
     saved: "Saved."
     referenced: "This item is used by existing records and cannot be deleted."
+    name_taken: "A store or category with this name already exists."
     store_deleted: "Store deleted."
     category_deleted: "Category deleted."
     set_as_default: "Set as default category"
     category_created: "Category created. Set it as this store's default?"
+
+expense:
+    not_found: "This expense was not found."
+    store_not_found: "The store was not found."
+    category_not_found: "The category was not found."
+    not_author: "Only the author can edit this expense."
+    allocation_mismatch: "The split amounts do not match the total."
+    future_date: "Purchase date cannot be in the future."
+    amount:
+        invalid_format: "Enter a positive number. Example: 125.50"
+        not_positive: "Amount must be greater than zero."
+        too_large: "Amount exceeds the maximum of %{maxAmount} %{currency}."
+        too_precise: "This currency allows up to %{precision} decimal place.|This currency allows up to %{precision} decimal places."
+        too_precise_zero: "%{currency} does not use decimal places."
+        empty: "not entered yet"
+        prompt: "💰 Send the amount in %{currency}. Example: %{example_amount}"
+    add:
+        # Card anatomy
+        card_header: "🧾 New expense · 👪 %{family_name}"
+        card:
+            moved: "↓ This draft continues in a newer message."
+        amount:
+            label: "Amount"
+            edit_prompt: "Current amount: %{amount}. Send a replacement amount, or use Continue to keep it."
+            continue: "✅ Continue"
+        store:
+            label: "Store"
+            empty: "not selected yet"
+            prompt: "🏪 Choose the store for this expense, or search by name."
+            unavailable: "“%{store_name}” is no longer available. Choose another store."
+            unavailable_generic: "That store is no longer available. Choose another store."
+            selected: "selected store"
+            no_stores: "There are no stores in this family yet."
+            add_first: "➕ Add first store"
+            entity_name: "a store"
+            section_name: "Stores"
+            search:
+                prompt: "🔎 Send the store name to search."
+                results: "Stores matching “%{query}”:"
+                none: "No stores found for “%{query}”. Create it in the Stores section or try another name."
+                empty: "Send at least one letter or digit."
+                too_long: "Search text must be no longer than %maxLength% character.|Search text must be no longer than %maxLength% characters."
+                create: "➕ Create “%{query}”"
+                limited: "Search is limited right now. Only close name matches are shown."
+                unavailable: "Search is temporarily unavailable. Choose a store from the list."
+        category:
+            label: "Category"
+            empty: "not selected yet"
+            prompt: "🏷 Choose a category for %{amount} %{currency}."
+            unavailable: "“%{category_name}” is no longer available. Choose another category."
+            search:
+                prompt: "🔎 Send the category name to search."
+                results: "Categories matching “%{query}”:"
+                none: "No categories found for “%{query}”. Create it in the Categories section or try another name."
+                empty: "Send at least one letter or digit."
+        date:
+            empty: "not selected yet"
+            today: "today"
+            yesterday: "yesterday"
+            prompt: "📅 Send the purchase date (DD.MM.YYYY, DD.MM, or YYYY-MM-DD)."
+            invalid: "Enter a valid date (DD.MM.YYYY, DD.MM, or YYYY-MM-DD)."
+            future: "Purchase date cannot be in the future."
+            too_old: "Purchase date cannot be before 2020."
+        currency:
+            more: "💱 More currencies"
+            more_prompt: "💱 Choose a currency, or send a code or name (for example GBP or British pound)."
+            changed_keep_amount: "Currency changed to %{currency}. The amount stays %{amount}."
+            precision_conflict: "%{currency} allows fewer decimal places than %{amount}. Edit the amount before continuing."
+            search:
+                button: "🔎 Search currencies"
+                prompt: "🔎 Send a currency code or name to search."
+                results: "Currencies matching “%{query}”:"
+                none: "I couldn't find a supported currency for “%{query}”. Send a 3-letter code (for example GBP) or a currency name."
+                empty: "Send a currency code or name to search."
+                list: "⬅️ Back to currency list"
+        btn:
+            back_to_review: "⬅️ Back to review"
+        split:
+            title: "🧩 Split between categories"
+            prompt: "Send the amount for %{category}."
+            remaining: "%{amount} %{currency} remaining"
+            over: "Over by %{amount} %{currency}"
+            done: "✅ Done"
+            add: "➕ Add category"
+            add_remaining: "➕ Add remaining"
+            remove: "🗑 Remove"
+            pick: "🔎 Pick category"
+            pick_search: "🔎 Search categories"
+            use_remaining: "Use remaining amount"
+            invalid_sum: "The split amounts must equal %{total} %{currency}."
+        review:
+            title: "🧾 Review your expense"
+            confirm: "✅ Confirm and save"
+            confirm_no_conversion: "✅ Save without conversion"
+            edit_store: "✏️ Store"
+            edit_amount: "✏️ Amount"
+            edit_category: "✏️ Category"
+            edit_date: "✏️ Date"
+            conversion_none: "⚠️ No conversion available."
+            conversion_ok: "💱 ≈ %{converted} %{reporting_currency}"
+            conversion_manual: "Manual rate applied."
+            conversion_reporting_changed: "Reporting currency changed. Please review the conversion."
+        save:
+            in_progress_card: "⏳ Saving the expense…"
+            in_progress: "Saving… one moment."
+            error: "⚠️ I couldn't confirm that the expense was saved. Your draft is kept. Tap Retry — it will not create a duplicate."
+            retry: "🔄 Retry"
+            review_draft: "✏️ Review draft"
+            committed_meanwhile: "This expense was already saved."
+        success:
+            title: "✅ Expense saved"
+            body: "%{store_name} · %{amount} %{currency}\nCategory: %{category_summary}\nDate: %{date}"
+            conversion_none: "⚠️ Saved without conversion. Reports will try to convert it with an available rate and mark it as not converted if none exists."
+            conversion_ok: "💱 ≈ %{converted} %{reporting_currency}"
+            add_another: "➕ Add another"
+            open_expense: "📋 Open expense"
+        cancel:
+            confirm: "Discard this expense draft? Everything you entered will be lost."
+            done: "Draft discarded. No expense was created."
+            yes: "Yes, discard"
+            no: "No, keep editing"
+        expired:
+            message: "This expense draft has expired. Tap “Start new expense” to begin again."
+            restart: "➕ Start new expense"
+            close: "✖️ Close"
+        callback:
+            stale: "This button is no longer active."
+        input:
+            unexpected: "I wasn't expecting text right now. Use the buttons on the expense card."
+            not_text: "Please send text."
+            show_card: "Show card"
+        membership:
+            lost: "You're no longer a member of this family, so the expense can't be saved. The draft was closed."
+        draft:
+            paused_for_creation: "⏸ Your expense draft is saved until %{expires_at}. Create %{entity_name} in the %{section_name} section, then come back with the button below or with “Add expense”."
+            return: "↩️ Back to expense"
+        family:
+            select:
+                prompt: "Which family is this expense for?"
+            change:
+                btn: "👪 Change family"
+        date_picker:
+            today: "📅 Today"
+            yesterday: "📅 Yesterday"
+            type_date: "✍️ Type date"
+        pagination:
+            previous: "‹ Previous"
+            next: "Next ›"
+            page: "Page %{current}/%{total}"

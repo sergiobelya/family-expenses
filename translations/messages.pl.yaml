@@ -76,6 +76,14 @@ family:
         switch_to_family: "Przełącz na %{family_name}"
         joined_success: "🎉 Dołączyłeś do rodziny <b>%{family_name}</b>!"
         invalid_or_expired: "To zaproszenie jest nieprawidłowe, wygasłe, odwołane lub wykorzystane."
+    not_found: "Rodzina nie została znaleziona."
+    not_member: "Nie jesteś członkiem tej rodziny."
+    already_member: "Jesteś już członkiem tej rodziny."
+    invitation:
+        expired: "Termin ważności zaproszenia wygasł."
+        revoked: "Zaproszenie zostało wycofane."
+        not_found: "Zaproszenie nie zostało znalezione."
+        limit_exceeded: "Limit użycia zaproszenia został wyczerpany."
 
 settings:
     title: "⚙️ <b>Ustawienia</b>"
@@ -99,6 +107,9 @@ settings:
     saved: "Ustawienia zostały zapisane."
     name_too_short: "Nazwa rodziny musi mieć co najmniej 2 znaki."
     name_too_long: "Nazwa rodziny nie może przekraczać 100 znaków."
+    invalid_currency: "Ta waluta nie jest obsługiwana."
+    invalid_country: "Ten kod kraju jest nieprawidłowy."
+    invalid_timezone: "Ta strefa czasowa jest nieprawidłowa."
 
 catalog:
     stores_title: "🏪 Sklepy"
@@ -150,7 +161,156 @@ catalog:
     alias_conflict: "Ta nazwa jest już używana przez %{name}."
     saved: "Zapisano."
     referenced: "Ten element jest używany i nie można go usunąć."
+    name_taken: "Sklep lub kategoria o tej nazwie już istnieje."
     store_deleted: "Sklep został usunięty."
     category_deleted: "Kategoria została usunięta."
     set_as_default: "Ustaw jako domyślną kategorię"
     category_created: "Kategoria została utworzona. Ustawić ją jako domyślną dla tego sklepu?"
+
+expense:
+    not_found: "Wydatek nie został znaleziony."
+    store_not_found: "Sklep nie został znaleziony."
+    category_not_found: "Kategoria nie została znaleziona."
+    not_author: "Tylko autor może edytować ten wydatek."
+    allocation_mismatch: "Kwoty rozdzielone nie zgadzają się z kwotą całkowitą."
+    future_date: "Data zakupu nie może być w przyszłości."
+    amount:
+        invalid_format: "Wpisz dodatnią liczbę. Przykład: 125.50"
+        not_positive: "Kwota musi być większa od zera."
+        too_large: "Kwota przekracza maksimum %{maxAmount} %{currency}."
+        too_precise: "Ta waluta pozwala na maksymalnie %{precision} miejsce po przecinku.|Ta waluta pozwala na maksymalnie %{precision} miejsca po przecinku.|Ta waluta pozwala na maksymalnie %{precision} miejsc po przecinku."
+        too_precise_zero: "%{currency} nie używa miejsc po przecinku."
+        empty: "nie wprowadzono"
+        prompt: "💰 Wyślij kwotę w %{currency}. Przykład: %{example_amount}"
+    add:
+        card_header: "🧾 Nowy wydatek · 👪 %{family_name}"
+        card:
+            moved: "↓ Ten szkic jest kontynuowany w nowszej wiadomości."
+        amount:
+            label: "Kwota"
+            edit_prompt: "Aktualna kwota: %{amount}. Wyślij nową kwotę lub wybierz Kontynuuj, aby ją zachować."
+            continue: "✅ Kontynuuj"
+        store:
+            label: "Sklep"
+            empty: "nie wybrano"
+            prompt: "🏪 Wybierz sklep dla tego wydatku lub wyszukaj po nazwie."
+            unavailable: "„%{store_name}” nie jest już dostępny. Wybierz inny sklep."
+            unavailable_generic: "Ten sklep nie jest już dostępny. Wybierz inny sklep."
+            selected: "wybrany sklep"
+            no_stores: "Ta rodzina nie ma jeszcze żadnych sklepów."
+            add_first: "➕ Dodaj pierwszy sklep"
+            entity_name: "sklep"
+            section_name: "Sklepy"
+            search:
+                prompt: "🔎 Wyślij nazwę sklepu do wyszukania."
+                results: "Sklepy pasujące do „%{query}”:"
+                none: "Nie znaleziono sklepów dla „%{query}”. Utwórz go w sekcji Sklepy lub spróbuj innej nazwy."
+                empty: "Wyślij co najmniej jedną literę lub cyfrę."
+                too_long: "Maksymalna długość zapytania to %maxLength% znak.|Maksymalna długość zapytania to %maxLength% znaki.|Maksymalna długość zapytania to %maxLength% znaków."
+                create: "➕ Utwórz „%{query}”"
+                limited: "Wyszukiwanie jest teraz ograniczone. Pokazane są tylko dokładne dopasowania."
+                unavailable: "Wyszukiwanie jest tymczasowo niedostępne. Wybierz sklep z listy."
+        category:
+            label: "Kategoria"
+            empty: "nie wybrano"
+            prompt: "🏷 Wybierz kategorię dla %{amount} %{currency}."
+            unavailable: "„%{category_name}” nie jest już dostępna. Wybierz inną kategorię."
+            search:
+                prompt: "🔎 Wyślij nazwę kategorii do wyszukania."
+                results: "Kategorie pasujące do „%{query}”:"
+                none: "Nie znaleziono kategorii dla „%{query}”. Utwórz ją w sekcji Kategorie lub spróbuj innej nazwy."
+                empty: "Wyślij co najmniej jedną literę lub cyfrę."
+        date:
+            empty: "nie wybrano"
+            today: "dzisiaj"
+            yesterday: "wczoraj"
+            prompt: "📅 Wyślij datę zakupu (DD.MM.RRRR, DD.MM lub RRRR-MM-DD)."
+            invalid: "Wpisz poprawną datę (DD.MM.RRRR, DD.MM lub RRRR-MM-DD)."
+            future: "Data zakupu nie może być w przyszłości."
+            too_old: "Data zakupu nie może być wcześniejsza niż 2020."
+        currency:
+            more: "💱 Więcej walut"
+            more_prompt: "💱 Wybierz walutę albo wyślij jej kod lub nazwę (np. GBP lub British pound)."
+            changed_keep_amount: "Zmieniono walutę na %{currency}. Kwota pozostaje %{amount}."
+            precision_conflict: "%{currency} obsługuje mniej miejsc po przecinku niż kwota %{amount}. Zmień kwotę przed kontynuowaniem."
+            search:
+                button: "🔎 Szukaj walut"
+                prompt: "🔎 Wyślij kod lub nazwę waluty do wyszukania."
+                results: "Waluty pasujące do „%{query}”:"
+                none: "Nie znaleziono obsługiwanej waluty dla „%{query}”. Wyślij 3-literowy kod (np. GBP) lub nazwę waluty."
+                empty: "Wyślij kod lub nazwę waluty do wyszukania."
+                list: "⬅️ Wróć do listy walut"
+        btn:
+            back_to_review: "⬅️ Wróć do podsumowania"
+        split:
+            title: "🧩 Podział między kategorie"
+            prompt: "Wyślij kwotę dla %{category}."
+            remaining: "%{amount} %{currency} pozostało"
+            over: "Przekroczono o %{amount} %{currency}"
+            done: "✅ Gotowe"
+            add: "➕ Dodaj kategorię"
+            add_remaining: "➕ Dodaj resztę"
+            remove: "🗑 Usuń"
+            pick: "🔎 Wybierz kategorię"
+            pick_search: "🔎 Szukaj kategorii"
+            use_remaining: "Użyj pozostałej kwoty"
+            invalid_sum: "Kwoty podziału muszą równać się %{total} %{currency}."
+        review:
+            title: "🧾 Sprawdź swój wydatek"
+            confirm: "✅ Potwierdź i zapisz"
+            confirm_no_conversion: "✅ Zapisz bez konwersji"
+            edit_store: "✏️ Sklep"
+            edit_amount: "✏️ Kwota"
+            edit_category: "✏️ Kategoria"
+            edit_date: "✏️ Data"
+            conversion_none: "⚠️ Konwersja niedostępna."
+            conversion_ok: "💱 ≈ %{converted} %{reporting_currency}"
+            conversion_manual: "Kurs ustawiony ręcznie."
+            conversion_reporting_changed: "Waluta raportowania została zmieniona. Sprawdź konwersję."
+        save:
+            in_progress_card: "⏳ Zapisywanie wydatku…"
+            in_progress: "Zapisywanie… chwilę."
+            error: "⚠️ Nie udało się potwierdzić zapisania wydatku. Szkic został zachowany. Naciśnij Ponów — nie utworzy to duplikatu."
+            retry: "🔄 Ponów"
+            review_draft: "✏️ Sprawdź szkic"
+            committed_meanwhile: "Ten wydatek został już zapisany."
+        success:
+            title: "✅ Wydatek zapisany"
+            body: "%{store_name} · %{amount} %{currency}\nKategoria: %{category_summary}\nData: %{date}"
+            conversion_none: "⚠️ Zapisano bez konwersji. Raporty spróbują go przekonwertować po dostępnym kursie."
+            conversion_ok: "💱 ≈ %{converted} %{reporting_currency}"
+            add_another: "➕ Dodaj kolejny"
+            open_expense: "📋 Otwórz wydatek"
+        cancel:
+            confirm: "Odrzucić szkic wydatku? Wszystkie wprowadzone dane zostaną utracone."
+            done: "Szkic odrzucony. Nie utworzono wydatku."
+            yes: "Tak, odrzuć"
+            no: "Nie, kontynuuj"
+        expired:
+            message: "Ten szkic wydatku wygasł. Naciśnij „Nowy wydatek”, aby zacząć od nowa."
+            restart: "➕ Nowy wydatek"
+            close: "✖️ Zamknij"
+        callback:
+            stale: "Ten przycisk nie jest już aktywny."
+        input:
+            unexpected: "Nie oczekuję teraz tekstu. Użyj przycisków na karcie wydatku."
+            not_text: "Wyślij tekst."
+            show_card: "Pokaż kartę"
+        membership:
+            lost: "Nie jesteś już członkiem tej rodziny, więc wydatek nie może być zapisany. Szkic został zamknięty."
+        draft:
+            paused_for_creation: "⏸ Szkic wydatku jest zapisany do %{expires_at}. Utwórz %{entity_name} w sekcji %{section_name}, a następnie wróć przyciskiem poniżej lub „Dodaj wydatek”."
+            return: "↩️ Wróć do wydatku"
+        family:
+            select:
+                prompt: "Dla której rodziny jest ten wydatek?"
+            change:
+                btn: "👪 Przełącz rodzinę"
+        date_picker:
+            today: "📅 Dzisiaj"
+            yesterday: "📅 Wczoraj"
+            type_date: "✍️ Wpisz datę"
+        pagination:
+            previous: "‹ Wstecz"
+            next: "Dalej ›"
+            page: "Str. %{current}/%{total}"

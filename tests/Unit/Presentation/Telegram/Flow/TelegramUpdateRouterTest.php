@@ -4,6 +4,7 @@ namespace App\Tests\Unit\Presentation\Telegram\Flow;
 
 use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Identity\Domain\Entity\User;
+use App\Presentation\Telegram\Client\TelegramApiClientInterface;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\Context\TelegramUserContextResolver;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
@@ -11,7 +12,9 @@ use App\Presentation\Telegram\Flow\FamilyContextFlowHandlerInterface;
 use App\Presentation\Telegram\Flow\TelegramUpdateRouter;
 use App\Presentation\Telegram\Flow\UserContextFlowHandlerInterface;
 use App\Presentation\Telegram\Keyboard\MainMenuKeyboard;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class TelegramUpdateRouterTest extends TestCase
@@ -46,11 +49,18 @@ class TelegramUpdateRouterTest extends TestCase
             });
 
         $translator = $this->createMock(TranslatorInterface::class);
-        $translator->method('trans')->willReturnCallback(static fn(string $key): string => $key);
+        $translator->method('trans')->willReturnCallback(static fn(string $key, array $params = []): string => $key);
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $exceptionToTranslation = new MapExceptionToTranslatableMessage([]);
+        $logger = $this->createMock(LoggerInterface::class);
         $router = new TelegramUpdateRouter(
             $contextResolver,
             $stateRepository,
             new MainMenuKeyboard($translator),
+            $telegramClient,
+            $exceptionToTranslation,
+            $translator,
+            $logger,
             [$handler]
         );
 
@@ -80,11 +90,18 @@ class TelegramUpdateRouterTest extends TestCase
         $handler->expects(self::once())->method('handle');
 
         $translator = $this->createMock(TranslatorInterface::class);
-        $translator->method('trans')->willReturnCallback(static fn(string $key): string => $key);
+        $translator->method('trans')->willReturnCallback(static fn(string $key, array $params = []): string => $key);
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $exceptionToTranslation = new MapExceptionToTranslatableMessage([]);
+        $logger = $this->createMock(LoggerInterface::class);
         $router = new TelegramUpdateRouter(
             $contextResolver,
             $stateRepository,
             new MainMenuKeyboard($translator),
+            $telegramClient,
+            $exceptionToTranslation,
+            $translator,
+            $logger,
             [$handler]
         );
 
@@ -116,11 +133,18 @@ class TelegramUpdateRouterTest extends TestCase
         $userHandler->expects(self::once())->method('handle');
 
         $translator = $this->createMock(TranslatorInterface::class);
-        $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
+        $translator->method('trans')->willReturnCallback(static fn (string $key, array $params = []): string => $key);
+        $telegramClient = $this->createMock(TelegramApiClientInterface::class);
+        $exceptionToTranslation = new MapExceptionToTranslatableMessage([]);
+        $logger = $this->createMock(LoggerInterface::class);
         $router = new TelegramUpdateRouter(
             $contextResolver,
             $stateRepository,
             new MainMenuKeyboard($translator),
+            $telegramClient,
+            $exceptionToTranslation,
+            $translator,
+            $logger,
             [$familyHandler, $userHandler]
         );
 

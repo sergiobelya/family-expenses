@@ -20,5 +20,11 @@
 
 ### Pending
 
+- **API collecting validator** — When REST API delivery needs all field errors at once (API forms), implement a collecting validator that returns a result with a list of problems, built on the same value object rules and Application validators. Each delivery mechanism maps errors itself: Telegram to translation keys, API to stable error codes (`ErrorType`). `ErrorType` is the shared contract; translation keys are not part of the domain.
+
+- **Telegram HTML escaping** — Replace direct `htmlspecialchars()` calls in `Presentation/Telegram` with a dedicated escape method or class.
+
+- **Shared Telegram pagination** — Extract reusable pagination logic from `ExpenseStorePickerScreen::renderList()`, `CategoryEntryScreen::renderList()`, and other paginated screens into a shared service/component. First assess whether a library paginator, such as Doctrine's or Symfony's, can be reused or adapted; keep screen-specific rendering and callback behavior in the screens.
+
 - **Thread-local locale** — `TranslatorInterface::setLocale()` is called on every request in `TelegramUserContextResolver`. In multi-threaded environments (e.g., RoadRunner) this can cause race conditions. Use `LocaleAwareInterface` with thread-local storage or pass locale explicitly instead of mutating a shared translator instance.
 

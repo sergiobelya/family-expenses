@@ -16,7 +16,7 @@ use App\Core\Domain\ValueObject\FamilyId;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Keyboard\InlineKeyboardBuilder;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
@@ -26,7 +26,7 @@ final class CategoryNameInputHandler
         private CatalogFlowUtils $utils,
         private CatalogRepositoryInterface $catalog,
         private CatalogSearchInterface $search,
-        private MapExceptionToTranslationKey $exceptionToTranslation,
+        private MapExceptionToTranslatableMessage $exceptionToTranslation,
         private string $listCallback,
     ) {
     }
@@ -40,14 +40,15 @@ final class CategoryNameInputHandler
         string $value,
         ?string $returnStoreId,
         callable $renderList,
-        callable $renderDetails
+        callable $renderDetails,
+        bool $similarityConfirmed = false
     ): void {
         try {
             $name = CatalogName::fromString($value);
         } catch (InvalidValueException $e) {
             $this->utils->render(
                 $context,
-                ($this->exceptionToTranslation)($e),
+                $this->utils->translateMessage(($this->exceptionToTranslation)($e), $context->language),
                 $this->utils->backKeyboard($this->listCallback)
             );
             return;
@@ -67,7 +68,7 @@ final class CategoryNameInputHandler
         }
         $id = isset($data['id']) ? $this->utils->parseUuid((string) $data['id']) : null;
         $categoryId = $id === null ? null : new CategoryId($id);
-        $matches = array_filter(
+        $matches = $similarityConfirmed ? [] : array_filter(
             $this->search->categories($familyId, $name->getValue()),
             fn (Category $category): bool => $category->getDedupeKey() !== $name->getDedupeKey()
                 && ($categoryId === null || !$category->getId()->equals($categoryId))

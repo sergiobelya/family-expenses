@@ -8,7 +8,7 @@ use App\Core\Infrastructure\Persistence\Redis\UserInteractionStateRepository;
 use App\Family\Domain\ValueObject\FamilyName;
 use App\Presentation\Telegram\CallbackActions;
 use App\Presentation\Telegram\Client\TelegramApiClientInterface;
-use App\Presentation\Telegram\MapExceptionToTranslationKey;
+use App\Presentation\Telegram\MapExceptionToTranslatableMessage;
 use App\Presentation\Telegram\Context\TelegramFamilyMemberContext;
 use App\Presentation\Telegram\Context\TelegramUserContext;
 use App\Presentation\Telegram\DTO\TelegramUpdate;
@@ -23,7 +23,7 @@ final class FamilyNameStep implements FamilyCreationStepInterface
         private UserInteractionStateRepository $stateRepository,
         private TimezoneSelector $timezoneSelector,
         private TranslatorInterface $translator,
-        private MapExceptionToTranslationKey $exceptionToTranslation
+        private MapExceptionToTranslatableMessage $exceptionToTranslation
     ) {}
 
     public function handle(
@@ -41,7 +41,7 @@ final class FamilyNameStep implements FamilyCreationStepInterface
         } catch (InvalidValueException $e) {
             $this->telegramClient->sendMessage(
                 chatId: $context->chatId,
-                text: $this->translator->trans(($this->exceptionToTranslation)($e))
+                text: ($this->exceptionToTranslation)($e)->trans($this->translator, $context->language)
             );
             return null;
         }

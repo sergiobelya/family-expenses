@@ -1,3 +1,7 @@
+---
+name: implement
+description: Agent Skill for implementing tasks from `docs/tasks`, other sources or user requests.
+---
 # implement
 
 Agent Skill for implementing tasks from `docs/tasks`, other sources or user requests.
@@ -16,6 +20,7 @@ Do **not** use this skill when:
 
 ## Workflow
 
+Check `Dockerfile` for the active PHP version and extensions.
 Follow these steps for each task implementation. Repeat the cycle until all critical issues are resolved.
 
 ### 1. Read the task and guidelines
@@ -24,6 +29,7 @@ Follow these steps for each task implementation. Repeat the cycle until all crit
 - Read `src/Agents.md` for implementation rules and architecture guidelines. **Follow all rules strictly.**
 - Read `docs/nfr_requirements.md` for non-functional requirements if applicable.
 - Read `docs/system_design.md` for system design decisions if applicable.
+- Read related specification in `docs/specs/` if applicable.
 
 ### 2. Implement the task
 
@@ -51,10 +57,9 @@ docker compose run --rm php-app php vendor/bin/phpunit
 docker compose run --rm php-app bin/console lint:container
 ```
 
-If translations were changed, run:
+If translation files (`translations/messages.*.yaml`) were changed, run:
 
 ```bash
-
 docker compose run --rm php-app bin/console lint:translations --locale=uk
 docker compose run --rm php-app bin/console lint:translations --locale=en
 docker compose run --rm php-app bin/console lint:translations --locale=pl
@@ -64,30 +69,18 @@ docker compose run --rm php-app bin/console lint:translations --locale=ru
 - If any check fails, fix the issues and re-run until **all pass**.
 - Do not proceed to review until tests, static analysis, and container/translations lint are clean.
 
-### 5. Review uncommitted changes
+### 5. Review the current task
 
-After tests pass, perform a thorough review of all uncommitted changes:
+After checks pass, review the changes for this task using [`skills/review/SKILL.md`](../review/SKILL.md). Keep the review scoped to the current task; include relevant staged, unstaged, and untracked files, but exclude unrelated working-tree changes. Record the findings and requirement-coverage results before proceeding to §6.
 
-- Check for adherence to `src/Agents.md` rules.
-- Check for code quality, naming consistency, and architecture compliance.
-- Identify **critical issues** (must fix before marking task as done):
-  - Rule violations in `src/Agents.md`
-  - Broken tests or PHPStan errors
-  - Architecture violations (e.g., cross-context dependency, Domain depends on Infrastructure)
-  - Missing cascade/orphan-removal in Doctrine mappings
-  - Incorrect exception handling
-- Identify **minor observations** (nice to have, but not blocking):
-  - Naming inconsistencies
-  - Code style improvements
-  - Missing tests for edge cases
-  - Documentation updates
-
-### 6. Fix critical issues
+### 6. Fix issues found in review
 
 - Fix all critical issues identified in the review.
-- If minor issues are found alongside critical ones, fix them too.
-- Re-run tests and static analysis after fixes.
-- Re-run review after fixes.
+- On the first cycle iteration, fix all minor issues too, regardless of whether critical issues exist.
+- On the second and later iterations, fix minor issues together with critical — but only if critical issues are present.
+- Re-run tests and static analysis after fixes (see §4. Run tests and static analysis).
+- After tests pass, always re-run review to ensure fixes did not introduce new critical issues.
+- If a re-run review finds only minor issues (no critical), stop — minor issues alone must not trigger another fix cycle.
 
 ### 7. Repeat until clean
 
@@ -112,7 +105,7 @@ After completing the task, report all decisions made during implementation to th
 
 - **Always read `src/Agents.md` before implementing code changes.** It is the authoritative source for architecture rules.
 - **Always run all checks after any code changes:** PHPUnit, PHPStan, `lint:container`, and `lint:translations`. Do not skip any of them.
-- **The review step is mandatory** — do not skip it. A task is not complete until review finds no critical issues.
+- **The review step is mandatory** — use `skills/review/SKILL.md` and do not skip it. A task is not complete until review finds no critical issues.
 - **Critical issues must be fixed** before marking a task as done.
 - **Keep a running list of decisions** made during implementation and report them at the end.
 - **Propose short commit message** using conventional commit format (e.g., `feat:`, `fix:`, `refactor:`).
